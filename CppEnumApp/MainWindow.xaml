@@ -1,0 +1,104 @@
+﻿<Window x:Class="CppEnumApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CppEnumApp"
+        mc:Ignorable="d" d:DataContext="{d:DesignInstance local:ViewModel, IsDesignTimeCreatable=True}"
+        Title="C++ Enums" Height="800" Width="1400" WindowStartupLocation="CenterScreen" AllowDrop="True"
+        Drop="Window_Drop"
+        >
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="500" />
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+
+        <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2">
+            <Grid Margin="3">
+                <Grid.RowDefinitions>
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="auto" />
+                    <ColumnDefinition Width="auto" />
+                    <ColumnDefinition Width="auto" />
+                </Grid.ColumnDefinitions>
+
+                <Label Grid.Row="0" Grid.Column="0" Content="Source/header file or directory:" />
+                <TextBox Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" Text="{Binding InputPath, UpdateSourceTrigger=PropertyChanged}" />
+
+                <Label Grid.Row="0" Grid.Column="2"  Content="Directory search pattern:"  />
+                <TextBox Grid.Row="0" Grid.Column="3" Width="150" VerticalAlignment="Center" Text="{Binding Extensions}" />
+
+                <Button Grid.Row="0" Grid.Column="4" Margin="5,0,0,0" Content="Go" Height="20" Width="80" Command="{Binding GoCommand}" />
+            </Grid>
+        </Grid>
+
+        <Grid Grid.Row="1" Grid.Column="0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0" Margin="3">
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Label Grid.Row="0" Grid.Column="0" Content="Filter namespace: " />
+                    <TextBox Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" Text="{Binding NamespaceFilter, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <Label Grid.Row="1" Grid.Column="0" Content="Filter type name: " />
+                    <TextBox Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" Text="{Binding TypeNameFilter, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <Label Grid.Row="2" Grid.Column="0" Content="Exclude: " />
+                    <StackPanel Orientation="Horizontal" Grid.Row="2" Grid.Column="1">
+                        <CheckBox Content="std" IsChecked="{Binding ExcludeStd}" VerticalAlignment="Center" Margin="0,0,15,0" />
+                        <CheckBox Content="global" IsChecked="{Binding ExcludeGlobal}" VerticalAlignment="Center" Margin="0,0,15,0" />
+                        <CheckBox Content="no members" IsChecked="{Binding ExcludeNoMembers}" VerticalAlignment="Center" Margin="0,0,15,0" />
+                        <CheckBox Content="internal" IsChecked="{Binding ExcludeInternal}" VerticalAlignment="Center" Margin="0,0,15,0" />
+                    </StackPanel>
+                </Grid>
+
+                <ListView Margin="3" Grid.Row="1" ItemsSource="{Binding FilteredEnums}" SelectedItem="{Binding SelectedEnum}">
+                    <ListView.Resources>
+                        <Style TargetType="{x:Type GridViewColumnHeader}">
+                            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                        </Style>
+                    </ListView.Resources>
+
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="Name" Width="250"  DisplayMemberBinding="{Binding Name}" />
+                            <GridViewColumn Header="Namespace" Width="200"  DisplayMemberBinding="{Binding Namespace}" />
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </Grid>
+        </Grid>
+
+        <TextBox x:Name="MainTextBox" Margin="3" Grid.Row="1" Grid.Column="1" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Visible"
+                 FontFamily="Cascadia Mono" FontSize="10pt" IsReadOnly="True" IsReadOnlyCaretVisible="True">
+            <TextBox.Text>
+                <PriorityBinding>
+                    <Binding Path="SelectedEnum.EnumToString" Mode="OneWay" />
+                    <Binding Path="ErrorText" Mode="OneWay" />
+                </PriorityBinding>
+            </TextBox.Text>
+        </TextBox>
+    </Grid>
+</Window>

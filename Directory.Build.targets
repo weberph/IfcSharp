@@ -1,0 +1,39 @@
+<Project>
+    <!--<Target Name="TestTarget" BeforeTargets="ClCompile">-->
+    <Target Name="TestTarget">
+        <!--<Exec Command="$(ProjectDir)..\CppEnumStringGenerator\bin\Debug\net8.0\CppEnumStringGenerator.exe" />-->
+
+        <ItemGroup>
+            <InputFiles Include="@(ClCompile)" Condition="'%(Identity)' == 'ExportedEnums.ixx'" />
+            <!--<ClCompile>
+                <SomeTest Condition="'%(ClCompile.Extension)' == '.ixx'">$(OutDir)ifc\$(ProjectName)\%(Filename).ifc</ModuleOutputFile>
+            </ClCompile>-->
+        </ItemGroup>
+
+        <Message Text="#################### @(InputFiles->Metadata('ModuleOutputFile'))" />
+
+        <PropertyGroup>
+            <Arguments>@(InputFiles->Metadata('ModuleOutputFile'))</Arguments>
+            <CachedClCompile>@(ClCompile)</CachedClCompile>
+        </PropertyGroup>
+
+        <Exec Command="$(ProjectDir)..\CppEnumStringGenerator\bin\Debug\net8.0\CppEnumStringGenerator.exe $(Arguments)" />
+
+        <ItemGroup>
+            <ClCompile Remove="*" />
+            <ClCompile Include="Test.cpp">
+                <!--<CompilerIteration>XamlGenerated</CompilerIteration>-->
+            </ClCompile>
+        </ItemGroup>
+
+        <Message Text="#################### @(ClCompile)" />
+        <CallTarget Targets="ClCompile" />
+
+        <ItemGroup>
+            <ClCompile Remove="Test.cpp" />
+            <ClCompile Include="$(CachedClCompile)" />
+        </ItemGroup>
+
+        <Message Text="#################### @(ClCompile)" />
+    </Target>
+</Project>
