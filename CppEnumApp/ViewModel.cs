@@ -43,7 +43,7 @@ namespace CppEnumApp
 
             return
                 $$"""
-                constexpr std::string_view to_string(const {{name}} val) const noexcept
+                constexpr std::string_view to_string(const {{name}} val) noexcept
                 {
                     switch (val)
                     {
@@ -58,7 +58,8 @@ namespace CppEnumApp
     internal partial class ViewModel : ObservableObject
     {
         // TODO: configuration
-        private const string VcvarsPath = @"c:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat";
+        private const string VcvarsPath1 = @"c:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvars64.bat";
+        private const string VcvarsPath2 = @"c:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat";
 
         private AppEnumData[] _enums = [];
 
@@ -110,7 +111,21 @@ namespace CppEnumApp
         private Task<DeveloperEnvironment> _environment = Task.Run(async () =>
         {
             var env = new DeveloperEnvironment();
-            await env.ActivateDeveloperEnvironmentAsync(VcvarsPath);
+
+            if (Directory.Exists(VcvarsPath1))
+            {
+                await env.ActivateDeveloperEnvironmentAsync(VcvarsPath1);
+            }
+            else if (Directory.Exists(VcvarsPath2))
+            {
+                await env.ActivateDeveloperEnvironmentAsync(VcvarsPath2);
+            }
+            else
+            {
+                var vcvarsPath = Environment.GetEnvironmentVariable("ENUM_VCVARS") ?? throw new IfcCreationException(new Exception("vcvars64.bat not found"));
+                await env.ActivateDeveloperEnvironmentAsync(vcvarsPath);
+            }
+
             return env;
         });
 
@@ -148,7 +163,9 @@ namespace CppEnumApp
             var outputFile = Path.Combine(Directory.GetCurrentDirectory(), "current.ifc");
 
             // TODO: configuration
-            string[] includeDirs = [@"d:\workspace\.source\Microsoft\GSL\include", @"d:\workspace\.source\Microsoft\ifc\include"];
+            // string[] includeDirs = [@"d:\workspace\.source\Microsoft\GSL\include", @"d:\workspace\.source\Microsoft\ifc\include"];
+
+            string[] includeDirs = Environment.GetEnvironmentVariable("ENUM_INCLUDES")?.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [];
 
             var env = _environment.Result;
             var (stdout, stderr, exitCode) = await env.CreateIfcAsync(inputFile, includeDirs, outputFile).ConfigureAwait(false);
