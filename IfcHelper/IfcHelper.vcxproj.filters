@@ -23,6 +23,15 @@
     <ClInclude Include="IfcReader.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="EnumToString.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Query.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GetStringView.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TypeName.cxx">
@@ -32,6 +41,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Assert.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EnumToString.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

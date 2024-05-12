@@ -13,8 +13,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{0b2d2d21-9465-4086-b6fe-fbb070f7438f}</ProjectGuid>
-    <RootNamespace>IfcHelper</RootNamespace>
+    <ProjectGuid>{a02141c2-8ffb-4de2-bed8-2ace31c3b413}</ProjectGuid>
+    <RootNamespace>IfcTestData</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -76,27 +76,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="EnumToString.hxx" />
-    <ClInclude Include="File.hxx" />
-    <ClInclude Include="GetStringView.hxx" />
-    <ClInclude Include="IfcHelper.hxx" />
-    <ClInclude Include="IfcReader.hxx" />
-    <ClInclude Include="Query.hxx" />
-    <ClInclude Include="TypeName.hxx" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="Assert.cxx" />
-    <ClCompile Include="EnumToString.cxx" />
-    <ClCompile Include="File.cxx" />
-    <ClCompile Include="TypeName.cxx" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\..\..\workspace\.source\Microsoft\ifc\build\ifc-dom.vcxproj">
-      <Project>{addbbe15-b5e5-3b22-8778-114c580e8d77}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\..\..\workspace\.source\Microsoft\ifc\build\ifc-reader.vcxproj">
-      <Project>{ba3c56ef-d049-34af-972b-c273401d7de3}</Project>
-    </ProjectReference>
+    <ClCompile Include="BitFieldTest.ixx">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsHeaderUnit</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsHeaderUnit</CompileAs>
+    </ClCompile>
+    <ClCompile Include="IfcHeaderUnit.ixx">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsHeaderUnit</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsHeaderUnit</CompileAs>
+    </ClCompile>
+    <ClCompile Include="IfcSizeValidation.ixx" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

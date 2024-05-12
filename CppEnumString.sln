@@ -29,6 +29,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IfcEnumLib", "IfcEnumLib\If
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IfcBuilderLib", "..\IfcBuilder\IfcBuilderLib\IfcBuilderLib.csproj", "{4150F285-55BC-4360-B4AA-5D0494A08850}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IfcTestData", "IfcTestData\IfcTestData.vcxproj", "{A02141C2-8FFB-4DE2-BED8-2ACE31C3B413}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -111,6 +113,14 @@ Global
 		{4150F285-55BC-4360-B4AA-5D0494A08850}.Release|x64.ActiveCfg = Release|x64
 		{4150F285-55BC-4360-B4AA-5D0494A08850}.Release|x64.Build.0 = Release|x64
 		{4150F285-55BC-4360-B4AA-5D0494A08850}.RelWithDebInfo|x64.ActiveCfg = Release|x64
+		{A02141C2-8FFB-4DE2-BED8-2ACE31C3B413}.Debug|x64.ActiveCfg = Debug|x64
+		{A02141C2-8FFB-4DE2-BED8-2ACE31C3B413}.Debug|x64.Build.0 = Debug|x64
+		{A02141C2-8FFB-4DE2-BED8-2ACE31C3B413}.MinSizeRel|x64.ActiveCfg = Debug|x64
+		{A02141C2-8FFB-4DE2-BED8-2ACE31C3B413}.MinSizeRel|x64.Build.0 = Debug|x64
+		{A02141C2-8FFB-4DE2-BED8-2ACE31C3B413}.Release|x64.ActiveCfg = Release|x64
+		{A02141C2-8FFB-4DE2-BED8-2ACE31C3B413}.Release|x64.Build.0 = Release|x64
+		{A02141C2-8FFB-4DE2-BED8-2ACE31C3B413}.RelWithDebInfo|x64.ActiveCfg = Release|x64
+		{A02141C2-8FFB-4DE2-BED8-2ACE31C3B413}.RelWithDebInfo|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
