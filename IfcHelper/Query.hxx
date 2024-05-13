@@ -162,8 +162,17 @@ namespace ifchelper
         }
     };
 
-    //template<index_like::Fiber U, index_like::MultiSorted TIndex>
-    //concept SameIndexType = 
+    template<index_like::MultiSorted TIndex, index_like::Fiber U>
+    struct QueryResult;
+
+    template<index_like::Fiber U>
+    struct OptionalResult : std::optional<std::reference_wrapper<const U>>
+    {
+        const U& value() const noexcept
+        {
+            return std::optional<std::reference_wrapper<const U>>::value().get();
+        }
+    };
 
     template<index_like::MultiSorted TIndex>
     struct Query
@@ -185,6 +194,21 @@ namespace ifchelper
         {
             detail::sameSortOrThrow( index.sort(), U::algebra_sort );
             return reader.get<U>( index );
+        }
+
+        template<index_like::Fiber U, index_like::MultiSorted UIndex>
+        std::tuple<Query<UIndex>, const U&> getWithQuery( detail::Ptm<UIndex, U> ptm ) const
+        {
+            detail::sameSortOrThrow( index.sort(), U::algebra_sort );
+            const auto& ref = reader.get<U>( index );
+            return { { reader, ref.*ptm }, ref };
+        }
+
+        template<index_like::Fiber U>
+        QueryResult<TIndex, U> map() const
+        {
+            detail::sameSortOrThrow( index.sort(), U::algebra_sort );
+            return { reader, index, reader.get<U>( index ) };
         }
 
         template<index_like::Fiber U>
@@ -219,11 +243,11 @@ namespace ifchelper
         }
 
         template<index_like::Fiber U>
-        std::optional<std::reference_wrapper<U>> tryGet() const
+        OptionalResult<U> tryGet() const
         {
             if ( index.sort() == U::algebra_sort )
             {
-                return { reader, reader.get<U>( index ) };
+                return { reader.get<U>( index ) };
             }
 
             return {};
@@ -251,20 +275,6 @@ namespace ifchelper
             const auto& ref = reader.get<U>( index );
             return getStringView( reader, ref.*ptm ); // TODO check index for null (also other places)
         }
-
-        //template<class U, index_like::Algebra UIndex, std::invocable<UIndex> F>
-        //auto getVisit( Ptm<UIndex, U> ptm, F&& f ) const
-        //{
-        //    const auto& ref = reader.get<U>( index );
-        //    return f( ref.*ptm );
-        //}
-
-        //template<class U, index_like::Algebra UIndex, std::invocable<decltype( reader ), UIndex> F>
-        //auto getVisit( Ptm<UIndex, U> ptm, F&& f ) const
-        //{
-        //    const auto& ref = reader.get<U>( index );
-        //    return f( reader, ref.*ptm );
-        //}
 
         template<class F>
         auto visit( F&& f ) const
@@ -294,21 +304,26 @@ namespace ifchelper
                 return { reader, {}, ref.*ptm2, false };
             }
         }
+    };
 
-        //template<index_like::Fiber U1, class U1Index, index_like::Fiber U2>
-        //Magic<U1> flat( Ptm<U1Index, U1> ptm1, Ptm<U1Index, U2> ptm2 ) const
-        //{
-        //    if ( index.sort() == U1::algebra_sort )
-        //    {
-        //        const auto& ref = reader.get<U1>( index );
-        //        return { reader, ref.*ptm1 };
-        //    }
-        //    else
-        //    {
-        //        asert( index.sort() == U2::algebra_sort );
-        //        const auto& ref = reader.get<U2>( index );
-        //        return { reader, ref.*ptm2 };
-        //    }
-        //}
+    template<index_like::MultiSorted TIndex, index_like::Fiber U>
+    struct QueryResult : public Query<TIndex>
+    {
+        std::reference_wrapper<const U> result;
+
+        const U& value() const noexcept
+        {
+            return result;
+        }
+
+        operator const U& ( ) const noexcept
+        {
+            return result;
+        }
+
+        const U* operator->() const noexcept
+        {
+            return &result.get();
+        }
     };
 }

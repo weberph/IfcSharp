@@ -344,20 +344,76 @@ std::string getTypeName( const ifc::Reader& reader, const ifc::TypeIndex typeInd
     return typeName;
 }
 
-constexpr std::optional<std::string_view> enumBaseToCS( const ifc::symbolic::FundamentalType& type )
+constexpr size_t fundamentalBitWidth( const ifc::symbolic::FundamentalType& type )
 {
-    constexpr std::optional<std::string_view> empty;
-    const bool isSigned = type.sign != ifc::symbolic::TypeSign::Unsigned;
-    constexpr auto x = sizeof( long int );
     switch ( type.precision )
     {
         case ifc::symbolic::TypePrecision::Default:
             switch ( type.basis )
             {
                 case ifc::symbolic::TypeBasis::Bool:
-                case ifc::symbolic::TypeBasis::Char: return type.sign == ifc::symbolic::TypeSign::Unsigned ? "byte" : "sbyte";
-                case ifc::symbolic::TypeBasis::Int: return type.sign == ifc::symbolic::TypeSign::Unsigned ? "uint" : empty;
-                default: throw std::runtime_error( "unexpected enum base type" );
+                case ifc::symbolic::TypeBasis::Char:
+                    return 8;
+
+                case ifc::symbolic::TypeBasis::Wchar_t:
+                    return 16;
+
+                case ifc::symbolic::TypeBasis::Float:
+                case ifc::symbolic::TypeBasis::Int:
+                    return 32;
+
+                case ifc::symbolic::TypeBasis::Double:
+                    return 64;
+
+                default: throw std::runtime_error( "unexpected fundamental type" );
+            }
+
+        case ifc::symbolic::TypePrecision::Bit8:
+            return 8;
+
+        case ifc::symbolic::TypePrecision::Short:
+        case ifc::symbolic::TypePrecision::Bit16:
+            return 16;
+
+        case ifc::symbolic::TypePrecision::Long:
+        case ifc::symbolic::TypePrecision::Bit32:
+            return 32;
+
+        case ifc::symbolic::TypePrecision::Bit64:
+            return 64;
+
+        case ifc::symbolic::TypePrecision::Bit128:
+            return 128;
+
+        default: throw std::runtime_error( "unexpected fundamental type" );
+    }
+}
+
+constexpr std::string_view fundamentalToCS( const ifc::symbolic::FundamentalType& type )
+{
+    const bool isSigned = type.sign != ifc::symbolic::TypeSign::Unsigned;
+    switch ( type.precision )
+    {
+        case ifc::symbolic::TypePrecision::Default:
+            switch ( type.basis )
+            {
+                case ifc::symbolic::TypeBasis::Bool:
+                case ifc::symbolic::TypeBasis::Char:
+                    return type.sign == ifc::symbolic::TypeSign::Unsigned ? "byte" : "sbyte";
+
+                case ifc::symbolic::TypeBasis::Int:
+                    return type.sign == ifc::symbolic::TypeSign::Unsigned ? "uint" : "int";
+
+                case ifc::symbolic::TypeBasis::Wchar_t:
+                    return "char";
+
+                case ifc::symbolic::TypeBasis::Float:
+                    return "float";
+
+                case ifc::symbolic::TypeBasis::Double:
+                    return "double";
+
+                default: throw std::runtime_error( "unexpected fundamental type" );
             }
 
         case ifc::symbolic::TypePrecision::Bit8:
@@ -369,13 +425,13 @@ constexpr std::optional<std::string_view> enumBaseToCS( const ifc::symbolic::Fun
 
         case ifc::symbolic::TypePrecision::Long:
         case ifc::symbolic::TypePrecision::Bit32:
-            return isSigned ? empty : "uint";
+            return isSigned ? "int" : "uint";
 
         case ifc::symbolic::TypePrecision::Bit64:
             return isSigned ? "long" : "ulong";
 
         case ifc::symbolic::TypePrecision::Bit128:
-        default: throw std::runtime_error( "unexpected enum base type" );
+        default: throw std::runtime_error( "unexpected fundamental type" );
     }
 }
 
@@ -390,9 +446,9 @@ void enumToCS( ifc::Reader& reader,
     if ( not index_like::null( baseIndex ) )
     {
         if ( baseIndex.sort() != ifc::TypeSort::Fundamental ) throw std::runtime_error( "unexpected enum base" );
-        if ( const auto base = enumBaseToCS( reader.get<ifc::symbolic::FundamentalType>( baseIndex ) ) )
+        if ( const auto base = fundamentalToCS( reader.get<ifc::symbolic::FundamentalType>( baseIndex ) ); base != "int" )
         {
-            os << " : " << base.value();
+            os << " : " << base;
         }
     }
 
@@ -1148,6 +1204,37 @@ std::string_view getTypeForFieldFromTemplateArgument( const ifc::Reader& reader,
     return "### ? ###"; // TODO
 }
 
+const ifc::symbolic::FundamentalType& getTypeForBitfield( const ifc::Reader& reader, const ifc::TypeIndex bitfieldDeclType );
+
+const ifc::symbolic::FundamentalType& getTypeForBitfield( const ifc::Reader& reader, const ifc::DeclIndex declIndex )
+{
+    Query query( reader, declIndex );
+    if ( const auto result = query.tryGet<ifc::symbolic::AliasDecl>() )
+    {
+        return getTypeForBitfield( reader, result.value().aliasee );
+    }
+
+    print( "TODO: ", declIndex.sort() );
+    throw std::runtime_error( "Failed to find bitfield type" );
+}
+
+const ifc::symbolic::FundamentalType& getTypeForBitfield( const ifc::Reader& reader, const ifc::TypeIndex bitfieldDeclType )
+{
+    Query query( reader, bitfieldDeclType );
+    if ( const auto result = query.tryGet<ifc::symbolic::FundamentalType>() )
+    {
+        return result.value();
+    }
+
+    if ( const auto result = query.tryGet<ifc::symbolic::DesignatedType>() )
+    {
+        return getTypeForBitfield( reader, result.value().decl );
+    }
+
+    print( "TODO: ", bitfieldDeclType.sort() );
+    throw std::runtime_error( "Failed to find bitfield type" );
+}
+
 class StructInfo;
 
 class StructInfo : public InfoBaseT<ifc::symbolic::ScopeDecl, InfoBaseType::Struct>
@@ -1158,13 +1245,14 @@ public:
     std::optional<std::string_view> primitiveTypeNameCS( const std::string& typeName ) const
     {
         static const std::unordered_map<std::string, std::string_view> mapping = {
-            //{ "bool", "bool" },
-            //{ "Bool", "bool" },
-            { "bool", "byte" }, // XXX ?
+            //{ "bool", "bool" }, // bool has 4 bytes
+            //{ "Bool", "bool" }, // TODO: requires [MarshalAs(UnmanagedType.U1)] until then: use byte
+            { "bool", "byte" },
             { "Bool", "byte" },
             { "uint8_t", "byte" },
             { "uint16_t", "ushort" },
             { "uint32_t", "uint" },
+            { "uint64_t", "ulong" },
             { "Double", "Double" },
             { "basic_string_view<Char, char_traits<Char>>", "string" }
         };
@@ -1690,12 +1778,33 @@ public:
             os << std::get<0>( member ) << ' ' << std::get<1>( member ) << ';' << std::endl;;
         }
 
+        struct BitfieldMember
+        {
+            std::string_view fieldName{};
+            std::string_view typeName{};
+            size_t width{};
+            size_t shift{}; // # of unused bits to the right
+            std::string_view bitfieldFieldName{}; // + "_bitfield" suffix
+        };
+
+        struct BitfieldTracker
+        {
+            std::vector<BitfieldMember> fields;
+            ifc::symbolic::FundamentalType currentType{};
+            size_t currentRemainingBits{};
+            std::string_view currentBitfieldFieldName{}; // + "_bitfield" suffix
+        } bitfieldTracker{};
+
         if ( const auto* initScope = reader.try_get( decl().initializer ); initScope and not baseTypes.Sequence.has_value() ) // TODO: sequence is currently inlined
         {
             for ( const auto& innerDeclaration : reader.sequence( *initScope ) )
             {
                 if ( innerDeclaration.index.sort() == ifc::DeclSort::Field )
                 {
+                    bitfieldTracker.currentType = {};
+                    bitfieldTracker.currentRemainingBits = 0;
+                    bitfieldTracker.currentBitfieldFieldName = {};
+
                     os << "    public ";
                     if ( isReadonlyStruct )
                     {
@@ -1803,11 +1912,58 @@ public:
                 }
                 else if ( innerDeclaration.index.sort() == ifc::DeclSort::Bitfield )
                 {
-                    const auto name = mName;
-                    const auto& innerDecl = reader.get<ifc::symbolic::BitfieldDecl>( innerDeclaration.index );
-                    const auto fieldName = getStringView( mReader, innerDecl.identity );
-                    const std::string typeName = getTypeName( mReader, innerDecl.type );
-                    const auto width = literalToString( reader, reader.get<ifc::symbolic::LiteralExpr>( innerDecl.width ) );
+                    const auto name = mName; // debug
+
+                    //Query query( reader, innerDeclaration.index ).map<ifc::symbolic::BitfieldDecl>();
+
+                    const auto& [type, bitfield] = Query( reader, innerDeclaration.index ).getWithQuery( &ifc::symbolic::BitfieldDecl::type );
+
+                    //const auto innerDecl = Query( reader, innerDeclaration.index ).map<ifc::symbolic::BitfieldDecl>();
+                    const auto width = getLiteralValue( reader, bitfield.width );
+                    const auto fieldName = getStringView( mReader, bitfield.identity );
+
+                    assert( width > 0 );
+                    assert( index_like::null( bitfield.initializer ) );
+
+                    const auto& fundamentalType = getTypeForBitfield( reader, type.index );
+
+                    assert( fundamentalType.sign == ifc::symbolic::TypeSign::Unsigned );
+
+                    const auto fundamentalTypeName = fundamentalToCS( fundamentalType );
+
+                    if ( width <= bitfieldTracker.currentRemainingBits && bitfieldTracker.currentType == fundamentalType )
+                    {
+                        // no new field required
+                        bitfieldTracker.currentRemainingBits -= width;
+
+                        os << "    // " << fundamentalTypeName << ' ' << fieldName << " (bitfield continuation)" << std::endl;
+
+                        bitfieldTracker.fields.emplace_back(
+                            fundamentalTypeName, fieldName, gsl::narrow_cast<size_t>( width ), bitfieldTracker.currentRemainingBits, bitfieldTracker.currentBitfieldFieldName
+                        );
+                    }
+                    else
+                    {
+                        const auto typeWidth = fundamentalBitWidth( fundamentalType );
+                        assert( width <= typeWidth );
+
+                        bitfieldTracker.currentRemainingBits = typeWidth - width;
+                        bitfieldTracker.currentType = fundamentalType;
+                        bitfieldTracker.currentBitfieldFieldName = fieldName;
+
+                        bitfieldTracker.fields.emplace_back(
+                            fundamentalTypeName, fieldName, gsl::narrow_cast<size_t>( width ), bitfieldTracker.currentRemainingBits, fieldName
+                        );
+
+                        os << "    private ";
+                        if ( isReadonlyStruct )
+                        {
+                            os << "readonly ";
+                        }
+
+                        os << fundamentalTypeName << ' ' << fieldName << "_bitfield;" << std::endl;
+                    }
+
                     std::cout << "";
                 }
                 else
@@ -1819,6 +1975,12 @@ public:
         else
         {
             assert( baseTypes.Sequence.has_value() );
+        }
+
+        for ( const auto& [typeName, fieldName, width, shift, containigFieldName] : bitfieldTracker.fields )
+        {
+            // TODO 64 bit and omit cast if bitfield type is equal to typeName
+            os << "    public " << typeName << ' ' << fieldName << " => (" << typeName << ")((" << containigFieldName << "_bitfield >> " << shift << ") & 0b" << std::string( width, '1' ) << ");" << std::endl;
         }
 
         os << "}" << std::endl << std::endl;
@@ -1973,7 +2135,7 @@ int main() // TODO: unions and bitfields, LiteralReal pragma pack(push, 4), why 
 
     const auto ignoreTypeByName = []( const InfoBase& info ) {
         static const std::set<std::string_view> excluded = {
-            { "Pathname", "InputIfc", "Reader", "NodeKey", "Node", "Loader", "UnexpectedVisitor", "Extension" },
+            "Pathname", "InputIfc", "Reader", "NodeKey", "Node", "Loader", "UnexpectedVisitor", "Extension", "IfcArchMismatch", "IfcReadFailure", "InvalidPartitionName"
         };
 
         return info.name().starts_with( '?' ) or info.name().starts_with( '_' ) or info.name().starts_with( '<' ) or excluded.contains( info.name() );

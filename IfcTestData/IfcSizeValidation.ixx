@@ -1,4 +1,4 @@
-// hash: a72e7c7f8c716258d187e9033130b80ebe74ff553b52ae130ffcd288bf9b9a51
+// hash: f6dae4935db8e23cfec7bc0b9ad6c11c3e10d3203ec124697094a8a03f27961e
 
 module;
 
@@ -19,10 +19,6 @@ constexpr inline size_t UnitIndexSize = sizeof(UnitIndex);
 constexpr inline size_t HeaderSize = sizeof(Header);
 // ifc - 
 constexpr inline size_t PartitionSummaryDataSize = sizeof(PartitionSummaryData);
-// ifc - 
-constexpr inline size_t IfcArchMismatchSize = sizeof(IfcArchMismatch);
-// ifc - 
-constexpr inline size_t IfcReadFailureSize = sizeof(IfcReadFailure);
 // ifc - 
 constexpr inline size_t IntegrityCheckFailedSize = sizeof(IntegrityCheckFailed);
 // ifc - 
@@ -63,8 +59,6 @@ constexpr inline size_t DirIndexSize = sizeof(DirIndex);
 constexpr inline size_t TraitOrderingSize = sizeof(TraitOrdering);
 // ifc - 
 constexpr inline size_t TableOfContentsSize = sizeof(TableOfContents);
-// ifc - 
-constexpr inline size_t InvalidPartitionNameSize = sizeof(InvalidPartitionName);
 namespace source
 {
 }
