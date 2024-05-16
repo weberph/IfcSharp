@@ -510,13 +510,12 @@ bool isUnwrittenScope( const T& decl )
         || ( ifc::to_underlying( decl.basic_spec ) & ifc::to_underlying( ifc::BasicSpecifiers::IsMemberOfGlobalModule ) ) != 0;
 }
 
-template<>
-struct std::hash<ifc::DeclIndex>
+template<index_like::Algebra T>
+struct std::hash<T>
 {
-    std::size_t operator()( const ifc::DeclIndex& s ) const noexcept
+    std::size_t operator()( const T index ) const noexcept
     {
-        static_assert( sizeof( ifc::DeclIndex ) == sizeof( uint32_t ) );
-        return *reinterpret_cast<const uint32_t*>( &s );
+        return std::bit_cast<uint32_t>( index );
     }
 };
 
@@ -1235,6 +1234,18 @@ const ifc::symbolic::FundamentalType& getTypeForBitfield( const ifc::Reader& rea
     throw std::runtime_error( "Failed to find bitfield type" );
 }
 
+bool isStructClassOrUnion( const ifc::Reader& reader, const ifc::TypeIndex type, bool& isUnion )
+{
+    if ( type.sort() != ifc::TypeSort::Fundamental )
+    {
+        return false;
+    }
+
+    const auto& typeOfType = reader.get<ifc::symbolic::FundamentalType>( type );
+    isUnion = typeOfType.basis == ifc::symbolic::TypeBasis::Union;
+    return typeOfType.basis == ifc::symbolic::TypeBasis::Class || typeOfType.basis == ifc::symbolic::TypeBasis::Struct || isUnion;
+}
+
 class StructInfo;
 
 class StructInfo : public InfoBaseT<ifc::symbolic::ScopeDecl, InfoBaseType::Struct>
@@ -1263,6 +1274,11 @@ public:
         }
 
         return {};
+    }
+
+    void renameUnnamedUnion( const std::string_view newName )
+    {
+        mName = newName;
     }
 
     bool reservedTypeNameCS( const std::string_view& typeName ) const
@@ -1714,11 +1730,15 @@ public:
     {
         auto& reader = mReader.get();
 
+        const bool isUnion = reader.get<ifc::symbolic::FundamentalType>( decl().type ).basis == ifc::symbolic::TypeBasis::Union;
+
         std::set<std::tuple<std::string, size_t>> inlineArrays;
         SpecialBaseTypes baseTypes;
 
         if ( not index_like::null( decl().base ) )
         {
+            assert( not isUnion );
+
             baseTypes.collect( reader, infoByIndex, decl().base );
 
             if ( baseTypes.Over.has_value() )
@@ -1734,6 +1754,11 @@ public:
         }
 
         const bool isReadonlyStruct = mName != "TableOfContents";
+
+        if ( isUnion )
+        {
+            os << "[StructLayout(LayoutKind.Explicit)]" << std::endl;
+        }
 
         os << "public ";
         if ( isReadonlyStruct )
@@ -1780,8 +1805,8 @@ public:
 
         struct BitfieldMember
         {
-            std::string_view fieldName{};
             std::string_view typeName{};
+            std::string_view fieldName{};
             size_t width{};
             size_t shift{}; // # of unused bits to the right
             std::string_view bitfieldFieldName{}; // + "_bitfield" suffix
@@ -1790,10 +1815,10 @@ public:
         struct BitfieldTracker
         {
             std::vector<BitfieldMember> fields;
-            ifc::symbolic::FundamentalType currentType{};
-            size_t currentRemainingBits{};
-            std::string_view currentBitfieldFieldName{}; // + "_bitfield" suffix
-        } bitfieldTracker{};
+            ifc::symbolic::FundamentalType type{};
+            size_t remainingBits{};
+            std::string_view fieldName{}; // + "_bitfield" suffix
+        } tracker{};
 
         if ( const auto* initScope = reader.try_get( decl().initializer ); initScope and not baseTypes.Sequence.has_value() ) // TODO: sequence is currently inlined
         {
@@ -1801,10 +1826,14 @@ public:
             {
                 if ( innerDeclaration.index.sort() == ifc::DeclSort::Field )
                 {
-                    bitfieldTracker.currentType = {};
-                    bitfieldTracker.currentRemainingBits = 0;
-                    bitfieldTracker.currentBitfieldFieldName = {};
+                    tracker.type = {};
+                    tracker.remainingBits = 0;
+                    tracker.fieldName = {};
 
+                    if ( isUnion )
+                    {
+                        os << "[FieldOffset(0)]" << std::endl;
+                    }
                     os << "    public ";
                     if ( isReadonlyStruct )
                     {
@@ -1830,7 +1859,7 @@ public:
                             const auto& qualifiers = getRefereeQualifier( *this, foundIt->second.get() );
                             for ( const auto& refereeQualifier : qualifiers )
                             {
-                                os << refereeQualifier << "::";
+                                os << refereeQualifier << ".";
                             }
                             found = true;
                         }
@@ -1912,14 +1941,9 @@ public:
                 }
                 else if ( innerDeclaration.index.sort() == ifc::DeclSort::Bitfield )
                 {
-                    const auto name = mName; // debug
-
-                    //Query query( reader, innerDeclaration.index ).map<ifc::symbolic::BitfieldDecl>();
-
                     const auto& [type, bitfield] = Query( reader, innerDeclaration.index ).getWithQuery( &ifc::symbolic::BitfieldDecl::type );
 
-                    //const auto innerDecl = Query( reader, innerDeclaration.index ).map<ifc::symbolic::BitfieldDecl>();
-                    const auto width = getLiteralValue( reader, bitfield.width );
+                    const auto width = gsl::narrow_cast<size_t>( getLiteralValue( reader, bitfield.width ) );
                     const auto fieldName = getStringView( mReader, bitfield.identity );
 
                     assert( width > 0 );
@@ -1931,15 +1955,15 @@ public:
 
                     const auto fundamentalTypeName = fundamentalToCS( fundamentalType );
 
-                    if ( width <= bitfieldTracker.currentRemainingBits && bitfieldTracker.currentType == fundamentalType )
+                    if ( width <= tracker.remainingBits && tracker.type == fundamentalType )
                     {
                         // no new field required
-                        bitfieldTracker.currentRemainingBits -= width;
+                        tracker.remainingBits -= width;
 
                         os << "    // " << fundamentalTypeName << ' ' << fieldName << " (bitfield continuation)" << std::endl;
 
-                        bitfieldTracker.fields.emplace_back(
-                            fundamentalTypeName, fieldName, gsl::narrow_cast<size_t>( width ), bitfieldTracker.currentRemainingBits, bitfieldTracker.currentBitfieldFieldName
+                        tracker.fields.emplace_back(
+                            fundamentalTypeName, fieldName, gsl::narrow_cast<size_t>( width ), tracker.remainingBits, tracker.fieldName
                         );
                     }
                     else
@@ -1947,12 +1971,12 @@ public:
                         const auto typeWidth = fundamentalBitWidth( fundamentalType );
                         assert( width <= typeWidth );
 
-                        bitfieldTracker.currentRemainingBits = typeWidth - width;
-                        bitfieldTracker.currentType = fundamentalType;
-                        bitfieldTracker.currentBitfieldFieldName = fieldName;
+                        tracker.remainingBits = typeWidth - width;
+                        tracker.type = fundamentalType;
+                        tracker.fieldName = fieldName;
 
-                        bitfieldTracker.fields.emplace_back(
-                            fundamentalTypeName, fieldName, gsl::narrow_cast<size_t>( width ), bitfieldTracker.currentRemainingBits, fieldName
+                        tracker.fields.emplace_back(
+                            fundamentalTypeName, fieldName, gsl::narrow_cast<size_t>( width ), tracker.remainingBits, fieldName
                         );
 
                         os << "    private ";
@@ -1966,6 +1990,26 @@ public:
 
                     std::cout << "";
                 }
+                else if ( innerDeclaration.index.sort() == ifc::DeclSort::Scope )
+                {
+                    const auto& [scopeIndex, scope] = Query( reader, innerDeclaration.index ).getWithIndex<ifc::symbolic::ScopeDecl>();
+
+                    bool isUnionArg{};
+                    const bool isUnionDeclaration = isStructClassOrUnion( reader, scope.type, isUnionArg ) && isUnionArg;
+                    assert( isUnionDeclaration );
+
+                    const auto unionInfo = infoByIndex.at( scopeIndex ).get().as<StructInfo>();
+
+                    os << "    private ";
+                    if ( isReadonlyStruct )
+                    {
+                        os << "readonly ";
+                    }
+
+                    os << unionInfo.mName << ' ' << unionInfo.mName << ';' << std::endl;
+
+                    // TODO: getter for union
+                }
                 else
                 {
                     // ignore other (e.g. Constructor)
@@ -1977,10 +2021,14 @@ public:
             assert( baseTypes.Sequence.has_value() );
         }
 
-        for ( const auto& [typeName, fieldName, width, shift, containigFieldName] : bitfieldTracker.fields )
+        for ( const auto& [typeName, fieldName, width, shift, containigFieldName] : tracker.fields )
         {
-            // TODO 64 bit and omit cast if bitfield type is equal to typeName
-            os << "    public " << typeName << ' ' << fieldName << " => (" << typeName << ")((" << containigFieldName << "_bitfield >> " << shift << ") & 0b" << std::string( width, '1' ) << ");" << std::endl;
+            os << "    public " << typeName << ' ' << fieldName << " => ";
+            if ( typeName != "uint" )
+            {
+                os << "(" << typeName << ")";
+            }
+            os << "((" << containigFieldName << "_bitfield >> " << shift << ") & 0b" << std::string( width, '1' ) << ");" << std::endl;
         }
 
         os << "}" << std::endl << std::endl;
@@ -2092,17 +2140,6 @@ struct StructFieldEnumerator
     }
 };
 
-bool isStructOrClass( const ifc::Reader& reader, const ifc::TypeIndex type )
-{
-    if ( type.sort() != ifc::TypeSort::Fundamental )
-    {
-        return false;
-    }
-
-    const auto& typeOfType = reader.get<ifc::symbolic::FundamentalType>( type );
-    return typeOfType.basis == ifc::symbolic::TypeBasis::Class || typeOfType.basis == ifc::symbolic::TypeBasis::Struct;
-}
-
 int main() // TODO: unions and bitfields, LiteralReal pragma pack(push, 4), why byte must be used for of bool (bool as last member makes the structs bigger)
 {
     const std::string ifcFile = R"(d:\.projects\.unsorted\2024\CppEnumString\IfcTestData\x64\Debug\IfcHeaderUnit.ixx.ifc)";
@@ -2153,17 +2190,15 @@ int main() // TODO: unions and bitfields, LiteralReal pragma pack(push, 4), why 
     const auto templateDecls = reader.partition<ifc::symbolic::TemplateDecl>();
     for ( const auto& tdecl : templateDecls | std::views::filter( std::not_fn( isUnwrittenScope<ifc::symbolic::TemplateDecl> ) ) )
     {
-        if ( isStructOrClass( reader, tdecl.type ) )
+        bool isUnion{};
+        if ( isStructClassOrUnion( reader, tdecl.type, isUnion ) )
         {
             const auto& scope = scopeInfo.findOrAdd( reader, tdecl.home_scope );
             if ( inIfcNamespace( scope ) )
             {
-                std::vector<TemplateInfo::TemplateField> fields;
+                assert( not isUnion );
 
-                if ( getStringView( reader, tdecl.identity ) == "Sequence" )
-                {
-                    std::cout << "";
-                }
+                std::vector<TemplateInfo::TemplateField> fields;
 
                 StructFieldEnumerator fieldEnumerator{ tdecl.entity.decl };
                 fieldEnumerator.visit( reader, overloaded{
@@ -2183,7 +2218,9 @@ int main() // TODO: unions and bitfields, LiteralReal pragma pack(push, 4), why 
                         }
                     },
 
-                    []( const ifc::DeclIndex, const ifc::symbolic::BitfieldDecl& ) {} // TODO
+                    []( const ifc::DeclIndex, const ifc::symbolic::BitfieldDecl& ) {
+                        assert( false ); // TODO?
+                    }
                     } );
 
                 const auto argumentCount = gsl::narrow_cast<size_t>( reader.get<ifc::symbolic::UnilevelChart>( tdecl.chart ).cardinality );
@@ -2209,22 +2246,29 @@ int main() // TODO: unions and bitfields, LiteralReal pragma pack(push, 4), why 
         }
     }
 
-    auto typeCount = 0;
+    std::unordered_map<ifc::DeclIndex, size_t> unionCounterByScope;
     auto types = reader.partition<ifc::symbolic::ScopeDecl>();
     for ( const auto& decl : types | std::views::filter( std::not_fn( isUnwrittenScope<ifc::symbolic::ScopeDecl> ) ) )
     {
-        if ( isStructOrClass( reader, decl.type ) )
+        bool isUnion{};
+        if ( isStructClassOrUnion( reader, decl.type, isUnion ) )
         {
-            const auto scope = scopeInfo.findOrAdd( reader, decl.home_scope );
-            if ( inIfcNamespace( scope ) )
+            auto scopeOpt = scopeInfo.findOrAdd( reader, decl.home_scope );
+            if ( inIfcNamespace( scopeOpt ) )
             {
-                const auto& structInfo = infoByScope[scope->get().Index].structs.emplace_back( reader, decl, scope );
+                Scope& scope = scopeOpt.value();
+                auto& structInfo = infoByScope[scope.Index].structs.emplace_back( reader, decl, scope );
                 infoByIndex.emplace( structInfo.index(), structInfo );
-                auto& nameList = namesByIndex[structInfo.index()];
-                buildNameList( scope.value(), nameList );
-            }
+                if ( structInfo.name().starts_with( "<unnamed" ) )
+                {
+                    assert( isUnion );
+                    assert( not scope.IsNamespace );
+                    structInfo.renameUnnamedUnion( registerString( "UnnamedUnion" + std::to_string( ++unionCounterByScope[scope.Index] ) ) );
+                }
 
-            ++typeCount;
+                auto& nameList = namesByIndex[structInfo.index()];
+                buildNameList( scope, nameList );
+            }
         }
     }
 
@@ -2313,6 +2357,7 @@ int main() // TODO: unions and bitfields, LiteralReal pragma pack(push, 4), why 
 
     std::ostringstream osCode;
 
+    osCode << "using System.Runtime.InteropServices;" << std::endl;
     osCode << "namespace ifc" << std::endl << '{' << std::endl;
     osCode << "public enum Index : uint { }" << std::endl << std::endl;
 
