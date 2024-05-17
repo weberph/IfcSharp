@@ -235,6 +235,20 @@ public:
     {
     }
 
+    static Declarator createDeclarator( const ifc::Reader& reader, const ifc::ExprIndex index )
+    {
+        DeclaratorVisitor visitor( reader );
+        visitor.dispatchExprIndex( index );
+        return visitor.declarator();
+    }
+
+    static Declarator createDeclarator( const ifc::Reader& reader, const ifc::TypeIndex index )
+    {
+        DeclaratorVisitor visitor( reader );
+        visitor.dispatchTypeIndex( index );
+        return visitor.declarator();
+    }
+
     const Declarator& declarator() const noexcept
     {
         return mDeclarator;
@@ -1050,43 +1064,6 @@ struct StdArrayArguments
     }
 };
 
-struct UntemplatedStructType // something that can be a base type which is not a template
-{
-    ifc::DeclIndex DeclIndex{};
-    std::string_view Name{};
-
-    [[nodiscard]] bool extract( const ifc::Reader& reader, const ifc::DeclIndex declIndex )
-    {
-        if ( declIndex.sort() == ifc::DeclSort::Scope )
-        {
-            DeclIndex = declIndex;
-            Name = Query( reader, declIndex ).identity( &ifc::symbolic::ScopeDecl::identity );
-            return true;
-        }
-        else
-        {
-            print( "TODO: ", declIndex.sort() );
-            assert( false );
-            //return extract( reader, designated.index );
-        }
-
-        return false;
-    }
-
-    [[nodiscard]] bool extract( const ifc::Reader& reader, const ifc::TypeIndex nonSyntacticTypeIndex )
-    {
-        Query query( reader, nonSyntacticTypeIndex );
-        if ( const auto designated = query.tryGet( &ifc::symbolic::DesignatedType::decl ) )
-        {
-            return extract( reader, designated.index );
-        }
-
-        print( "TODO: ", nonSyntacticTypeIndex.sort() );
-        assert( false );
-        return false;
-    }
-};
-
 struct TemplatedAliasType
 {
     ifc::DeclIndex TemplateDeclIndex{};
@@ -1329,11 +1306,10 @@ public:
         {
             if ( baseType.type.sort() != ifc::TypeSort::Syntactic )
             {
-                UntemplatedStructType untemplatedStructType;
-                const auto success = untemplatedStructType.extract( reader, baseType.type );
-                assert( success );
+                const auto declarator = DeclaratorVisitor::createDeclarator( reader, baseType.type );
+                const auto name = getIdentity( reader, declarator.index() );
 
-                MembersToInline.emplace_back( untemplatedStructType.Name, untemplatedStructType.Name ); // XXX possible name collision
+                MembersToInline.emplace_back( name, name ); // XXX possible name collision, wrong capitalization, no cs name lookup, could be the only base class
                 return;
             }
             else
