@@ -35,6 +35,24 @@
 
 using namespace ifchelper;
 
+template<index_like::Algebra T>
+struct std::hash<T>
+{
+    std::size_t operator()( const T index ) const noexcept
+    {
+        return std::bit_cast<uint32_t>( index );
+    }
+};
+
+template<>
+struct std::hash<ifc::symbolic::FundamentalType>
+{
+    std::size_t operator()( const ifc::symbolic::FundamentalType fundamentalType ) const noexcept
+    {
+        return std::bit_cast<uint32_t>( fundamentalType );
+    }
+};
+
 namespace
 {
     // XXX workaround
@@ -118,98 +136,370 @@ namespace
     }
 }
 
-std::string literalToString( const ifc::Reader& reader, const ifc::symbolic::LiteralExpr literalEx );
-
-std::string getTypeName( const ifc::Reader& reader, const ifc::TypeIndex typeIndex );
-
-std::string_view getTypeName( const ifc::Reader& reader, const ifc::DeclIndex declIndex )
+std::string_view getIdentity( const ifc::Reader& reader, const ifc::DeclIndex declIndex )
 {
+    Query query{ reader, declIndex };
     switch ( declIndex.sort() )
     {
         case ifc::DeclSort::Enumeration:
-            return getStringView( reader, reader.get<ifc::symbolic::EnumerationDecl>( declIndex ).identity );
+            return query.identity( &ifc::symbolic::EnumerationDecl::identity );
 
         case ifc::DeclSort::Scope:
-            return getStringView( reader, reader.get<ifc::symbolic::ScopeDecl>( declIndex ).identity );
+            return query.identity( &ifc::symbolic::ScopeDecl::identity );
 
         case ifc::DeclSort::Alias:
-            return getStringView( reader, reader.get<ifc::symbolic::AliasDecl>( declIndex ).identity ); // XXX: or check aliasee?
+            return query.identity( &ifc::symbolic::AliasDecl::identity );
 
         case ifc::DeclSort::Enumerator:
-            return getStringView( reader, reader.get<ifc::symbolic::EnumeratorDecl>( declIndex ).identity );
+            return query.identity( &ifc::symbolic::EnumeratorDecl::identity );
+
+        case ifc::DeclSort::Template:
+            return query.identity<ifc::symbolic::TemplateDecl>( &ifc::symbolic::Template::identity );
 
         default:
             assert( false );
             break;
     }
 
-    throw std::runtime_error( "getTypeName: DeclSort not implemented" );
+    throw std::runtime_error( "getIdentity: DeclSort not implemented" );
 }
 
-std::string getNamedDecl( const ifc::Reader& reader, const ifc::symbolic::NamedDeclExpr& namedDeclExpr )
+int64_t getLiteralValue( const ifc::Reader& reader, const ifc::symbolic::LiteralExpr literalExpr )
 {
-    return getTypeName( reader, namedDeclExpr.type ) + "::" + std::string( getTypeName( reader, namedDeclExpr.decl ) );
+    const auto visitor = [&]( const ifc::LitIndex index ) {
+        return index.sort() == ifc::LiteralSort::Immediate ? ifc::to_underlying( index.index() ) : gsl::narrow_cast<uint32_t>( reader.get<int64_t>( index ) );
+    };
+
+    return Query( reader, literalExpr.value ).visit( visitor );
 }
 
-std::vector<std::string> getTypeArgumentList( const ifc::Reader& reader, const ifc::ExprIndex exprIndex )
+int64_t getLiteralValue( const ifc::Reader& reader, const ifc::ExprIndex literalExprIndex )
 {
-    std::vector<std::string> typeNameList;
-    if ( exprIndex.sort() == ifc::ExprSort::Empty )
+    return getLiteralValue( reader, Query( reader, literalExprIndex ).get<ifc::symbolic::LiteralExpr>() );
+}
+
+template<class T>
+struct OptRef : std::optional<std::reference_wrapper<T>>
+{
+    const T& value() const noexcept
     {
+        return std::optional<std::reference_wrapper<T>>::value().get();
+    }
+};
+
+template<class... Ts>
+struct VariantRef : std::variant<std::reference_wrapper<Ts>...>
+{
+    template<class T>
+    const T& get() const
+    {
+        return std::get<std::reference_wrapper<T>>( *this );
+    }
+};
+
+struct Declarator;
+
+//using TypeTemplateArgument = VariantRef<Declarator, const ifc::symbolic::LiteralExpr>;
+using TypeTemplateArgument = std::variant<Declarator, ifc::symbolic::LiteralExpr>;
+
+enum class ReferenceType
+{
+    LValueReference, RValueReference
+};
+
+struct Declarator
+{
+    std::variant<ifc::DeclIndex, ifc::symbolic::FundamentalType> type{};
+    std::vector<TypeTemplateArgument> templateArgs{};
+    std::optional<size_t> arrayBound{};
+    size_t indirections{};
+    std::optional<ReferenceType> referenceType{};
+    std::optional<ifc::DeclIndex> containingType{};
+    size_t templateParamCount{};
+
+    ifc::DeclIndex index() const
+    {
+        return std::get<ifc::DeclIndex>( type );
+    }
+
+    ifc::symbolic::FundamentalType fundamental() const
+    {
+        return std::get<ifc::symbolic::FundamentalType>( type );
+    }
+
+    bool isFundamental() const noexcept
+    {
+        return std::holds_alternative<ifc::symbolic::FundamentalType>( type );
+    }
+};
+
+class DeclaratorVisitor
+{
+public:
+    explicit DeclaratorVisitor( ifc::Reader& reader )
+        : mReader( reader )
+    {
+    }
+
+    const Declarator& declarator() const noexcept
+    {
+        return mDeclarator;
+    }
+
+    void visitFundamental( const ifc::symbolic::FundamentalType fundamentalType )
+    {
+        mDeclarator.type = fundamentalType;
+    }
+
+    void visitDesignated( const ifc::symbolic::DesignatedType designatedType )
+    {
+        mDeclarator.type = designatedType.decl;
+    }
+
+    void visitNamedDecl( const ifc::symbolic::NamedDeclExpr namedDeclExpr )
+    {
+        mDeclarator.type = namedDeclExpr.decl;
+
+        if ( not index_like::null( namedDeclExpr.type ) )
+        {
+            DeclaratorVisitor containingTypeVisitor( mReader );
+            containingTypeVisitor.dispatchTypeIndex( namedDeclExpr.type );
+            mDeclarator.containingType = containingTypeVisitor.declarator().index();
+        }
+    }
+
+    void visitArray( const ifc::symbolic::ArrayType arrayType )
+    {
+        assert( arrayType.bound.sort() == ifc::ExprSort::Literal );
+
+        mDeclarator.arrayBound = getLiteralValue( mReader, arrayType.bound );
+        dispatchTypeIndex( arrayType.element );
+    }
+
+    void visitSyntactic( const ifc::symbolic::SyntacticType syntacticType )
+    {
+        assert( syntacticType.expr.sort() == ifc::ExprSort::TemplateId );
+
+        const auto& templateIdExpr = query( syntacticType.expr ).get<ifc::symbolic::TemplateIdExpr>();
+
+        assert( templateIdExpr.primary_template.sort() == ifc::ExprSort::NamedDecl );
+
+        visitNamedDecl( query( templateIdExpr.primary_template ).get<ifc::symbolic::NamedDeclExpr>() );
+
+        assert( mDeclarator.templateArgs.empty() );
+        mDeclarator.templateArgs = getTypeArgumentList( templateIdExpr.arguments );
+    }
+
+    void visitForallType( const ifc::symbolic::ForallType forallType )
+    {
+        assert( false );
+        //dispatchTypeIndex( forallType.subject );
+
+        //const auto& chart = query( forallType.chart ).get<ifc::symbolic::UnilevelChart>();
+        //mDeclarator.templateParamCount = gsl::narrow_cast<size_t>( chart.cardinality );
+        //assert( mDeclarator.templateParamCount == 0 );
+    }
+
+    void dispatchTypeIndex( const ifc::TypeIndex typeIndex )
+    {
+        ifc::Reader& reader = mReader;
+        switch ( typeIndex.sort() )
+        {
+            case ifc::TypeSort::Designated:
+                visitDesignated( query( typeIndex ).get<ifc::symbolic::DesignatedType>() );
+                break;
+
+            case ifc::TypeSort::Fundamental:
+                visitFundamental( reader.get<ifc::symbolic::FundamentalType>( typeIndex ) );
+                break;
+
+            case ifc::TypeSort::Syntactic:
+                visitSyntactic( reader.get<ifc::symbolic::SyntacticType>( typeIndex ) );
+                break;
+
+            case ifc::TypeSort::Array:
+                visitArray( reader.get<ifc::symbolic::ArrayType>( typeIndex ) );
+                break;
+
+            case ifc::TypeSort::Base:
+                dispatchTypeIndex( reader.get<ifc::symbolic::BaseType>( typeIndex ).type );
+                break;
+
+            case ifc::TypeSort::Qualified:
+                dispatchTypeIndex( reader.get<ifc::symbolic::QualifiedType>( typeIndex ).unqualified_type ); // const, etc discarded
+                break;
+
+            case ifc::TypeSort::Pointer:
+                ++mDeclarator.indirections;
+                dispatchTypeIndex( reader.get<ifc::symbolic::PointerType>( typeIndex ).pointee );
+                break;
+
+            case ifc::TypeSort::LvalueReference:
+                mDeclarator.referenceType = ReferenceType::LValueReference;
+                dispatchTypeIndex( reader.get<ifc::symbolic::LvalueReferenceType>( typeIndex ).referee );
+                break;
+
+            case ifc::TypeSort::Forall:
+                visitForallType( reader.get<ifc::symbolic::ForallType>( typeIndex ) );
+                break;
+
+            default:
+                print( "TypeSort not implemented: ", typeIndex.sort() );
+                throw std::runtime_error( "dispatchTypeIndex: TypeSort not implemented" );
+        }
+
+    }
+
+    void dispatchExprIndex( const ifc::ExprIndex exprIndex )
+    {
+        switch ( exprIndex.sort() )
+        {
+            case ifc::ExprSort::Type:
+                dispatchTypeIndex( query( exprIndex ).get<ifc::symbolic::TypeExpr>().denotation ); // "type" discarded
+                break;
+
+            case ifc::ExprSort::NamedDecl:
+                visitNamedDecl( query( exprIndex ).get<ifc::symbolic::NamedDeclExpr>() );
+                break;
+
+            default:
+                print( "TypeSort not implemented: ", exprIndex.sort() );
+                throw std::runtime_error( "dispatchExprIndex: ExprIndex not implemented" );
+        }
+    }
+
+    void getTypeArgumentList( const ifc::ExprIndex exprIndex, std::vector<TypeTemplateArgument>& args )
+    {
+        const ifc::Reader& reader = mReader;
+
+        if ( exprIndex.sort() == ifc::ExprSort::Empty )
+        {
+            return;
+        }
+
+        if ( exprIndex.sort() == ifc::ExprSort::Literal )
+        {
+            args.emplace_back( reader.get<ifc::symbolic::LiteralExpr>( exprIndex ) );
+        }
+        else if ( exprIndex.sort() == ifc::ExprSort::Type || exprIndex.sort() == ifc::ExprSort::NamedDecl )
+        {
+            DeclaratorVisitor visitor( mReader );
+            visitor.dispatchExprIndex( exprIndex );
+            args.emplace_back( visitor.declarator() );
+        }
+        else if ( exprIndex.sort() == ifc::ExprSort::Tuple )
+        {
+            const auto& tupleExpr = reader.get<ifc::symbolic::TupleExpr>( exprIndex );
+            for ( const auto& tupleItem : reader.sequence( tupleExpr ) )
+            {
+                getTypeArgumentList( tupleItem, args );
+            }
+        }
+        else if ( exprIndex.sort() == ifc::ExprSort::PackedTemplateArguments )
+        {
+            getTypeArgumentList( reader.get<ifc::symbolic::PackedTemplateArgumentsExpr>( exprIndex ).arguments, args );
+        }
+        else
+        {
+            print( "Assert: ", exprIndex.sort() );
+            throw std::runtime_error( "getTypeArgumentList: ExprIndex not implemented" );
+        }
+    }
+
+    std::vector<TypeTemplateArgument> getTypeArgumentList( const ifc::ExprIndex exprIndex )
+    {
+        std::vector<TypeTemplateArgument> typeNameList;
+        getTypeArgumentList( exprIndex, typeNameList );
         return typeNameList;
     }
 
-    assert( exprIndex.sort() == ifc::ExprSort::Type
-        || exprIndex.sort() == ifc::ExprSort::Tuple
-        || exprIndex.sort() == ifc::ExprSort::NamedDecl );
-
-    if ( exprIndex.sort() == ifc::ExprSort::Type )
+private:
+    template<index_like::MultiSorted TIndex>
+    Query<TIndex> query( const TIndex index ) const noexcept
     {
-        const auto& typeExpr = reader.get<ifc::symbolic::TypeExpr>( exprIndex );
-
-        typeNameList.emplace_back( getTypeName( reader, typeExpr.denotation ) );
-    }
-    else if ( exprIndex.sort() == ifc::ExprSort::Tuple )
-    {
-        const auto& tupleExpr = reader.get<ifc::symbolic::TupleExpr>( exprIndex );
-        for ( const auto& tupleItem : reader.sequence( tupleExpr ) )
-        {
-            assert( tupleItem.sort() == ifc::ExprSort::Type
-                || tupleItem.sort() == ifc::ExprSort::PackedTemplateArguments
-                || tupleItem.sort() == ifc::ExprSort::NamedDecl
-                || tupleItem.sort() == ifc::ExprSort::Literal );
-
-            if ( tupleItem.sort() == ifc::ExprSort::Type )
-            {
-                const auto& typeExpr = reader.get<ifc::symbolic::TypeExpr>( tupleItem );
-                typeNameList.emplace_back( getTypeName( reader, typeExpr.denotation ) );
-            }
-            else if ( tupleItem.sort() == ifc::ExprSort::PackedTemplateArguments )
-            {
-                const auto& packedTypeExpr = reader.get<ifc::symbolic::PackedTemplateArgumentsExpr>( tupleItem );
-                for ( auto&& str : getTypeArgumentList( reader, packedTypeExpr.arguments ) )
-                {
-                    typeNameList.emplace_back( std::move( str ) );
-                }
-            }
-            else if ( tupleItem.sort() == ifc::ExprSort::Literal )
-            {
-                const auto& literalEx = reader.get<ifc::symbolic::LiteralExpr>( tupleItem );
-                typeNameList.emplace_back( literalToString( reader, literalEx ) );
-            }
-            else if ( tupleItem.sort() == ifc::ExprSort::NamedDecl )
-            {
-                typeNameList.emplace_back( getNamedDecl( reader, reader.get<ifc::symbolic::NamedDeclExpr>( tupleItem ) ) );
-            }
-        }
-    }
-    else if ( exprIndex.sort() == ifc::ExprSort::NamedDecl )
-    {
-        typeNameList.emplace_back( getNamedDecl( reader, reader.get<ifc::symbolic::NamedDeclExpr>( exprIndex ) ) );
+        return { mReader, index };
     }
 
-    return typeNameList;
-}
+    Declarator mDeclarator{};
+    std::reference_wrapper<ifc::Reader> mReader;
+};
+
+struct QualifiedTypeName : Declarator
+{
+    std::vector<std::string_view> qualifiers{};
+};
+
+std::string literalToString( const ifc::Reader& reader, const ifc::symbolic::LiteralExpr literalEx );
+
+Declarator getTypeName( const ifc::Reader& reader, const ifc::TypeIndex typeIndex );
+
+
+//TypeName getNamedDecl( const ifc::Reader& reader, const ifc::symbolic::NamedDeclExpr& namedDeclExpr )
+//{
+//    TypeName typeName = getTypeName( reader, namedDeclExpr.decl );
+//    //typeName.containingType = std::optional<TypeName>( getTypeName( reader, namedDeclExpr.type ) );
+//    return typeName;
+//}
+
+//std::vector<TypeName> getTypeArgumentList( const ifc::Reader& reader, const ifc::ExprIndex exprIndex )
+//{
+//    std::vector<TypeName> typeNameList;
+//    if ( exprIndex.sort() == ifc::ExprSort::Empty )
+//    {
+//        return typeNameList;
+//    }
+//
+//    assert( exprIndex.sort() == ifc::ExprSort::Type
+//        || exprIndex.sort() == ifc::ExprSort::Tuple
+//        || exprIndex.sort() == ifc::ExprSort::NamedDecl );
+//
+//    if ( exprIndex.sort() == ifc::ExprSort::Type )
+//    {
+//        const auto& typeExpr = reader.get<ifc::symbolic::TypeExpr>( exprIndex );
+//
+//        typeNameList.emplace_back( getTypeName( reader, typeExpr.denotation ) );
+//    }
+//    else if ( exprIndex.sort() == ifc::ExprSort::Tuple )
+//    {
+//        const auto& tupleExpr = reader.get<ifc::symbolic::TupleExpr>( exprIndex );
+//        for ( const auto& tupleItem : reader.sequence( tupleExpr ) )
+//        {
+//            assert( tupleItem.sort() == ifc::ExprSort::Type
+//                || tupleItem.sort() == ifc::ExprSort::PackedTemplateArguments
+//                || tupleItem.sort() == ifc::ExprSort::NamedDecl
+//                || tupleItem.sort() == ifc::ExprSort::Literal );
+//
+//            if ( tupleItem.sort() == ifc::ExprSort::Type )
+//            {
+//                const auto& typeExpr = reader.get<ifc::symbolic::TypeExpr>( tupleItem );
+//                typeNameList.emplace_back( getTypeName( reader, typeExpr.denotation ) );
+//            }
+//            else if ( tupleItem.sort() == ifc::ExprSort::PackedTemplateArguments )
+//            {
+//                const auto& packedTypeExpr = reader.get<ifc::symbolic::PackedTemplateArgumentsExpr>( tupleItem );
+//                for ( auto&& str : getTypeArgumentList( reader, packedTypeExpr.arguments ) )
+//                {
+//                    typeNameList.emplace_back( std::move( str ) );
+//                }
+//            }
+//            else if ( tupleItem.sort() == ifc::ExprSort::Literal )
+//            {
+//                const auto& literalEx = reader.get<ifc::symbolic::LiteralExpr>( tupleItem );
+//                typeNameList.emplace_back( literalToString( reader, literalEx ) );
+//            }
+//            else if ( tupleItem.sort() == ifc::ExprSort::NamedDecl )
+//            {
+//                typeNameList.emplace_back( getNamedDecl( reader, reader.get<ifc::symbolic::NamedDeclExpr>( tupleItem ) ) );
+//            }
+//        }
+//    }
+//    else if ( exprIndex.sort() == ifc::ExprSort::NamedDecl )
+//    {
+//        typeNameList.emplace_back( getNamedDecl( reader, reader.get<ifc::symbolic::NamedDeclExpr>( exprIndex ) ) );
+//    }
+//
+//    return typeNameList;
+//}
 
 std::string_view getSyntacticTemplateName( const ifc::Reader& reader, const ifc::ExprIndex primaryTemplate )
 {
@@ -222,16 +512,17 @@ std::string_view getSyntacticTemplateName( const ifc::Reader& reader, const ifc:
         } );
 }
 
-std::string getFullTypeNameFromSyntacticTemplate( const ifc::Reader& reader, const ifc::TypeIndex syntacticIndex ) // incomplete/best-effort
-{
-    const auto& templateIdExpr = Query( reader, syntacticIndex )
-        .get( &ifc::symbolic::SyntacticType::expr ).get<ifc::symbolic::TemplateIdExpr>();
-
-    const auto name = getSyntacticTemplateName( reader, templateIdExpr.primary_template );
-
-    const std::string typeArgs = "<" + join( getTypeArgumentList( reader, templateIdExpr.arguments ), ", " ) + ">";
-    return std::string( name ) + typeArgs;
-}
+//TypeName getFullTypeNameFromSyntacticTemplate( const ifc::Reader& reader, const ifc::TypeIndex syntacticIndex ) // incomplete/best-effort
+//{
+//    const auto& templateIdExpr = Query( reader, syntacticIndex )
+//        .get( &ifc::symbolic::SyntacticType::expr ).get<ifc::symbolic::TemplateIdExpr>();
+//
+//    auto [outer, inner] = getNamedDecl( reader, Query( reader, templateIdExpr.primary_template ).get<ifc::symbolic::NamedDeclExpr>() );
+//
+//    TypeName typeName( inner.containingType )
+//        typeName. = getTypeArgumentList( reader, templateIdExpr->arguments ), ", " ) + ">";
+//        return std::string( name ) + typeArgs;
+//}
 
 std::string literalToString( const ifc::Reader& reader, const ifc::symbolic::LiteralExpr literalEx )
 {
@@ -248,101 +539,63 @@ std::string literalToString( const ifc::Reader& reader, const ifc::symbolic::Lit
     throw std::runtime_error( "literalToString: LiteralSort not implemented" );
 }
 
-std::string getArrayTypeAndBound( const ifc::Reader& reader, const ifc::symbolic::ArrayType arrayType )
-{
-    std::string bound;
-    switch ( arrayType.bound.sort() )
-    {
-        case ifc::ExprSort::Literal:
-        {
-            const auto& literalEx = reader.get<ifc::symbolic::LiteralExpr>( arrayType.bound );
-            bound = literalToString( reader, literalEx );
-        }
-        break;
-        default:
-            assert( false );
-            break;
-    }
-
-    return getTypeName( reader, arrayType.element ) + "[" + bound + "]";
-}
-
-std::vector<std::string> getTypeListNames( const ifc::Reader& reader, const ifc::TypeIndex typeIndex )
-{
-    std::vector<std::string> typeNameList;
-
-    switch ( typeIndex.sort() )
-    {
-        case ifc::TypeSort::Base:
-            typeNameList.emplace_back( getTypeName( reader, reader.get<ifc::symbolic::BaseType>( typeIndex ).type ) );
-            break;
-
-        case ifc::TypeSort::Tuple:
-            for ( const auto& tupleItem : reader.sequence( reader.get<ifc::symbolic::TupleType>( typeIndex ) ) )
-            {
-                typeNameList.emplace_back( getTypeName( reader, tupleItem ) );
-            }
-            break;
-
-        default:
-            print( "Assert: ", typeIndex.sort() );
-            assert( false );
-            throw std::runtime_error( "getTypeListNames: TypeSort not implemented" );
-            //typeNameList.emplace_back( "(TODO: " + to_string( typeIndex.sort() ) + ")" );
-            break;
-    }
-
-    return typeNameList;
-}
-
-std::string getTypeName( const ifc::Reader& reader, const ifc::TypeIndex typeIndex, bool )
-{
-    switch ( typeIndex.sort() )
-    {
-        case ifc::TypeSort::Designated:
-            return std::string( getTypeName( reader, reader.get<ifc::symbolic::DesignatedType>( typeIndex ).decl ) );
-
-        case ifc::TypeSort::Fundamental:
-            return std::string( ifchelper::to_string( reader.get<ifc::symbolic::FundamentalType>( typeIndex ).basis ) );
-
-        case ifc::TypeSort::Syntactic:
-            return getFullTypeNameFromSyntacticTemplate( reader, typeIndex );
-
-        case ifc::TypeSort::Array:
-            return getArrayTypeAndBound( reader, reader.get<ifc::symbolic::ArrayType>( typeIndex ) );
-
-        case ifc::TypeSort::Base:
-            return getTypeName( reader, reader.get<ifc::symbolic::BaseType>( typeIndex ).type );
-
-        case ifc::TypeSort::Qualified:
-            return getTypeName( reader, reader.get<ifc::symbolic::QualifiedType>( typeIndex ).unqualified_type ); // const, etc discarded
-
-        case ifc::TypeSort::Pointer:
-            return getTypeName( reader, reader.get<ifc::symbolic::PointerType>( typeIndex ).pointee ) + "*";
-
-        case ifc::TypeSort::LvalueReference:
-            return getTypeName( reader, reader.get<ifc::symbolic::LvalueReferenceType>( typeIndex ).referee ) + "&";
-
-        case ifc::TypeSort::Forall:
-            return getTypeName( reader, reader.get<ifc::symbolic::ForallType>( typeIndex ).subject ); // ?
-
-        default:
-            print( "Assert: ", typeIndex.sort() );
-            assert( false );
-    }
-
-    throw std::runtime_error( "getTypeName: TypeSort not implemented" );
-}
-
-std::string getTypeName( const ifc::Reader& reader, const ifc::TypeIndex typeIndex )
-{
-    const std::string typeName = getTypeName( reader, typeIndex, false );
-    //if ( typeName == "MsvcTraitSort" )
-    //{
-    //    std::cout << "";
-    //}
-    return typeName;
-}
+//TypeName getArrayTypeAndBound( const ifc::Reader& reader, const ifc::symbolic::ArrayType arrayType )
+//{
+//    assert( arrayType.bound.sort() == ifc::ExprSort::Literal );
+//
+//    auto typeName = getTypeName( reader, arrayType.element );
+//    typeName.arrayBound = getLiteralValue( reader, arrayType.bound );
+//    return typeName;
+//}
+//
+//TypeName getTypeName( const ifc::Reader& reader, const ifc::TypeIndex typeIndex, bool )
+//{
+//    switch ( typeIndex.sort() )
+//    {
+//        case ifc::TypeSort::Designated:
+//            return std::string( getTypeName( reader, reader.get<ifc::symbolic::DesignatedType>( typeIndex ).decl ) );
+//
+//        case ifc::TypeSort::Fundamental:
+//            return std::string( ifchelper::to_string( reader.get<ifc::symbolic::FundamentalType>( typeIndex ).basis ) );
+//
+//        case ifc::TypeSort::Syntactic:
+//            return getFullTypeNameFromSyntacticTemplate( reader, typeIndex );
+//
+//        case ifc::TypeSort::Array:
+//            return getArrayTypeAndBound( reader, reader.get<ifc::symbolic::ArrayType>( typeIndex ) );
+//
+//        case ifc::TypeSort::Base:
+//            return getTypeName( reader, reader.get<ifc::symbolic::BaseType>( typeIndex ).type );
+//
+//        case ifc::TypeSort::Qualified:
+//            return getTypeName( reader, reader.get<ifc::symbolic::QualifiedType>( typeIndex ).unqualified_type ); // const, etc discarded
+//
+//        case ifc::TypeSort::Pointer:
+//            return getTypeName( reader, reader.get<ifc::symbolic::PointerType>( typeIndex ).pointee ) + "*";
+//
+//        case ifc::TypeSort::LvalueReference:
+//            return getTypeName( reader, reader.get<ifc::symbolic::LvalueReferenceType>( typeIndex ).referee ) + "&";
+//
+//        case ifc::TypeSort::Forall:
+//            return getTypeName( reader, reader.get<ifc::symbolic::ForallType>( typeIndex ).subject ); // ?
+//
+//        default:
+//            print( "Assert: ", typeIndex.sort() );
+//            assert( false );
+//    }
+//
+//    throw std::runtime_error( "getTypeName: TypeSort not implemented" );
+//}
+//
+//TypeName getTypeName( const ifc::Reader& reader, const ifc::TypeIndex typeIndex )
+//{
+//    const auto typeName = getTypeName( reader, typeIndex, false );
+//    //if ( typeName == "MsvcTraitSort" )
+//    //{
+//    //    std::cout << "";
+//    //}
+//    return typeName;
+//}
 
 constexpr size_t fundamentalBitWidth( const ifc::symbolic::FundamentalType& type )
 {
@@ -509,15 +762,6 @@ bool isUnwrittenScope( const T& decl )
     return index_like::null( decl.identity.locus.line )
         || ( ifc::to_underlying( decl.basic_spec ) & ifc::to_underlying( ifc::BasicSpecifiers::IsMemberOfGlobalModule ) ) != 0;
 }
-
-template<index_like::Algebra T>
-struct std::hash<T>
-{
-    std::size_t operator()( const T index ) const noexcept
-    {
-        return std::bit_cast<uint32_t>( index );
-    }
-};
 
 template<class T>
 concept HasIdentityAndHomescope = requires( T t )
@@ -828,9 +1072,8 @@ class TemplateInfo : public InfoBaseT<ifc::symbolic::TemplateDecl, InfoBaseType:
 public:
     struct TemplateField
     {
-        std::string TypeName; // TODO: string_view
-        std::string_view FieldName;
-        std::optional<size_t> ParameterIndex;
+        std::variant<Declarator, ifc::symbolic::ParameterDecl> param{};
+        std::string_view fieldName{};
     };
 
     TemplateInfo( ifc::Reader& reader, const ifc::symbolic::TemplateDecl& decl, std::optional<ScopeRef> scope, const size_t argumentCount, std::vector<TemplateField> fields )
@@ -859,15 +1102,6 @@ private:
     size_t mArgumentCount;
     std::vector<TemplateField> mFields;
 };
-
-int64_t getLiteralValue( const ifc::Reader& reader, const ifc::ExprIndex literalExprIndex )
-{
-    const auto visitor = [&]( const ifc::LitIndex index ) {
-        return index.sort() == ifc::LiteralSort::Immediate ? ifc::to_underlying( index.index() ) : gsl::narrow_cast<uint32_t>( reader.get<int64_t>( index ) );
-    };
-
-    return Query( reader, literalExprIndex ).get( &ifc::symbolic::LiteralExpr::value ).visit( visitor );
-}
 
 template<class F>
 concept FlatTemplateArgumentListVisitor =
@@ -1253,9 +1487,9 @@ class StructInfo : public InfoBaseT<ifc::symbolic::ScopeDecl, InfoBaseType::Stru
 public:
     using InfoBaseT::InfoBaseT;
 
-    std::optional<std::string_view> primitiveTypeNameCS( const std::string& typeName ) const
+    static std::optional<std::string_view> primitiveTypeNameCS( const std::string_view& typeName )
     {
-        static const std::unordered_map<std::string, std::string_view> mapping = {
+        static const std::unordered_map<std::string_view, std::string_view> mapping = {
             //{ "bool", "bool" }, // bool has 4 bytes
             //{ "Bool", "bool" }, // TODO: requires [MarshalAs(UnmanagedType.U1)] until then: use byte
             { "bool", "byte" },
@@ -1274,6 +1508,13 @@ public:
         }
 
         return {};
+    }
+
+
+    static std::string_view getCsTypeName( const ifc::Reader& reader, const Declarator& declarator )
+    {
+        const std::string_view realTypeName = declarator.isFundamental() ? to_string( declarator.fundamental().basis ) : getIdentity( reader, declarator.index() );
+        return primitiveTypeNameCS( realTypeName ).value_or( realTypeName );
     }
 
     void renameUnnamedUnion( const std::string_view newName )
@@ -1417,15 +1658,15 @@ public:
                         const auto templateArgs = templatedStructType.Arguments.exprs;
                         for ( const auto& field : templateInfo.fields() )
                         {
-                            if ( field.ParameterIndex.has_value() )
+                            if ( std::holds_alternative<ifc::symbolic::ParameterDecl>( field.param ) )
                             {
-                                const auto& argExpr = templateArgs.at( field.ParameterIndex.value() ); // XXX unsure about ordering/indexing
+                                const auto& argExpr = templateArgs.at( std::get<ifc::symbolic::ParameterDecl>( field.param ).position - 1 ); // XXX unsure about ordering/indexing
                                 const auto typeName = getTypeForFieldFromTemplateArgument( reader, argExpr );
-                                MembersToInline.emplace_back( typeName, field.FieldName );
+                                MembersToInline.emplace_back( typeName, field.fieldName );
                             }
                             else
                             {
-                                MembersToInline.emplace_back( registerString( field.TypeName ), field.FieldName );
+                                MembersToInline.emplace_back( getCsTypeName( reader, std::get<Declarator>( field.param ) ), field.fieldName );
                             }
                         }
 
@@ -1721,18 +1962,27 @@ public:
         }
     };
 
+    struct UnionMember
+    {
+        Declarator typeName;
+        std::string_view fieldName;
+    };
+
+    std::vector<UnionMember> unionMembers;
+
     void writeCS( std::ostream& os,
+        ScopeInfo& scopeInfo,
         std::set<ifc::DeclIndex>& structsForSizeValidation,
         const std::unordered_map<ifc::DeclIndex, std::vector<std::string_view>>& namesByIndex,
         const std::unordered_map<ifc::DeclIndex, InfoBaseRef>& infoByIndex,
         const std::function<std::span<std::string_view>( const StructInfo& referer, const InfoBase& referee )> getRefereeQualifier,
-        const std::function<void( std::ostream& )> writeNested ) const
+        const std::function<void( std::ostream& )> writeNested )
     {
         auto& reader = mReader.get();
 
         const bool isUnion = reader.get<ifc::symbolic::FundamentalType>( decl().type ).basis == ifc::symbolic::TypeBasis::Union;
 
-        std::set<std::tuple<std::string, size_t>> inlineArrays;
+        std::set<std::tuple<std::string, std::string_view, size_t>> inlineArrays; // helperTypeName, typeName, bound
         SpecialBaseTypes baseTypes;
 
         if ( not index_like::null( decl().base ) )
@@ -1841,106 +2091,96 @@ public:
                     }
 
                     const auto& innerDecl = reader.get<ifc::symbolic::FieldDecl>( innerDeclaration.index );
-                    const std::string typeName = getTypeName( mReader, innerDecl.type );
-
                     assert( index_like::null( innerDecl.alignment ) );
 
-                    bool isDesignated{};
-                    bool found{};
-                    ifc::DeclIndex refereeDecl{};
-                    std::optional<std::string> translatedTypeName;
-                    if ( innerDecl.type.sort() == ifc::TypeSort::Designated )
-                    {
-                        isDesignated = true;
+                    DeclaratorVisitor visitor( reader );
+                    visitor.dispatchTypeIndex( innerDecl.type );
+                    const auto& declarator = visitor.declarator();
 
-                        refereeDecl = reader.get<ifc::symbolic::DesignatedType>( innerDecl.type ).decl;
-                        if ( const auto foundIt = infoByIndex.find( refereeDecl ); foundIt != infoByIndex.end() )
+                    std::string_view typeName = getCsTypeName( reader, declarator );
+
+                    if ( typeName == "basic_string_view" || typeName == "Pathname" )
+                    {
+                        typeName = "string";
+                    }
+
+                    if ( not declarator.isFundamental() )
+                    {
+                        if ( const auto foundIt = infoByIndex.find( declarator.index() ); foundIt != infoByIndex.end() )
                         {
                             const auto& qualifiers = getRefereeQualifier( *this, foundIt->second.get() );
                             for ( const auto& refereeQualifier : qualifiers )
                             {
                                 os << refereeQualifier << ".";
                             }
-                            found = true;
                         }
                     }
-                    else if ( innerDecl.type.sort() == ifc::TypeSort::Array )
+
+                    if ( declarator.arrayBound.has_value() )
                     {
-                        const auto arrayType = reader.get<ifc::symbolic::ArrayType>( innerDecl.type );
-                        const auto bound = getLiteralValue( reader, arrayType.bound );
+                        assert( typeName != "array" );
 
-                        const auto arrayTypeName = getTypeName( reader, arrayType.element );
-                        translatedTypeName = arrayTypeName + std::to_string( bound );
-
-                        inlineArrays.emplace( arrayTypeName, bound );
-                        found = true;
+                        std::string helperTypeName = std::string( typeName ) + "_Array" + std::to_string( declarator.arrayBound.value() );
+                        os << helperTypeName;
+                        inlineArrays.emplace( std::move( helperTypeName ), typeName, declarator.arrayBound.value() );
                     }
-                    else if ( innerDecl.type.sort() == ifc::TypeSort::Syntactic )
+                    else if ( typeName == "array" )
                     {
-                        const auto& templateIdExpr = Query( reader, innerDecl.type )
-                            .get( &ifc::symbolic::SyntacticType::expr ).get<ifc::symbolic::TemplateIdExpr>();
+                        assert( declarator.templateArgs.size() >= 2 );
 
-                        const auto name = getSyntacticTemplateName( reader, templateIdExpr.primary_template );
-                        if ( name == "array" )
-                        {
-                            const auto [bound, stdArraytypeName] = StdArrayArguments::extract( reader, templateIdExpr.arguments );
-                            const auto arrayTypeName = std::string( primitiveTypeNameCS( std::string( stdArraytypeName ) ).value_or( stdArraytypeName ) );
+                        DeclaratorVisitor retry( reader );
+                        retry.dispatchTypeIndex( innerDecl.type );
 
-                            translatedTypeName = arrayTypeName + std::to_string( bound );
+                        const auto bound = getLiteralValue( reader, std::get<ifc::symbolic::LiteralExpr>( declarator.templateArgs.at( 1 ) ) );
+                        typeName = getCsTypeName( reader, std::get<Declarator>( declarator.templateArgs.at( 0 ) ) );
 
-                            inlineArrays.emplace( arrayTypeName, bound );
-                            found = true;
-
-                        }
-                        else if ( name == "basic_string_view" )
-                        {
-                            translatedTypeName = "string";
-                            found = true;
-                        }
-                        else if ( name == "Identity" or name == "Sequence" )
-                        {
-                            // nothing to do
-                        }
-                        else
-                        {
-                            assert( false ); // new type added?
-                        }
+                        std::string helperTypeName = std::string( typeName ) + "_Array" + std::to_string( bound );
+                        os << helperTypeName;
+                        inlineArrays.emplace( std::move( helperTypeName ), typeName, bound );
                     }
-
-                    if ( typeName == "Pathname" )
+                    else
                     {
-                        translatedTypeName = "string";
+                        os << typeName;
+                        for ( size_t i = 0; i < declarator.templateArgs.size(); ++i )
+                        {
+                            if ( i == 0 )
+                            {
+                                os << '<';
+                            }
+
+                            os << getCsTypeName( reader, std::get<Declarator>( declarator.templateArgs[0] ) );
+
+                            if ( i != declarator.templateArgs.size() - 1 )
+                            {
+                                os << ", ";
+                            }
+                            else
+                            {
+                                os << '>';
+                            }
+                        }
                     }
 
-                    if ( not found )
-                    {
-                        translatedTypeName = primitiveTypeNameCS( typeName );
-                        found = translatedTypeName.has_value();
-                    }
+                    os << ' ';
 
                     const auto fieldName = getStringView( mReader, innerDecl.identity );
                     const bool escapeFieldName = reservedTypeNameCS( fieldName );
 
-                    os << translatedTypeName.value_or( typeName ) << " ";
                     if ( escapeFieldName )
                     {
                         os << '@';
                     }
-                    os << fieldName << ";";
-                    if ( not isDesignated && not translatedTypeName.has_value() )
-                    {
-                        os << " // TODO verify";
-                    }
+                    os << fieldName << ";" << std::endl;
 
-                    if ( not found )
+                    if ( isUnion )
                     {
-                        os << " // Type not found: " << typeName;
+                        // unionMembers.emplace_back( fieldName, t );
                     }
-
-                    os << std::endl;
                 }
                 else if ( innerDeclaration.index.sort() == ifc::DeclSort::Bitfield )
                 {
+                    assert( not isUnion );
+
                     const auto& [type, bitfield] = Query( reader, innerDeclaration.index ).getWithQuery( &ifc::symbolic::BitfieldDecl::type );
 
                     const auto width = gsl::narrow_cast<size_t>( getLiteralValue( reader, bitfield.width ) );
@@ -2006,7 +2246,8 @@ public:
                         os << "readonly ";
                     }
 
-                    os << unionInfo.mName << ' ' << unionInfo.mName << ';' << std::endl;
+                    assert( std::isupper( unionInfo.mName[0] ) );
+                    os << unionInfo.mName << ' ' << gsl::narrow_cast<char>( std::tolower( unionInfo.mName[0] ) ) << unionInfo.mName.substr( 1 ) << ';' << std::endl;
 
                     // TODO: getter for union
                 }
@@ -2033,11 +2274,11 @@ public:
 
         os << "}" << std::endl << std::endl;
 
-        for ( const auto& [name, bound] : inlineArrays )
+        for ( const auto& [helperTypeName, typeName, bound] : inlineArrays )
         {
             os << "[System.Runtime.CompilerServices.InlineArray(" << bound << ")]" << std::endl;
-            os << "public struct " << name << bound << std::endl << '{' << std::endl;
-            os << "    private " << name << ' ' << "_element;" << std::endl << '}' << std::endl;
+            os << "public struct " << helperTypeName << std::endl << '{' << std::endl;
+            os << "    private " << typeName << ' ' << "_element;" << std::endl << '}' << std::endl;
         }
     }
 };
@@ -2208,13 +2449,13 @@ int main() // TODO: unions and bitfields, LiteralReal pragma pack(push, 4), why 
                         const auto& param = Query( reader, field.type ).tryGet( &ifc::symbolic::DesignatedType::decl ).tryGet<ifc::symbolic::ParameterDecl>();
                         if ( param.has_value() )
                         {
-                            const auto paramName = getStringView( reader, param.value().get().identity );
-                            fields.emplace_back( std::string( paramName ), fieldName, gsl::narrow_cast<size_t>( param.value().get().position - 1 ) );
+                            fields.emplace_back( param.value(), fieldName );
                         }
                         else
                         {
-                            const auto typeName = getTypeName( reader, field.type ); // TODO: don't use getTypeName
-                            fields.emplace_back( typeName, fieldName, std::optional<size_t>{} );
+                            DeclaratorVisitor visitor( reader );
+                            visitor.dispatchTypeIndex( field.type );
+                            fields.emplace_back( visitor.declarator(), fieldName );
                         }
                     },
 
@@ -2272,6 +2513,7 @@ int main() // TODO: unions and bitfields, LiteralReal pragma pack(push, 4), why 
         }
     }
 
+#if 0
     // --
 
     struct AliasInfo
@@ -2339,8 +2581,8 @@ int main() // TODO: unions and bitfields, LiteralReal pragma pack(push, 4), why 
             }
         }
     }
-
     // ---
+#endif
 
     const auto getRefereeQualifier = [&]( const StructInfo& referer, const InfoBase& referee ) -> std::span<std::string_view> {
         if ( referer.scope() == referee.scope() || referer.index() == referee.scope().value().get().Index )
@@ -2406,9 +2648,9 @@ int main() // TODO: unions and bitfields, LiteralReal pragma pack(push, 4), why 
                 }
             }
 
-            for ( const auto& structInfo : foundIt->second.structs | std::views::filter( std::not_fn( ignoreTypeByName ) ) )
+            for ( auto& structInfo : foundIt->second.structs | std::views::filter( std::not_fn( ignoreTypeByName ) ) )
             {
-                structInfo.writeCS( osCode, namesForSizeValidation, namesByIndex, infoByIndex, getRefereeQualifier, [&]( std::ostream& os ) {
+                structInfo.writeCS( osCode, scopeInfo, namesForSizeValidation, namesByIndex, infoByIndex, getRefereeQualifier, [&]( std::ostream& os ) {
                     // write nested
                     if ( const auto nestedIt = infoByScope.find( structInfo.index() ); nestedIt != infoByScope.end() )
                     {
@@ -2417,9 +2659,9 @@ int main() // TODO: unions and bitfields, LiteralReal pragma pack(push, 4), why 
                             nestedEnumInfo.writeCS( os );
                         }
 
-                        for ( const auto& nestedStructInfo : nestedIt->second.structs )
+                        for ( auto& nestedStructInfo : nestedIt->second.structs )
                         {
-                            nestedStructInfo.writeCS( os, namesForSizeValidation, namesByIndex, infoByIndex, getRefereeQualifier, {} );
+                            nestedStructInfo.writeCS( os, scopeInfo, namesForSizeValidation, namesByIndex, infoByIndex, getRefereeQualifier, {} );
                         }
                     }
                 } );
