@@ -157,6 +157,7 @@ std::string_view getIdentity( const ifc::Reader& reader, const ifc::DeclIndex de
             return query.identity<ifc::symbolic::TemplateDecl>( &ifc::symbolic::Template::identity );
 
         default:
+            print( "getIdentity not implemented: ", declIndex.sort() );
             assert( false );
             break;
     }
@@ -187,6 +188,12 @@ enum class ReferenceType
     LValueReference, RValueReference
 };
 
+//struct Base
+//{
+//    ifc::DeclIndex type{};
+//    std::vector<TypeTemplateArgument> templateArgs{};
+//};
+
 struct Declarator
 {
     std::variant<ifc::DeclIndex, ifc::symbolic::FundamentalType> type{};
@@ -213,11 +220,18 @@ struct Declarator
     }
 };
 
+enum class AliasPolicy
+{
+    Identity,
+    Aliasee
+};
+
 class DeclaratorVisitor
 {
 public:
-    explicit DeclaratorVisitor( const ifc::Reader& reader )
+    explicit DeclaratorVisitor( const ifc::Reader& reader, const AliasPolicy aliasPolicy = AliasPolicy::Aliasee )
         : mReader( reader )
+        , mAliasPolicy( aliasPolicy )
     {
     }
 
@@ -233,12 +247,26 @@ public:
 
     void visitDesignated( const ifc::symbolic::DesignatedType designatedType )
     {
-        mDeclarator.type = designatedType.decl;
+        if ( mAliasPolicy == AliasPolicy::Aliasee && designatedType.decl.sort() == ifc::DeclSort::Alias )
+        {
+            visitAlias( query( designatedType.decl ).get<ifc::symbolic::AliasDecl>() );
+        }
+        else
+        {
+            mDeclarator.type = designatedType.decl;
+        }
     }
 
     void visitNamedDecl( const ifc::symbolic::NamedDeclExpr namedDeclExpr )
     {
-        mDeclarator.type = namedDeclExpr.decl;
+        if ( mAliasPolicy == AliasPolicy::Aliasee && namedDeclExpr.decl.sort() == ifc::DeclSort::Alias )
+        {
+            visitAlias( query( namedDeclExpr.decl ).get<ifc::symbolic::AliasDecl>() );
+        }
+        else
+        {
+            mDeclarator.type = namedDeclExpr.decl;
+        }
 
         if ( not index_like::null( namedDeclExpr.type ) )
         {
@@ -246,6 +274,11 @@ public:
             containingTypeVisitor.dispatchTypeIndex( namedDeclExpr.type );
             mDeclarator.containingType = containingTypeVisitor.declarator().index();
         }
+    }
+
+    void visitAlias( const ifc::symbolic::AliasDecl& aliasDecl )
+    {
+        dispatchTypeIndex( aliasDecl.aliasee );
     }
 
     void visitArray( const ifc::symbolic::ArrayType arrayType )
@@ -402,6 +435,7 @@ private:
 
     Declarator mDeclarator{};
     std::reference_wrapper<const ifc::Reader> mReader;
+    AliasPolicy mAliasPolicy{};
 };
 
 constexpr size_t fundamentalBitWidth( const ifc::symbolic::FundamentalType& type )
@@ -1165,37 +1199,6 @@ struct TemplatedStructType
     }
 };
 
-const ifc::symbolic::FundamentalType& getTypeForBitfield( const ifc::Reader& reader, const ifc::TypeIndex bitfieldDeclType );
-
-const ifc::symbolic::FundamentalType& getTypeForBitfield( const ifc::Reader& reader, const ifc::DeclIndex declIndex )
-{
-    Query query( reader, declIndex );
-    if ( const auto result = query.tryGet<ifc::symbolic::AliasDecl>() )
-    {
-        return getTypeForBitfield( reader, result.value().aliasee );
-    }
-
-    print( "TODO: ", declIndex.sort() );
-    throw std::runtime_error( "Failed to find bitfield type" );
-}
-
-const ifc::symbolic::FundamentalType& getTypeForBitfield( const ifc::Reader& reader, const ifc::TypeIndex bitfieldDeclType )
-{
-    Query query( reader, bitfieldDeclType );
-    if ( const auto result = query.tryGet<ifc::symbolic::FundamentalType>() )
-    {
-        return result.value();
-    }
-
-    if ( const auto result = query.tryGet<ifc::symbolic::DesignatedType>() )
-    {
-        return getTypeForBitfield( reader, result.value().decl );
-    }
-
-    print( "TODO: ", bitfieldDeclType.sort() );
-    throw std::runtime_error( "Failed to find bitfield type" );
-}
-
 bool isStructClassOrUnion( const ifc::Reader& reader, const ifc::TypeIndex type, bool& isUnion )
 {
     if ( type.sort() != ifc::TypeSort::Fundamental )
@@ -1659,7 +1662,9 @@ public:
                     assert( width > 0 );
                     assert( index_like::null( bitfield.initializer ) );
 
-                    const auto& fundamentalType = getTypeForBitfield( reader, type.index );
+                    DeclaratorVisitor visitor( reader );
+                    visitor.dispatchTypeIndex( type.index );
+                    const auto fundamentalType = visitor.declarator().fundamental();
 
                     assert( fundamentalType.sign == ifc::symbolic::TypeSign::Unsigned );
 
