@@ -216,7 +216,7 @@ struct Declarator
 class DeclaratorVisitor
 {
 public:
-    explicit DeclaratorVisitor( ifc::Reader& reader )
+    explicit DeclaratorVisitor( const ifc::Reader& reader )
         : mReader( reader )
     {
     }
@@ -282,7 +282,7 @@ public:
 
     void dispatchTypeIndex( const ifc::TypeIndex typeIndex )
     {
-        ifc::Reader& reader = mReader;
+        const ifc::Reader& reader = mReader;
         switch ( typeIndex.sort() )
         {
             case ifc::TypeSort::Designated:
@@ -401,7 +401,7 @@ private:
     }
 
     Declarator mDeclarator{};
-    std::reference_wrapper<ifc::Reader> mReader;
+    std::reference_wrapper<const ifc::Reader> mReader;
 };
 
 constexpr size_t fundamentalBitWidth( const ifc::symbolic::FundamentalType& type )
@@ -1165,83 +1165,6 @@ struct TemplatedStructType
     }
 };
 
-std::string_view getTypeForFieldFromTemplateArgument( const ifc::Reader& reader, const ifc::ExprIndex exprIndex )
-{
-    // the exprIndex comes from a FlatTemplateArgumentList and should only contain TypeExpr/NamedDeclExpr/LiteralExpr
-    Query query( reader, exprIndex );
-
-    if ( const auto denotation = query.tryGet( &ifc::symbolic::TypeExpr::denotation ) )
-    {
-        if ( const auto designated = denotation.tryGet( &ifc::symbolic::DesignatedType::decl ) )
-        {
-            if ( designated.index.sort() == ifc::DeclSort::Scope or designated.index.sort() == ifc::DeclSort::Enumeration )
-            {
-                return designated.value()
-                    .either( &ifc::symbolic::ScopeDecl::identity, &ifc::symbolic::EnumerationDecl::identity )
-                    .visit( getStringView );
-            }
-            else if ( designated.index.sort() == ifc::DeclSort::Alias )
-            {
-                // TODO? implement proper alias lookup
-
-                const auto& alias = designated.value().get<ifc::symbolic::AliasDecl>();
-                if ( alias.aliasee.sort() == ifc::TypeSort::Fundamental )
-                {
-                    // e.g. uint64_t
-                    return getStringView( reader, alias.identity );
-                }
-                else
-                {
-                    const auto aliasName = getStringView( reader, alias.identity );
-                    print( "alias: ", alias.aliasee.sort() );
-                    assert( false ); // remove?
-                    return aliasName; // return alias name or recursion?
-                }
-            }
-
-            print( "TODO: designated: ", designated.index.sort() );
-            assert( false );
-        }
-        else if ( denotation.index.sort() == ifc::TypeSort::Syntactic )
-        {
-            TemplatedStructType templatedStructType;
-            if ( not templatedStructType.extract( reader, denotation.index ) )
-            {
-                assert( false );
-            }
-
-            assert( not templatedStructType.AliasName.has_value() ); // not implemented (need merging as implemented elsewhere)
-
-            if ( templatedStructType.Arguments.exprs.empty() )
-            {
-                return templatedStructType.TemplateBaseName;
-            }
-
-            std::string fullTypeName( templatedStructType.TemplateBaseName );
-            fullTypeName += '<';
-            for ( size_t i = 0; i < templatedStructType.Arguments.exprs.size(); ++i )
-            {
-                // XXX recursion here initially not intended -> rename function?
-                fullTypeName += getTypeForFieldFromTemplateArgument( reader, templatedStructType.Arguments.exprs[i] );
-                if ( i != templatedStructType.Arguments.exprs.size() - 1 )
-                {
-                    fullTypeName += ", ";
-                }
-            }
-            fullTypeName += '>';
-
-            return registerString( fullTypeName );
-        }
-
-        print( "TODO: denotation: ", denotation.index.sort() );
-        assert( false );
-    }
-
-    print( "TODO: not denotation: ", exprIndex.sort() );
-    assert( false );
-    return "### ? ###"; // TODO
-}
-
 const ifc::symbolic::FundamentalType& getTypeForBitfield( const ifc::Reader& reader, const ifc::TypeIndex bitfieldDeclType );
 
 const ifc::symbolic::FundamentalType& getTypeForBitfield( const ifc::Reader& reader, const ifc::DeclIndex declIndex )
@@ -1466,7 +1389,9 @@ public:
                             if ( std::holds_alternative<ifc::symbolic::ParameterDecl>( field.param ) )
                             {
                                 const auto& argExpr = templateArgs.at( std::get<ifc::symbolic::ParameterDecl>( field.param ).position - 1 ); // XXX unsure about ordering/indexing
-                                const auto typeName = getTypeForFieldFromTemplateArgument( reader, argExpr );
+                                DeclaratorVisitor visitor( reader );
+                                visitor.dispatchExprIndex( argExpr );
+                                const auto typeName = getCsTypeName( reader, visitor.declarator() );
                                 MembersToInline.emplace_back( typeName, field.fieldName );
                             }
                             else
@@ -2133,14 +2058,14 @@ int main() // TODO: unions and bitfields, LiteralReal pragma pack(push, 4), why 
         if ( referer.scope() == referee.scope() || referer.index() == referee.scope().value().get().Index )
         {
             return {};
-    }
+        }
 
         const std::span refererNames( namesByIndex.at( referer.index() ) );
         const std::span refereeNames( namesByIndex.at( referee.index() ) );
         const auto skipCount = std::ranges::distance( std::views::zip( refererNames, refereeNames )
             | std::views::take_while( []( const auto& t ) { return std::get<0>( t ) == std::get<1>( t ); } ) );
         return refereeNames.subspan( skipCount );
-};
+    };
 
     std::ostringstream osCode;
 
