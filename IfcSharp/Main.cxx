@@ -1329,7 +1329,7 @@ public:
         if ( baseTypes.Tag.has_value() )
         {
             insertStaticSortGetter = true;
-            os << " : StructFromSpanTest.IHasSort<" << baseTypes.Tag.value().parent.name << '>';
+            os << " : IHasSort<" << baseTypes.Tag.value().parent.name << '>';
         }
 
         os << std::endl << "{" << std::endl;
@@ -1604,9 +1604,9 @@ void updateValidationData( const std::string& validationInputFile, const std::st
 
 
     constexpr std::string_view templateCode = R"(
-namespace StructFromSpanTest
+namespace IfcSharpLib
 {
-    internal static partial class IfcSizeValidation
+    public static partial class IfcSizeValidation
     {
         static partial void ExecuteTest()
         {
@@ -1705,9 +1705,9 @@ std::span<const std::string_view> QualifiedNameTable::getRefereeQualifier( const
 
 int main() // TODO: bool handling
 {
-    const std::string ifcFile = R"(d:\.projects\.unsorted\2024\CppEnumString\IfcTestData\x64\Debug\IfcHeaderUnit.ixx.ifc)";
-    const std::string validationInputFile = R"(d:\.projects\.unsorted\2024\CppEnumString\IfcTestData\x64\Debug\IfcSizeValidation.ixx.ifc)";
-    const std::string validationOutputFile = R"(d:\.projects\.unsorted\2024\StructFromSpanTest\StructFromSpanTest\IfcSizeValidation_Generated.cs)";
+    const std::string ifcFile = R"(d:\.projects\.unsorted\2024\IfcSharp\IfcTestData\x64\Debug\IfcHeaderUnit.ixx.ifc)";
+    const std::string validationInputFile = R"(d:\.projects\.unsorted\2024\IfcSharp\IfcTestData\x64\Debug\IfcSizeValidation.ixx.ifc)";
+    const std::string validationOutputFile = R"(d:\.projects\.unsorted\2024\IfcSharp\IfcSharpLib\IfcSizeValidation.Generated.cs)";
 
     updateValidationData( validationInputFile, validationOutputFile );
 
@@ -1830,12 +1830,21 @@ int main() // TODO: bool handling
 
     osCode << "using System.Runtime.InteropServices;" << std::endl;
     osCode << "namespace ifc" << std::endl << '{' << std::endl;
-    osCode << "public enum Index : uint { }" << std::endl << std::endl;
+    osCode << "public enum Index : uint { }" << std::endl;
+    osCode << R"(
+    public interface IHasSort
+    {
+        static abstract int Sort{ get; }
+    }
 
+    public interface IHasSort<T> : IHasSort
+    {
+    }
+    )" << std::endl;
     osCode << "public class OverAttribute : Attribute { }" << std::endl << std::endl;
     osCode << "public class OverAttribute<T> : OverAttribute { }" << std::endl << std::endl;
     osCode << "public class TagAttribute : Attribute { }" << std::endl << std::endl;
-    osCode << "public class TagAttribute<T>(T sort) : TagAttribute { }" << std::endl << std::endl;
+    osCode << "public class TagAttribute<T>(T sort) : TagAttribute { public T Sort { get; } = sort; }" << std::endl << std::endl;
     osCode << "public readonly struct Sequence<T> { public readonly Index start; public readonly Cardinality cardinality; }" << std::endl << std::endl;
     osCode << "public readonly struct Identity<T> { public readonly T name; public readonly symbolic.SourceLocation locus; }" << std::endl << std::endl;
     osCode << '}' << std::endl << std::endl;
@@ -1900,7 +1909,7 @@ int main() // TODO: bool handling
 
     std::cout << std::endl << std::string( 80, '=' ) << std::endl << std::endl;
 
-    const std::string outputFile = R"(d:\.projects\.unsorted\2024\StructFromSpanTest\StructFromSpanTest\Ifc.cs)";
+    const std::string outputFile = R"(d:\.projects\.unsorted\2024\IfcSharp\IfcSharpLib\Ifc.Generated.cs)";
     if ( updateFileWithHash( outputFile, osCode.str() ) )
     {
         std::cout << "### Output file changed ###" << std::endl;
@@ -1935,7 +1944,7 @@ int main() // TODO: bool handling
     } );
     osTest << '}' << std::endl; // close export
 
-    const std::string testOutputFile = R"(d:\.projects\.unsorted\2024\CppEnumString\IfcTestData\IfcSizeValidation.ixx)";
+    const std::string testOutputFile = R"(d:\.projects\.unsorted\2024\IfcSharp\IfcTestData\IfcSizeValidation.ixx)";
     if ( updateFileWithHash( testOutputFile, osTest.str() ) )
     {
         std::cout << "### Test output file changed ###" << std::endl;

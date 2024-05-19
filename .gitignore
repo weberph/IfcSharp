@@ -7,3 +7,4 @@ publish/
 
 *.user
 *.aps
+*.Generated.cs
