@@ -156,6 +156,9 @@ std::string_view getIdentity( const ifc::Reader& reader, const ifc::DeclIndex de
         case ifc::DeclSort::Template:
             return query.identity<ifc::symbolic::TemplateDecl>( &ifc::symbolic::Template::identity );
 
+        case ifc::DeclSort::Parameter:
+            return query.identity( &ifc::symbolic::ParameterDecl::identity );
+
         default:
             print( "getIdentity not implemented: ", declIndex.sort() );
             assert( false );
@@ -191,13 +194,13 @@ enum class ReferenceType
 struct Declarator
 {
     std::variant<ifc::DeclIndex, ifc::symbolic::FundamentalType> type{};
+    std::string_view identity{};
     std::vector<TypeTemplateArgument> templateArgs{};
     std::optional<size_t> arrayBound{};
     size_t indirections{};
     std::optional<ReferenceType> referenceType{};
     std::optional<ifc::DeclIndex> containingType{};
     size_t templateParamCount{};
-
 
     ifc::DeclIndex index() const
     {
@@ -254,6 +257,13 @@ public:
         return mDeclarator;
     }
 
+    void postConditions() const
+    {
+        assert( mDeclarator.isFundamental() || not index_like::null( mDeclarator.index() ) );
+        assert( mDeclarator.isFundamental() || not mDeclarator.identity.empty() );
+        assert( mDeclarator.templateParamCount == 0 );
+    }
+
     void visitFundamental( const ifc::symbolic::FundamentalType fundamentalType )
     {
         mDeclarator.type = fundamentalType;
@@ -268,7 +278,10 @@ public:
         else
         {
             mDeclarator.type = designatedType.decl;
+            mDeclarator.identity = getIdentity( mReader, designatedType.decl );
         }
+
+        postConditions();
     }
 
     void visitNamedDecl( const ifc::symbolic::NamedDeclExpr namedDeclExpr )
@@ -280,6 +293,7 @@ public:
         else
         {
             mDeclarator.type = namedDeclExpr.decl;
+            mDeclarator.identity = getIdentity( mReader, namedDeclExpr.decl );
         }
 
         if ( not index_like::null( namedDeclExpr.type ) )
@@ -288,11 +302,22 @@ public:
             containingTypeVisitor.dispatchTypeIndex( namedDeclExpr.type );
             mDeclarator.containingType = containingTypeVisitor.declarator().index();
         }
+
+        postConditions();
     }
 
+    std::optional<Declarator> currentAlias;
     void visitAlias( const ifc::symbolic::AliasDecl& aliasDecl )
     {
-        dispatchTypeIndex( aliasDecl.aliasee ); // TODO XXX the alias must be captures separately
+        assert( not currentAlias.has_value() );
+        currentAlias = mDeclarator;
+        mDeclarator = {};
+        dispatchTypeIndex( aliasDecl.aliasee ); // TODO XXX the alias must be captured separately
+        currentAlias.reset();
+        if ( mDeclarator.templateParamCount > 0 )
+        {
+            std::cout << "";
+        }
     }
 
     void visitArray( const ifc::symbolic::ArrayType arrayType )
@@ -311,19 +336,62 @@ public:
 
         assert( templateIdExpr.primary_template.sort() == ifc::ExprSort::NamedDecl );
 
-        visitNamedDecl( query( templateIdExpr.primary_template ).get<ifc::symbolic::NamedDeclExpr>() );
-
         assert( mDeclarator.templateArgs.empty() );
         mDeclarator.templateArgs = getTypeArgumentList( templateIdExpr.arguments );
+
+        visitNamedDecl( query( templateIdExpr.primary_template ).get<ifc::symbolic::NamedDeclExpr>() );
     }
 
     void visitForallType( const ifc::symbolic::ForallType forallType )
     {
-        //assert( false );
         dispatchTypeIndex( forallType.subject );
 
         const auto& chart = query( forallType.chart ).get<ifc::symbolic::UnilevelChart>();
         mDeclarator.templateParamCount = gsl::narrow_cast<size_t>( chart.cardinality );
+
+        if ( mDeclarator.templateParamCount > 0 )
+        {
+            assert( currentAlias.has_value() );
+
+            const auto& outerArgs = currentAlias.value().templateArgs;
+            const auto& aliasArgs = mDeclarator.templateArgs;
+
+            assert( mDeclarator.templateParamCount <= outerArgs.size() );
+            assert( mDeclarator.templateParamCount <= aliasArgs.size() );
+
+            assert( outerArgs.size() == mDeclarator.templateParamCount ); // if this does not hold, we are probably visiting a template argument (not implemented)
+
+            std::vector<TypeTemplateArgument> merged{};
+            merged.resize( aliasArgs.size() );
+
+            // find the template arguments of the alias
+            size_t parametersFound = 0; // for validation
+            for ( size_t i = 0; i < aliasArgs.size(); ++i )
+            {
+                if ( not std::holds_alternative<ifc::symbolic::LiteralExpr>( aliasArgs[i] ) )
+                {
+                    const auto& declarator = std::get<Declarator>( aliasArgs[i] );
+                    if ( not declarator.isFundamental() )
+                    {
+                        if ( const auto& parameterDecl = query( declarator.index() ).tryGet<ifc::symbolic::ParameterDecl>() )
+                        {
+                            ++parametersFound;
+                            const ifc::symbolic::ParameterDecl& parameter = parameterDecl.value();
+                            assert( parameter.position - 1 == i ); // assume parameters are in order
+                            merged[i] = outerArgs.at( parameter.position - 1 );
+                            continue;
+                        }
+                    }
+                }
+
+                merged[i] = aliasArgs[i];
+            }
+
+            assert( mDeclarator.templateParamCount == parametersFound );
+            mDeclarator.templateParamCount = 0;
+
+            mDeclarator.templateArgs = merged;
+        }
     }
 
     void dispatchTypeIndex( const ifc::TypeIndex typeIndex )
@@ -409,7 +477,7 @@ public:
         else if ( exprIndex.sort() == ifc::ExprSort::Type || exprIndex.sort() == ifc::ExprSort::NamedDecl )
         {
             DeclaratorVisitor visitor( mReader );
-            visitor.dispatchExprIndex( exprIndex );
+            visitor.dispatchExprIndex( exprIndex ); // need to pass current template args?
             args.emplace_back( visitor.declarator() );
         }
         else if ( exprIndex.sort() == ifc::ExprSort::Tuple )
@@ -956,195 +1024,6 @@ private:
     std::vector<TemplateField> mFields;
 };
 
-template<class F>
-concept FlatTemplateArgumentListVisitor =
-/* */ std::invocable<F, ifc::ExprIndex, const ifc::symbolic::TypeExpr&, size_t> and
-/* */ std::invocable<F, ifc::ExprIndex, const ifc::symbolic::NamedDeclExpr&, size_t> and
-/* */ std::invocable<F, ifc::ExprIndex, const ifc::symbolic::LiteralExpr&, size_t>;
-
-struct FlatTemplateArgumentList
-{
-    std::vector<ifc::ExprIndex> exprs; // contains Type, NamedDecl or Literal
-
-    /// <param name="exprIndex">Typically TemplateIdExpr::arguments</param>
-    void extract( const ifc::Reader& reader, const ifc::ExprIndex exprIndex )
-    {
-        if ( exprIndex.sort() == ifc::ExprSort::Type
-            or exprIndex.sort() == ifc::ExprSort::NamedDecl
-            or exprIndex.sort() == ifc::ExprSort::Literal )
-        {
-            exprs.emplace_back( exprIndex );
-            return;
-        }
-
-        const Query query( reader, exprIndex );
-        if ( exprIndex.sort() == ifc::ExprSort::Tuple )
-        {
-            const auto tuple = query.sequence<ifc::symbolic::TupleExpr>();
-            for ( const auto nestedExprIndex : tuple.span )
-            {
-                extract( reader, nestedExprIndex );
-            }
-        }
-        else if ( exprIndex.sort() == ifc::ExprSort::PackedTemplateArguments )
-        {
-            const auto& packed = query.get<ifc::symbolic::PackedTemplateArgumentsExpr>();
-            extract( reader, packed.arguments );
-        }
-        else if ( exprIndex.sort() == ifc::ExprSort::Empty )
-        {
-            // nothing to do
-        }
-        else
-        {
-            assert( false );
-        }
-    }
-
-    template<FlatTemplateArgumentListVisitor F>
-    void visit( const ifc::Reader& reader, F&& visitor )
-    {
-        for ( size_t i = 0; i < exprs.size(); ++i )
-        {
-            const auto exprIndex = exprs[i];
-            if ( exprIndex.sort() == ifc::ExprSort::Type )
-            {
-                visitor( exprIndex, reader.get<ifc::symbolic::TypeExpr>( exprIndex ), i );
-            }
-            else if ( exprIndex.sort() == ifc::ExprSort::NamedDecl )
-            {
-                visitor( exprIndex, reader.get<ifc::symbolic::NamedDeclExpr>( exprIndex ), i );
-            }
-            else if ( exprIndex.sort() == ifc::ExprSort::Literal )
-            {
-                visitor( exprIndex, reader.get<ifc::symbolic::LiteralExpr>( exprIndex ), i );
-            }
-            else
-            {
-                assert( false ); // missing case; check extract method
-            }
-        }
-    }
-};
-
-struct TemplatedAliasType
-{
-    ifc::DeclIndex TemplateDeclIndex{};
-    std::string_view AliasName{};
-    FlatTemplateArgumentList Arguments{}; // mixed list of types and parameters
-    size_t TemplateArgumentCount{}; // less or equal than the number of Arguments
-
-    void extractAlias( const ifc::Reader& reader, const ifc::DeclIndex aliasIndex )
-    {
-        const auto alias = reader.get<ifc::symbolic::AliasDecl>( aliasIndex );
-        const auto forall = reader.get<ifc::symbolic::ForallType>( alias.aliasee );
-
-        AliasName = getStringView( reader, alias.identity );
-        TemplateArgumentCount = gsl::narrow_cast<size_t>( reader.get<ifc::symbolic::UnilevelChart>( forall.chart ).cardinality ); // parameter information is lost
-
-        const auto aliasedTemplateExpr = Query( reader, forall.subject )
-            .get( &ifc::symbolic::SyntacticType::expr )
-            .get<ifc::symbolic::TemplateIdExpr>();
-
-        const auto aliasedTemplateDecl = Query( reader, aliasedTemplateExpr.primary_template )
-            .get( &ifc::symbolic::NamedDeclExpr::decl );
-
-        TemplateDeclIndex = aliasedTemplateDecl.index;
-        Arguments.extract( reader, aliasedTemplateExpr.arguments );
-
-        const auto args = DeclaratorVisitor::getTypeArgumentList( reader, aliasedTemplateExpr.arguments );
-    }
-};
-
-struct TemplatedStructType;
-
-using TemplateArgument = std::variant<ifc::DeclIndex, TemplatedStructType>;
-
-struct TemplatedStructType
-{
-    ifc::DeclIndex TemplateDeclIndex{};
-    std::optional<std::string_view> AliasName{};
-    FlatTemplateArgumentList Arguments{};
-    std::string_view TemplateBaseName{}; // name without arguments
-
-    [[nodiscard]] bool extract( const ifc::Reader& reader, const ifc::TypeIndex syntacticTypeIndex )
-    {
-        const auto& templateIdExpr = Query( reader, syntacticTypeIndex )
-            .get( &ifc::symbolic::SyntacticType::expr ).get<ifc::symbolic::TemplateIdExpr>();
-
-        const auto templateOrAlias = Query( reader, templateIdExpr.primary_template ).get( &ifc::symbolic::NamedDeclExpr::decl );
-
-        ifc::DeclIndex templateIndex{};
-        if ( templateOrAlias.index.sort() == ifc::DeclSort::Template )
-        {
-            TemplateDeclIndex = templateOrAlias.index;
-            Arguments.extract( reader, templateIdExpr.arguments );
-
-            const auto args = DeclaratorVisitor::getTypeArgumentList( reader, templateIdExpr.arguments );
-        }
-        else if ( templateOrAlias.index.sort() == ifc::DeclSort::Alias )
-        {
-            TemplatedAliasType templatedAlias;
-            templatedAlias.extractAlias( reader, templateOrAlias.index );
-
-            AliasName = templatedAlias.AliasName;
-            TemplateDeclIndex = templatedAlias.TemplateDeclIndex;
-
-            FlatTemplateArgumentList localArgs;
-            localArgs.extract( reader, templateIdExpr.arguments );
-
-            const auto args = DeclaratorVisitor::getTypeArgumentList( reader, templateIdExpr.arguments );
-
-            // merge the local arguments with the arguments from the alias
-            std::vector<ifc::ExprIndex> mergedExprs;
-
-            const auto& aliasArgs = templatedAlias.Arguments;
-
-            if ( localArgs.exprs.size() != templatedAlias.TemplateArgumentCount )
-            {
-                assert( localArgs.exprs.size() < templatedAlias.TemplateArgumentCount ); // logic error on assert
-                assert( localArgs.exprs.size() != templatedAlias.TemplateArgumentCount ); // not a TemplatedStructType because not all arguments are provided
-                return false;
-            }
-
-            mergedExprs.resize( aliasArgs.exprs.size() );
-
-            // find the template arguments of the alias
-            size_t parametersFound = 0; // for validation
-            for ( size_t i = 0; i < aliasArgs.exprs.size(); ++i )
-            {
-                const auto parameterOpt = Query( reader, aliasArgs.exprs[i] )
-                    .tryGet( &ifc::symbolic::TypeExpr::denotation )
-                    .tryGet( &ifc::symbolic::DesignatedType::decl )
-                    .tryGet<ifc::symbolic::ParameterDecl>();
-
-                if ( parameterOpt )
-                {
-                    ++parametersFound;
-                    const ifc::symbolic::ParameterDecl& parameter = parameterOpt.value();
-                    assert( parameter.position - 1 == i ); // assume parameters are in order
-                    mergedExprs[i] = localArgs.exprs.at( parameter.position - 1 );
-                }
-                else
-                {
-                    mergedExprs[i] = aliasArgs.exprs[i];
-                }
-            }
-
-            Arguments = FlatTemplateArgumentList{ mergedExprs };
-
-            assert( parametersFound == templatedAlias.TemplateArgumentCount ); // ensure all ParameterDecls have been found
-        }
-        else
-        {
-            return false;
-        }
-
-        TemplateBaseName = getStringView( reader, reader.get<ifc::symbolic::TemplateDecl>( TemplateDeclIndex ).identity );
-        return true;
-    }
-};
-
 bool isStructClassOrUnion( const ifc::Reader& reader, const ifc::TypeIndex type, bool& isUnion )
 {
     if ( type.sort() != ifc::TypeSort::Fundamental )
@@ -1231,17 +1110,6 @@ public:
         std::optional<std::tuple<StructIndexAndName, std::optional<EnumeratorIndexAndName>>> Sequence;
         std::vector<std::tuple<std::string_view, std::string_view>> MembersToInline; // XXX no type, only name
 
-        EnumerationIndexAndName extractEnumerationIndexAndName( const ifc::Reader& reader, const ifc::ExprIndex expr )
-        {
-            const auto tagArgTypeDecl = Query( reader, expr )
-                .get( &ifc::symbolic::TypeExpr::denotation )
-                .get( &ifc::symbolic::DesignatedType::decl );
-
-            const auto tagArgTypeName = tagArgTypeDecl.identity( &ifc::symbolic::EnumerationDecl::identity );
-
-            return { tagArgTypeDecl.index, tagArgTypeName };
-        }
-
         EnumeratorIndexAndName extractEnumeratorIndexAndName( const ifc::Reader& reader, const ifc::ExprIndex expr )
         {
             const auto& tagArgNamedDeclExpr = reader.get<ifc::symbolic::NamedDeclExpr>( expr );
@@ -1269,24 +1137,18 @@ public:
             }
             else
             {
-                TemplatedStructType templatedStructType;
-                if ( not templatedStructType.extract( reader, baseType.type ) )
-                {
-                    assert( false );
-                }
-
-                // const auto declarator = DeclaratorVisitor::createDeclarator( reader, baseType.type ); // TODO: forall / alias
-
-                const auto foundIt = infoByIndex.find( templatedStructType.TemplateDeclIndex );
+                const auto declarator = DeclaratorVisitor::createDeclarator( reader, baseType.type ); // TODO: forall / alias
+                const auto foundIt = infoByIndex.find( declarator.index() );
                 if ( foundIt == infoByIndex.end() or foundIt->second.get().type() != InfoBaseType::Template )
                 {
-                    const auto templateName = Query( reader, templatedStructType.TemplateDeclIndex )
+                    const auto templateName = Query( reader, declarator.index() )
                         .identity<ifc::symbolic::TemplateDecl>( &ifc::symbolic::TemplateDecl::identity );
 
                     if ( templateName == "Over" )
                     {
                         // special handling: Over is in index_like which is currently ignored
-                        Over.emplace( extractEnumerationIndexAndName( reader, templatedStructType.Arguments.exprs.at( 0 ) ) );
+                        const auto enumerationIndex = std::get<Declarator>( declarator.templateArgs.at( 0 ) ).index();
+                        Over.emplace( enumerationIndex, getIdentity( reader, enumerationIndex ) );
                     }
                     else
                     {
@@ -1302,7 +1164,9 @@ public:
                     {
                         if ( templateName == "Tag" or templateName == "TraitTag" or templateName == "Location" or templateName == "LocationAndType" )
                         {
-                            Tag.emplace( extractEnumeratorIndexAndName( reader, templatedStructType.Arguments.exprs.at( 0 ) ) ); // TODO: differentiate between Tag and TraitTag
+                            const auto& enumerator = std::get<Declarator>( declarator.templateArgs.at( 0 ) );
+                            const auto enumerationDeclIndex = enumerator.containingType.value();
+                            Tag.emplace( EnumeratorIndexAndName{ { enumerationDeclIndex, getIdentity( reader, enumerationDeclIndex ) }, enumerator.index(), getIdentity( reader, enumerator.index() ) } );
                         }
                         else
                         {
@@ -1319,18 +1183,18 @@ public:
                     else
                     {
                         // TODO: emit templates so that they don't need to be inlined
-                        const auto templateArgs = templatedStructType.Arguments.exprs;
+                        const auto templateArgs = declarator.templateArgs;
                         for ( const auto& field : templateInfo.fields() )
                         {
                             if ( std::holds_alternative<ifc::symbolic::ParameterDecl>( field.param ) )
                             {
                                 const auto& argExpr = templateArgs.at( std::get<ifc::symbolic::ParameterDecl>( field.param ).position - 1 ); // XXX unsure about ordering/indexing
+                                const auto fieldDeclarator = std::get<Declarator>( argExpr );
 
-                                const auto declarator = DeclaratorVisitor::createDeclarator( reader, argExpr );
-                                const auto typeName = getCsTypeName( reader, declarator );
+                                const auto typeName = getCsTypeName( reader, fieldDeclarator );
                                 std::ostringstream oss;
                                 oss << typeName;
-                                printTemplateArgumentList( reader, oss, declarator );
+                                printTemplateArgumentList( reader, oss, fieldDeclarator );
                                 MembersToInline.emplace_back( registerString( oss.str() ), field.fieldName );
                             }
                             else
@@ -1864,6 +1728,8 @@ int main() // TODO: unions getter, LiteralReal pragma pack(push, 4), bool handli
                 infoByIndex.emplace( templateInfo.index(), templateInfo );
                 auto& nameList = namesByIndex[templateInfo.index()];
                 buildNameList( scope.value(), nameList );
+
+                std::cout << "Template: " << templateInfo.name() << std::endl;
             }
         }
     }
@@ -1906,77 +1772,6 @@ int main() // TODO: unions getter, LiteralReal pragma pack(push, 4), bool handli
             }
         }
     }
-
-#if 0
-    // --
-
-    struct AliasInfo
-    {
-        bool isInfoBase() const noexcept
-        {
-            return std::holds_alternative<InfoBaseRef>( mKnownType );
-        }
-
-        bool isTemplate() const noexcept
-        {
-            return isInfoBase() and infoBase().type() == InfoBaseType::Template;
-        }
-
-        const InfoBase& infoBase() const
-        {
-            return std::get<InfoBaseRef>( mKnownType );
-        }
-
-        std::string_view mName;
-        std::variant<ifc::symbolic::TypeBasis, InfoBaseRef> mKnownType;
-    };
-
-    std::vector<AliasInfo> aliasInfos;
-
-    const auto extractAlias = [&]( this const auto& self, const ifc::TypeIndex aliaseeIndex, const std::string_view name ) -> bool {
-        Query aliasee( reader, aliaseeIndex );
-        if ( const auto forall = aliasee.tryGet( &ifc::symbolic::ForallType::subject ) )
-        {
-            if ( const auto syntactic = forall.tryGet( &ifc::symbolic::SyntacticType::expr ) )
-            {
-                const auto aliasedTemplateExpr = syntactic.value().get<ifc::symbolic::TemplateIdExpr>();
-
-                const auto aliasedTemplateDecl = Query( reader, aliasedTemplateExpr.primary_template )
-                    .get( &ifc::symbolic::NamedDeclExpr::decl );
-
-                if ( const auto knownType = infoByIndex.find( aliasedTemplateDecl.index ); knownType != infoByIndex.end() )
-                {
-                    aliasInfos.emplace_back( name, knownType->second );
-                    return true;
-                }
-            }
-            else
-            {
-                return self( forall.index, name ); // XXX type argument (ForallType::chart) information is lost
-            }
-        }
-        else if ( const auto basis = aliasee.tryGet( &ifc::symbolic::FundamentalType::basis ) )
-        {
-            aliasInfos.emplace_back( name, basis.value() );
-            return true;
-        }
-
-        return false;
-    };
-
-    auto aliases = reader.partition<ifc::symbolic::AliasDecl>();
-    for ( const auto& decl : aliases )
-    {
-        if ( const auto scope = scopeInfo.find( decl.home_scope ); inIfcNamespace( scope ) )
-        {
-            if ( not extractAlias( decl.aliasee, getStringView( reader, decl.identity ) ) )
-            {
-                std::cout << "Ignoring unsupported alias of type " << to_string( decl.aliasee.sort() ) << ": " << getStringView( reader, decl.identity ) << std::endl;
-            }
-        }
-    }
-    // ---
-#endif
 
     const auto getRefereeQualifier = [&]( const StructInfo& referer, const InfoBase& referee ) -> std::span<std::string_view> {
         if ( referer.scope() == referee.scope() || referer.index() == referee.scope().value().get().Index )
@@ -2069,7 +1864,7 @@ int main() // TODO: unions getter, LiteralReal pragma pack(push, 4), bool handli
     if ( updateFileWithHash( outputFile, osCode.str() ) )
     {
         std::cout << "### Output file changed ###" << std::endl;
-    }
+}
     else
     {
         std::cout << "No change in output file" << std::endl;
