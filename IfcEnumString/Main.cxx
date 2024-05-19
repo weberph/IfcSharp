@@ -56,10 +56,10 @@ struct std::hash<ifc::symbolic::FundamentalType>
 namespace
 {
     // XXX workaround
-    std::deque<std::string> gStringTable;
-
     std::string_view registerString( std::string str )
     {
+        static std::deque<std::string> gStringTable;
+
         return gStringTable.emplace_back( std::move( str ) );
     }
 
@@ -67,16 +67,6 @@ namespace
     void print( const std::string& prefix, const T t )
     {
         std::cout << prefix << ifchelper::to_string( t ) << std::endl;
-    }
-
-    std::string join( const std::vector<std::string_view>& strings, const std::string& delimiter )
-    {
-        return strings | std::views::join_with( delimiter ) | std::ranges::to<std::string>();
-    }
-
-    std::string join( const std::vector<std::string>& strings, const std::string& delimiter )
-    {
-        return strings | std::views::join_with( delimiter ) | std::ranges::to<std::string>();
     }
 
     template<class... Ts>
@@ -312,12 +302,8 @@ public:
         assert( not currentAlias.has_value() );
         currentAlias = mDeclarator;
         mDeclarator = {};
-        dispatchTypeIndex( aliasDecl.aliasee ); // TODO XXX the alias must be captured separately
+        dispatchTypeIndex( aliasDecl.aliasee );
         currentAlias.reset();
-        if ( mDeclarator.templateParamCount > 0 )
-        {
-            std::cout << "";
-        }
     }
 
     void visitArray( const ifc::symbolic::ArrayType arrayType )
@@ -743,8 +729,10 @@ std::tuple<std::string_view, ifc::DeclIndex, bool> getNameAndHomeScope( const if
     {
         return std::make_tuple( getStringView( reader, decl.identity ), decl.home_scope, isNamespace( reader, decl ) );
     }
-
-    return std::make_tuple( getStringView( reader, decl.identity ), decl.home_scope, false );
+    else
+    {
+        return std::make_tuple( getStringView( reader, decl.identity ), decl.home_scope, false );
+    }
 }
 
 std::tuple<std::string_view, ifc::DeclIndex, bool> getNameAndHomeScope( const ifc::Reader& reader, const ifc::DeclIndex declIndex )
@@ -896,6 +884,37 @@ private:
     std::vector<ScopeRef> mTopLevel;
 };
 
+class StructInfo;
+class InfoBase;
+
+class QualifiedNameTable
+{
+public:
+    void add( const ifc::DeclIndex declIndex, const Scope& scope )
+    {
+        auto& nameList = mNamesByIndex[declIndex];
+        if ( nameList.empty() )
+        {
+            buildNameList( scope, nameList );
+        }
+    }
+
+    std::span<const std::string_view> getRefereeQualifier( const StructInfo& referer, const InfoBase& referee ) const;
+
+private:
+    void buildNameList( const Scope& scope, std::vector<std::string_view>& list ) const
+    {
+        if ( scope.Parent.has_value() )
+        {
+            buildNameList( scope.Parent.value(), list );
+        }
+
+        list.emplace_back( scope.Name );
+    }
+
+    std::unordered_map<ifc::DeclIndex, std::vector<std::string_view>> mNamesByIndex;
+};
+
 enum class InfoBaseType
 {
     Struct, Enum, Template, Alias
@@ -986,6 +1005,9 @@ public:
     {
         enumToCS( mReader, mName, decl().initializer, decl().base, os );
     }
+
+private:
+    ifc::symbolic::FundamentalType mFundamental{};
 };
 
 class TemplateInfo : public InfoBaseT<ifc::symbolic::TemplateDecl, InfoBaseType::Template>
@@ -1036,6 +1058,31 @@ bool isStructClassOrUnion( const ifc::Reader& reader, const ifc::TypeIndex type,
     return typeOfType.basis == ifc::symbolic::TypeBasis::Class || typeOfType.basis == ifc::symbolic::TypeBasis::Struct || isUnion;
 }
 
+bool reservedTypeNameCS( const std::string_view& typeName )
+{
+    static const std::set<std::string_view> reserved = {
+        "string", "base"
+    };
+
+    return reserved.contains( typeName );
+}
+
+struct CsIdentifier
+{
+    std::string_view identifier{};
+};
+
+static std::ostream& operator<<( std::ostream& os, const CsIdentifier csIdentifier )
+{
+    if ( reservedTypeNameCS( csIdentifier.identifier ) )
+    {
+        os << '@';
+    }
+
+    os << csIdentifier.identifier;
+    return os;
+}
+
 class StructInfo;
 
 class StructInfo : public InfoBaseT<ifc::symbolic::ScopeDecl, InfoBaseType::Struct>
@@ -1073,15 +1120,6 @@ public:
     void renameUnnamedUnion( const std::string_view newName )
     {
         mName = newName;
-    }
-
-    bool reservedTypeNameCS( const std::string_view& typeName ) const
-    {
-        static const std::set<std::string_view> reserved = {
-            "string", "base"
-        };
-
-        return reserved.contains( typeName );
     }
 
     struct EnumerationIndexAndName
@@ -1137,7 +1175,7 @@ public:
             }
             else
             {
-                const auto declarator = DeclaratorVisitor::createDeclarator( reader, baseType.type ); // TODO: forall / alias
+                const auto declarator = DeclaratorVisitor::createDeclarator( reader, baseType.type );
                 const auto foundIt = infoByIndex.find( declarator.index() );
                 if ( foundIt == infoByIndex.end() or foundIt->second.get().type() != InfoBaseType::Template )
                 {
@@ -1202,9 +1240,6 @@ public:
                                 MembersToInline.emplace_back( getCsTypeName( reader, std::get<Declarator>( field.param ) ), field.fieldName );
                             }
                         }
-
-                        //constexpr std::string_view nameTodo = "TODO_Name_Of_Template";
-                        //MembersToInline.emplace_back( templateInfo.name(), nameTodo ); // XXX possible name collision
                     }
                 }
             }
@@ -1235,20 +1270,10 @@ public:
         }
     };
 
-    struct UnionMember
-    {
-        Declarator typeName;
-        std::string_view fieldName;
-    };
-
-    std::vector<UnionMember> unionMembers;
-
     void writeCS( std::ostream& os,
-        ScopeInfo& scopeInfo,
         std::set<ifc::DeclIndex>& structsForSizeValidation,
-        const std::unordered_map<ifc::DeclIndex, std::vector<std::string_view>>& namesByIndex,
+        const QualifiedNameTable& nameTable,
         const std::unordered_map<ifc::DeclIndex, InfoBaseRef>& infoByIndex,
-        const std::function<std::span<std::string_view>( const StructInfo& referer, const InfoBase& referee )> getRefereeQualifier,
         const std::function<void( std::ostream& )> writeNested )
     {
         auto& reader = mReader.get();
@@ -1281,6 +1306,14 @@ public:
         if ( isUnion )
         {
             os << "[StructLayout(LayoutKind.Explicit)]" << std::endl;
+        }
+        else
+        {
+            // note: alignment is ignored
+            if ( const auto packSize = ifc::to_underlying( decl().pack_size ); packSize != 0 && packSize != 16 )
+            {
+                os << "[StructLayout(LayoutKind.Sequential, Pack = " << ifc::to_underlying( decl().pack_size ) << ")]" << std::endl;
+            }
         }
 
         os << "public ";
@@ -1325,6 +1358,20 @@ public:
             }
             os << std::get<0>( member ) << ' ' << std::get<1>( member ) << ';' << std::endl;;
         }
+
+        const auto printQualifiedTypePrefix = [&]( const Declarator& d ) {
+            if ( not d.isFundamental() )
+            {
+                if ( const auto foundIt = infoByIndex.find( d.index() ); foundIt != infoByIndex.end() )
+                {
+                    const auto& qualifiers = nameTable.getRefereeQualifier( *this, foundIt->second.get() );
+                    for ( const auto& refereeQualifier : qualifiers )
+                    {
+                        os << refereeQualifier << ".";
+                    }
+                }
+            }
+        };
 
         struct BitfieldMember
         {
@@ -1377,18 +1424,6 @@ public:
                         typeName = "string";
                     }
 
-                    if ( not declarator.isFundamental() )
-                    {
-                        if ( const auto foundIt = infoByIndex.find( declarator.index() ); foundIt != infoByIndex.end() )
-                        {
-                            const auto& qualifiers = getRefereeQualifier( *this, foundIt->second.get() );
-                            for ( const auto& refereeQualifier : qualifiers )
-                            {
-                                os << refereeQualifier << ".";
-                            }
-                        }
-                    }
-
                     if ( declarator.arrayBound.has_value() )
                     {
                         assert( typeName != "array" );
@@ -1413,6 +1448,7 @@ public:
                     }
                     else
                     {
+                        printQualifiedTypePrefix( declarator );
                         os << typeName;
                         printTemplateArgumentList( reader, os, declarator );
                     }
@@ -1420,17 +1456,12 @@ public:
                     os << ' ';
 
                     const auto fieldName = getStringView( mReader, innerDecl.identity );
-                    const bool escapeFieldName = reservedTypeNameCS( fieldName );
 
-                    if ( escapeFieldName )
-                    {
-                        os << '@';
-                    }
-                    os << fieldName << ";" << std::endl;
+                    os << CsIdentifier{ fieldName } << ";" << std::endl;
 
                     if ( isUnion )
                     {
-                        // unionMembers.emplace_back( fieldName, t );
+                        mUnionMembers.emplace_back( typeName, fieldName, declarator );
                     }
                 }
                 else if ( innerDeclaration.index.sort() == ifc::DeclSort::Bitfield )
@@ -1507,7 +1538,16 @@ public:
                     assert( std::isupper( unionInfo.mName[0] ) );
                     os << unionInfo.mName << ' ' << gsl::narrow_cast<char>( std::tolower( unionInfo.mName[0] ) ) << unionInfo.mName.substr( 1 ) << ';' << std::endl;
 
-                    // TODO: getter for union
+                    assert( not unionInfo.mUnionMembers.empty() ); // assumes that nested unions are emitted first
+
+                    for ( const auto& member : unionInfo.mUnionMembers )
+                    {
+                        os << "    public ";
+                        printQualifiedTypePrefix( member.declarator );
+                        os << member.typeName << ' ' << CsIdentifier{ member.fieldName } << " => "
+                            << gsl::narrow_cast<char>( std::tolower( unionInfo.mName[0] ) ) << unionInfo.mName.substr( 1 )
+                            << '.' << CsIdentifier{ member.fieldName } << ';' << std::endl;
+                    }
                 }
                 else
                 {
@@ -1522,7 +1562,7 @@ public:
 
         for ( const auto& [typeName, fieldName, width, shift, containigFieldName] : tracker.fields )
         {
-            os << "    public " << typeName << ' ' << fieldName << " => ";
+            os << "    public " << typeName << ' ' << CsIdentifier{ fieldName } << " => ";
             if ( typeName != "uint" )
             {
                 os << "(" << typeName << ")";
@@ -1539,6 +1579,16 @@ public:
             os << "    private " << typeName << ' ' << "_element;" << std::endl << '}' << std::endl;
         }
     }
+
+private:
+    struct UnionMember
+    {
+        std::string_view typeName{};
+        std::string_view fieldName{};
+        Declarator declarator{};
+    };
+
+    std::vector<UnionMember> mUnionMembers;
 };
 
 void updateValidationData( const std::string& validationInputFile, const std::string& validationOutputFile )
@@ -1639,7 +1689,21 @@ struct StructFieldEnumerator
     }
 };
 
-int main() // TODO: unions getter, LiteralReal pragma pack(push, 4), bool handling
+std::span<const std::string_view> QualifiedNameTable::getRefereeQualifier( const StructInfo& referer, const InfoBase& referee ) const
+{
+    if ( referer.scope() == referee.scope() || referer.index() == referee.scope().value().get().Index )
+    {
+        return {};
+    }
+
+    const std::span refererNames( mNamesByIndex.at( referer.index() ) );
+    const std::span refereeNames( mNamesByIndex.at( referee.index() ) );
+    const auto skipCount = std::ranges::distance( std::views::zip( refererNames, refereeNames )
+        | std::views::take_while( []( const auto& t ) { return std::get<0>( t ) == std::get<1>( t ); } ) );
+    return refereeNames.subspan( skipCount );
+}
+
+int main() // TODO: bool handling
 {
     const std::string ifcFile = R"(d:\.projects\.unsorted\2024\CppEnumString\IfcTestData\x64\Debug\IfcHeaderUnit.ixx.ifc)";
     const std::string validationInputFile = R"(d:\.projects\.unsorted\2024\CppEnumString\IfcTestData\x64\Debug\IfcSizeValidation.ixx.ifc)";
@@ -1661,8 +1725,9 @@ int main() // TODO: unions getter, LiteralReal pragma pack(push, 4), bool handli
         std::deque<TemplateInfo> templates;
     };
 
+    QualifiedNameTable nameTable;
+
     std::unordered_map<ifc::DeclIndex, ScopeContent> infoByScope;
-    std::unordered_map<ifc::DeclIndex, std::vector<std::string_view>> namesByIndex;
     std::unordered_map<ifc::DeclIndex, InfoBaseRef> infoByIndex;
 
     const auto inIfcNamespace = []( const std::optional<ScopeRef>& scope ) {
@@ -1675,15 +1740,6 @@ int main() // TODO: unions getter, LiteralReal pragma pack(push, 4), bool handli
         };
 
         return info.name().starts_with( '?' ) or info.name().starts_with( '_' ) or info.name().starts_with( '<' ) or excluded.contains( info.name() );
-    };
-
-    const auto buildNameList = []( this const auto& self, const Scope& scope, std::vector<std::string_view>& list ) -> void {
-        if ( scope.Parent.has_value() )
-        {
-            self( scope.Parent.value(), list );
-        }
-
-        list.emplace_back( scope.Name );
     };
 
     const auto templateDecls = reader.partition<ifc::symbolic::TemplateDecl>();
@@ -1726,8 +1782,7 @@ int main() // TODO: unions getter, LiteralReal pragma pack(push, 4), bool handli
 
                 const auto& templateInfo = infoByScope[scope->get().Index].templates.emplace_back( reader, tdecl, scope.value(), argumentCount, std::move( fields ) );
                 infoByIndex.emplace( templateInfo.index(), templateInfo );
-                auto& nameList = namesByIndex[templateInfo.index()];
-                buildNameList( scope.value(), nameList );
+                nameTable.add( templateInfo.index(), scope.value() );
 
                 std::cout << "Template: " << templateInfo.name() << std::endl;
             }
@@ -1742,8 +1797,7 @@ int main() // TODO: unions getter, LiteralReal pragma pack(push, 4), bool handli
         {
             const auto& enumInfo = infoByScope[scope->get().Index].enums.emplace_back( reader, decl, scope );
             infoByIndex.emplace( enumInfo.index(), enumInfo );
-            auto& nameList = namesByIndex[enumInfo.index()];
-            buildNameList( scope.value(), nameList );
+            nameTable.add( enumInfo.index(), scope.value() );
         }
     }
 
@@ -1767,24 +1821,10 @@ int main() // TODO: unions getter, LiteralReal pragma pack(push, 4), bool handli
                     structInfo.renameUnnamedUnion( registerString( "UnnamedUnion" + std::to_string( ++unionCounterByScope[scope.Index] ) ) );
                 }
 
-                auto& nameList = namesByIndex[structInfo.index()];
-                buildNameList( scope, nameList );
+                nameTable.add( structInfo.index(), scope );
             }
         }
     }
-
-    const auto getRefereeQualifier = [&]( const StructInfo& referer, const InfoBase& referee ) -> std::span<std::string_view> {
-        if ( referer.scope() == referee.scope() || referer.index() == referee.scope().value().get().Index )
-        {
-            return {};
-        }
-
-        const std::span refererNames( namesByIndex.at( referer.index() ) );
-        const std::span refereeNames( namesByIndex.at( referee.index() ) );
-        const auto skipCount = std::ranges::distance( std::views::zip( refererNames, refereeNames )
-            | std::views::take_while( []( const auto& t ) { return std::get<0>( t ) == std::get<1>( t ); } ) );
-        return refereeNames.subspan( skipCount );
-    };
 
     std::ostringstream osCode;
 
@@ -1839,7 +1879,7 @@ int main() // TODO: unions getter, LiteralReal pragma pack(push, 4), bool handli
 
             for ( auto& structInfo : foundIt->second.structs | std::views::filter( std::not_fn( ignoreTypeByName ) ) )
             {
-                structInfo.writeCS( osCode, scopeInfo, namesForSizeValidation, namesByIndex, infoByIndex, getRefereeQualifier, [&]( std::ostream& os ) {
+                structInfo.writeCS( osCode, namesForSizeValidation, nameTable, infoByIndex, [&]( std::ostream& os ) {
                     // write nested
                     if ( const auto nestedIt = infoByScope.find( structInfo.index() ); nestedIt != infoByScope.end() )
                     {
@@ -1850,7 +1890,7 @@ int main() // TODO: unions getter, LiteralReal pragma pack(push, 4), bool handli
 
                         for ( auto& nestedStructInfo : nestedIt->second.structs )
                         {
-                            nestedStructInfo.writeCS( os, scopeInfo, namesForSizeValidation, namesByIndex, infoByIndex, getRefereeQualifier, {} );
+                            nestedStructInfo.writeCS( os, namesForSizeValidation, nameTable, infoByIndex, {} );
                         }
                     }
                 } );
@@ -1864,7 +1904,7 @@ int main() // TODO: unions getter, LiteralReal pragma pack(push, 4), bool handli
     if ( updateFileWithHash( outputFile, osCode.str() ) )
     {
         std::cout << "### Output file changed ###" << std::endl;
-}
+    }
     else
     {
         std::cout << "No change in output file" << std::endl;
