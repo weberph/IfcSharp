@@ -21,7 +21,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\IfcBuilder\IfcBuilderLib\IfcBuilderLib.csproj" />
-    <ProjectReference Include="..\CppEnumStringGenerator\CppEnumStringGenerator.csproj" />
   </ItemGroup>
 
 </Project>
