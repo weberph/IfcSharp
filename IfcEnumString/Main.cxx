@@ -188,12 +188,6 @@ enum class ReferenceType
     LValueReference, RValueReference
 };
 
-//struct Base
-//{
-//    ifc::DeclIndex type{};
-//    std::vector<TypeTemplateArgument> templateArgs{};
-//};
-
 struct Declarator
 {
     std::variant<ifc::DeclIndex, ifc::symbolic::FundamentalType> type{};
@@ -203,6 +197,7 @@ struct Declarator
     std::optional<ReferenceType> referenceType{};
     std::optional<ifc::DeclIndex> containingType{};
     size_t templateParamCount{};
+
 
     ifc::DeclIndex index() const
     {
@@ -249,6 +244,11 @@ public:
         return visitor.declarator();
     }
 
+    static std::vector<TypeTemplateArgument> getTypeArgumentList( const ifc::Reader& reader, const ifc::ExprIndex exprIndex )
+    {
+        return DeclaratorVisitor( reader ).getTypeArgumentList( exprIndex );
+    }
+
     const Declarator& declarator() const noexcept
     {
         return mDeclarator;
@@ -292,7 +292,7 @@ public:
 
     void visitAlias( const ifc::symbolic::AliasDecl& aliasDecl )
     {
-        dispatchTypeIndex( aliasDecl.aliasee );
+        dispatchTypeIndex( aliasDecl.aliasee ); // TODO XXX the alias must be captures separately
     }
 
     void visitArray( const ifc::symbolic::ArrayType arrayType )
@@ -319,12 +319,11 @@ public:
 
     void visitForallType( const ifc::symbolic::ForallType forallType )
     {
-        assert( false );
-        //dispatchTypeIndex( forallType.subject );
+        //assert( false );
+        dispatchTypeIndex( forallType.subject );
 
-        //const auto& chart = query( forallType.chart ).get<ifc::symbolic::UnilevelChart>();
-        //mDeclarator.templateParamCount = gsl::narrow_cast<size_t>( chart.cardinality );
-        //assert( mDeclarator.templateParamCount == 0 );
+        const auto& chart = query( forallType.chart ).get<ifc::symbolic::UnilevelChart>();
+        mDeclarator.templateParamCount = gsl::narrow_cast<size_t>( chart.cardinality );
     }
 
     void dispatchTypeIndex( const ifc::TypeIndex typeIndex )
@@ -374,7 +373,6 @@ public:
                 print( "TypeSort not implemented: ", typeIndex.sort() );
                 throw std::runtime_error( "dispatchTypeIndex: TypeSort not implemented" );
         }
-
     }
 
     void dispatchExprIndex( const ifc::ExprIndex exprIndex )
@@ -390,7 +388,7 @@ public:
                 break;
 
             default:
-                print( "TypeSort not implemented: ", exprIndex.sort() );
+                print( "ExprIndex not implemented: ", exprIndex.sort() );
                 throw std::runtime_error( "dispatchExprIndex: ExprIndex not implemented" );
         }
     }
@@ -428,7 +426,7 @@ public:
         }
         else
         {
-            print( "Assert: ", exprIndex.sort() );
+            print( "ExprIndex not implemented: ", exprIndex.sort() );
             throw std::runtime_error( "getTypeArgumentList: ExprIndex not implemented" );
         }
     }
@@ -505,7 +503,7 @@ constexpr std::string_view fundamentalToCS( const ifc::symbolic::FundamentalType
         case ifc::symbolic::TypePrecision::Default:
             switch ( type.basis )
             {
-                case ifc::symbolic::TypeBasis::Bool:
+                case ifc::symbolic::TypeBasis::Bool: // bool has 4 bytes -> requires [MarshalAs(UnmanagedType.U1)] until then: use byte
                 case ifc::symbolic::TypeBasis::Char:
                     return type.sign == ifc::symbolic::TypeSign::Unsigned ? "byte" : "sbyte";
 
@@ -1029,41 +1027,6 @@ struct FlatTemplateArgumentList
     }
 };
 
-struct StdArrayArguments
-{
-    size_t Bound{};
-    std::string_view TypeName{};
-
-    static StdArrayArguments extract( const ifc::Reader& reader, const ifc::ExprIndex templateIdExprArguments )
-    {
-        const auto tuple = Query( reader, templateIdExprArguments ).sequence<ifc::symbolic::TupleExpr>();
-        if ( tuple.span.size() == 2 )
-        {
-            const auto bound = gsl::narrow_cast<size_t>( getLiteralValue( reader, tuple[1].index ) );
-
-            const auto typeDecl = tuple[0]
-                .get( &ifc::symbolic::TypeExpr::denotation )
-                .get( &ifc::symbolic::DesignatedType::decl );
-
-            if ( typeDecl.index.sort() == ifc::DeclSort::Alias )
-            {
-                const auto alias = typeDecl.identity( &ifc::symbolic::AliasDecl::identity );
-                return { bound, alias };
-            }
-            else
-            {
-                assert( false );
-            }
-        }
-        else
-        {
-            assert( false );
-        }
-
-        throw "TODO";
-    }
-};
-
 struct TemplatedAliasType
 {
     ifc::DeclIndex TemplateDeclIndex{};
@@ -1088,6 +1051,8 @@ struct TemplatedAliasType
 
         TemplateDeclIndex = aliasedTemplateDecl.index;
         Arguments.extract( reader, aliasedTemplateExpr.arguments );
+
+        const auto args = DeclaratorVisitor::getTypeArgumentList( reader, aliasedTemplateExpr.arguments );
     }
 };
 
@@ -1114,6 +1079,8 @@ struct TemplatedStructType
         {
             TemplateDeclIndex = templateOrAlias.index;
             Arguments.extract( reader, templateIdExpr.arguments );
+
+            const auto args = DeclaratorVisitor::getTypeArgumentList( reader, templateIdExpr.arguments );
         }
         else if ( templateOrAlias.index.sort() == ifc::DeclSort::Alias )
         {
@@ -1125,6 +1092,8 @@ struct TemplatedStructType
 
             FlatTemplateArgumentList localArgs;
             localArgs.extract( reader, templateIdExpr.arguments );
+
+            const auto args = DeclaratorVisitor::getTypeArgumentList( reader, templateIdExpr.arguments );
 
             // merge the local arguments with the arguments from the alias
             std::vector<ifc::ExprIndex> mergedExprs;
@@ -1195,34 +1164,31 @@ class StructInfo : public InfoBaseT<ifc::symbolic::ScopeDecl, InfoBaseType::Stru
 public:
     using InfoBaseT::InfoBaseT;
 
-    static std::optional<std::string_view> primitiveTypeNameCS( const std::string_view& typeName )
-    {
-        static const std::unordered_map<std::string_view, std::string_view> mapping = {
-            //{ "bool", "bool" }, // bool has 4 bytes
-            //{ "Bool", "bool" }, // TODO: requires [MarshalAs(UnmanagedType.U1)] until then: use byte
-            { "bool", "byte" },
-            { "Bool", "byte" },
-            { "uint8_t", "byte" },
-            { "uint16_t", "ushort" },
-            { "uint32_t", "uint" },
-            { "uint64_t", "ulong" },
-            { "Double", "Double" },
-            { "basic_string_view<Char, char_traits<Char>>", "string" }
-        };
-
-        if ( const auto foundIt = mapping.find( typeName ); foundIt != mapping.end() )
-        {
-            return foundIt->second;
-        }
-
-        return {};
-    }
-
-
     static std::string_view getCsTypeName( const ifc::Reader& reader, const Declarator& declarator )
     {
-        const std::string_view realTypeName = declarator.isFundamental() ? to_string( declarator.fundamental().basis ) : getIdentity( reader, declarator.index() );
-        return primitiveTypeNameCS( realTypeName ).value_or( realTypeName );
+        return declarator.isFundamental() ? fundamentalToCS( declarator.fundamental() ) : getIdentity( reader, declarator.index() );
+    }
+
+    static void printTemplateArgumentList( const ifc::Reader& reader, std::ostream& os, const Declarator& declarator )
+    {
+        for ( size_t i = 0; i < declarator.templateArgs.size(); ++i )
+        {
+            if ( i == 0 )
+            {
+                os << '<';
+            }
+
+            os << getCsTypeName( reader, std::get<Declarator>( declarator.templateArgs[0] ) );
+
+            if ( i != declarator.templateArgs.size() - 1 )
+            {
+                os << ", ";
+            }
+            else
+            {
+                os << '>';
+            }
+        }
     }
 
     void renameUnnamedUnion( const std::string_view newName )
@@ -1291,17 +1257,6 @@ public:
             return { { tagArgTypeDecl.index, tagArgTypeName }, tagArgNamedDeclExpr.decl, tagArgEnumeratorName };
         }
 
-        StructIndexAndName extractSequenceType( const ifc::Reader& reader, const ifc::ExprIndex expr )
-        {
-            const auto tagArgTypeDecl = Query( reader, expr )
-                .get( &ifc::symbolic::TypeExpr::denotation )
-                .get( &ifc::symbolic::DesignatedType::decl );
-
-            const auto tagArgTypeName = tagArgTypeDecl.identity( &ifc::symbolic::ScopeDecl::identity );
-
-            return { tagArgTypeDecl.index, tagArgTypeName };
-        }
-
         void collect( const ifc::Reader& reader, const std::unordered_map<ifc::DeclIndex, InfoBaseRef>& infoByIndex, const ifc::symbolic::BaseType& baseType )
         {
             if ( baseType.type.sort() != ifc::TypeSort::Syntactic )
@@ -1319,6 +1274,8 @@ public:
                 {
                     assert( false );
                 }
+
+                // const auto declarator = DeclaratorVisitor::createDeclarator( reader, baseType.type ); // TODO: forall / alias
 
                 const auto foundIt = infoByIndex.find( templatedStructType.TemplateDeclIndex );
                 if ( foundIt == infoByIndex.end() or foundIt->second.get().type() != InfoBaseType::Template )
@@ -1368,10 +1325,13 @@ public:
                             if ( std::holds_alternative<ifc::symbolic::ParameterDecl>( field.param ) )
                             {
                                 const auto& argExpr = templateArgs.at( std::get<ifc::symbolic::ParameterDecl>( field.param ).position - 1 ); // XXX unsure about ordering/indexing
-                                DeclaratorVisitor visitor( reader );
-                                visitor.dispatchExprIndex( argExpr );
-                                const auto typeName = getCsTypeName( reader, visitor.declarator() );
-                                MembersToInline.emplace_back( typeName, field.fieldName );
+
+                                const auto declarator = DeclaratorVisitor::createDeclarator( reader, argExpr );
+                                const auto typeName = getCsTypeName( reader, declarator );
+                                std::ostringstream oss;
+                                oss << typeName;
+                                printTemplateArgumentList( reader, oss, declarator );
+                                MembersToInline.emplace_back( registerString( oss.str() ), field.fieldName );
                             }
                             else
                             {
@@ -1590,24 +1550,7 @@ public:
                     else
                     {
                         os << typeName;
-                        for ( size_t i = 0; i < declarator.templateArgs.size(); ++i )
-                        {
-                            if ( i == 0 )
-                            {
-                                os << '<';
-                            }
-
-                            os << getCsTypeName( reader, std::get<Declarator>( declarator.templateArgs[0] ) );
-
-                            if ( i != declarator.templateArgs.size() - 1 )
-                            {
-                                os << ", ";
-                            }
-                            else
-                            {
-                                os << '>';
-                            }
-                        }
+                        printTemplateArgumentList( reader, os, declarator );
                     }
 
                     os << ' ';
@@ -1832,7 +1775,7 @@ struct StructFieldEnumerator
     }
 };
 
-int main() // TODO: unions and bitfields, LiteralReal pragma pack(push, 4), why byte must be used for of bool (bool as last member makes the structs bigger)
+int main() // TODO: unions getter, LiteralReal pragma pack(push, 4), bool handling
 {
     const std::string ifcFile = R"(d:\.projects\.unsorted\2024\CppEnumString\IfcTestData\x64\Debug\IfcHeaderUnit.ixx.ifc)";
     const std::string validationInputFile = R"(d:\.projects\.unsorted\2024\CppEnumString\IfcTestData\x64\Debug\IfcSizeValidation.ixx.ifc)";
