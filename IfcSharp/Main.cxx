@@ -149,6 +149,9 @@ std::string_view getIdentity( const ifc::Reader& reader, const ifc::DeclIndex de
         case ifc::DeclSort::Parameter:
             return query.identity( &ifc::symbolic::ParameterDecl::identity );
 
+        case ifc::DeclSort::Bitfield:
+            return query.identity( &ifc::symbolic::BitfieldDecl::identity );
+
         default:
             print( "getIdentity not implemented: ", declIndex.sort() );
             assert( false );
@@ -1046,6 +1049,50 @@ private:
     std::vector<TemplateField> mFields;
 };
 
+template<class F>
+concept StructFieldVisitor = std::invocable<F, ifc::DeclIndex, const ifc::symbolic::FieldDecl&> and std::invocable<F, ifc::DeclIndex, const ifc::symbolic::BitfieldDecl&>;
+
+struct StructFieldEnumerator
+{
+    ifc::DeclIndex ScopeIndex{};
+
+    template<StructFieldVisitor F>
+    void visit( ifc::Reader& reader, F&& f )
+    {
+        const auto& scope = reader.get<ifc::symbolic::ScopeDecl>( ScopeIndex );
+
+        if ( const auto* initScope = reader.try_get( scope.initializer ) )
+        {
+            for ( const auto& innerDeclaration : reader.sequence( *initScope ) )
+            {
+                if ( innerDeclaration.index.sort() == ifc::DeclSort::Field )
+                {
+                    f( innerDeclaration.index, reader.get<ifc::symbolic::FieldDecl>( innerDeclaration.index ) );
+                }
+                else if ( innerDeclaration.index.sort() == ifc::DeclSort::Bitfield )
+                {
+                    f( innerDeclaration.index, reader.get<ifc::symbolic::BitfieldDecl>( innerDeclaration.index ) );
+                }
+                else if ( innerDeclaration.index.sort() == ifc::DeclSort::Constructor )
+                {
+                    const auto ctor = reader.get<ifc::symbolic::ConstructorDecl>( innerDeclaration.index );
+                    if ( auto* mapping_def = reader.try_find<ifc::symbolic::trait::MappingExpr>( innerDeclaration.index ) )
+                    {
+                        return;
+                    }
+
+                    // Inline functions (and all other under a switch to be added).
+                    if ( auto* mapping_def = reader.try_find<ifc::symbolic::trait::MsvcCodegenMappingExpr>( innerDeclaration.index ) )
+                    {
+                        return;
+                    }
+
+                }
+            }
+        }
+    }
+};
+
 bool isStructClassOrUnion( const ifc::Reader& reader, const ifc::TypeIndex type, bool& isUnion )
 {
     if ( type.sort() != ifc::TypeSort::Fundamental )
@@ -1141,9 +1188,16 @@ public:
         std::string_view name{};
     };
 
+    struct OverBase
+    {
+        EnumerationIndexAndName tagType{};
+        size_t tagPrecision{};
+        size_t valuePrecision{};
+    };
+
     struct SpecialBaseTypes
     {
-        std::optional<EnumerationIndexAndName> Over;
+        std::optional<OverBase> Over;
         std::optional<EnumeratorIndexAndName> Tag;
         std::optional<std::tuple<StructIndexAndName, std::optional<EnumeratorIndexAndName>>> Sequence;
         std::vector<std::tuple<std::string_view, std::string_view>> MembersToInline; // XXX no type, only name
@@ -1163,7 +1217,7 @@ public:
             return { { tagArgTypeDecl.index, tagArgTypeName }, tagArgNamedDeclExpr.decl, tagArgEnumeratorName };
         }
 
-        void collect( const ifc::Reader& reader, const std::unordered_map<ifc::DeclIndex, InfoBaseRef>& infoByIndex, const ifc::symbolic::BaseType& baseType )
+        void collect( ifc::Reader& reader, const std::unordered_map<ifc::DeclIndex, InfoBaseRef>& infoByIndex, const ifc::symbolic::BaseType& baseType )
         {
             if ( baseType.type.sort() != ifc::TypeSort::Syntactic )
             {
@@ -1179,14 +1233,48 @@ public:
                 const auto foundIt = infoByIndex.find( declarator.index() );
                 if ( foundIt == infoByIndex.end() or foundIt->second.get().type() != InfoBaseType::Template )
                 {
-                    const auto templateName = Query( reader, declarator.index() )
-                        .identity<ifc::symbolic::TemplateDecl>( &ifc::symbolic::TemplateDecl::identity );
+                    const auto& templateDecl = Query( reader, declarator.index() ).get<ifc::symbolic::TemplateDecl>();
+
+                    const auto templateName = getIdentity( reader, declarator.index() );
 
                     if ( templateName == "Over" )
                     {
                         // special handling: Over is in index_like which is currently ignored
+
+                        size_t tagPrecision{}, valuePrecision{};
+                        StructFieldEnumerator fieldEnumerator{ templateDecl.entity.decl };
+                        fieldEnumerator.visit( reader, overloaded{
+                            []( const ifc::DeclIndex, const ifc::symbolic::FieldDecl& ) {},
+                            [&]( const ifc::DeclIndex, const ifc::symbolic::BitfieldDecl& field ) {
+                                const auto fieldName = getStringView( reader, field.identity );
+                                if ( fieldName == "tag" )
+                                {
+                                    tagPrecision = getLiteralValue( reader, field.width );
+                                }
+                                else if ( fieldName == "value" )
+                                {
+                                    valuePrecision = getLiteralValue( reader, field.width );
+                                }
+                                else
+                                {
+                                    assert( "tag/value members renamed?" );
+                                }
+                            }
+                            } );
+
+                        if ( auto* specializations = reader.try_find<ifc::symbolic::trait::Specializations>( declarator.index() ) )
+                        {
+                            for ( auto& decl : reader.sequence( specializations->trait ) )
+                            {
+                                std::cout << "";
+                            }
+                        }
+
+                        assert( tagPrecision != 0 && valuePrecision != 0 );
+                        //assert( tagPrecision + valuePrecision == 32 );
+
                         const auto enumerationIndex = std::get<Declarator>( declarator.templateArgs.at( 0 ) ).index();
-                        Over.emplace( enumerationIndex, getIdentity( reader, enumerationIndex ) );
+                        Over.emplace( OverBase{ enumerationIndex, getIdentity( reader, enumerationIndex ), tagPrecision, valuePrecision } );
                     }
                     else
                     {
@@ -1245,7 +1333,7 @@ public:
             }
         }
 
-        void collect( const ifc::Reader& reader, const std::unordered_map<ifc::DeclIndex, InfoBaseRef>& infoByIndex, const ifc::symbolic::TupleType& tupleType )
+        void collect( ifc::Reader& reader, const std::unordered_map<ifc::DeclIndex, InfoBaseRef>& infoByIndex, const ifc::symbolic::TupleType& tupleType )
         {
             for ( const auto& base : reader.sequence( tupleType ) )
             {
@@ -1253,7 +1341,7 @@ public:
             }
         }
 
-        void collect( const ifc::Reader& reader, const std::unordered_map<ifc::DeclIndex, InfoBaseRef>& infoByIndex, ifc::TypeIndex baseIndex )
+        void collect( ifc::Reader& reader, const std::unordered_map<ifc::DeclIndex, InfoBaseRef>& infoByIndex, ifc::TypeIndex baseIndex )
         {
             if ( baseIndex.sort() == ifc::TypeSort::Base )
             {
@@ -1291,7 +1379,7 @@ public:
 
             if ( baseTypes.Over.has_value() )
             {
-                os << "[Over<" << baseTypes.Over.value().name << ">]" << std::endl;
+                os << "[Over<" << baseTypes.Over.value().tagType.name << ">]" << std::endl;
             }
 
             if ( baseTypes.Tag.has_value() )
@@ -1332,6 +1420,11 @@ public:
             os << " : IHasSort<" << baseTypes.Tag.value().parent.name << '>';
         }
 
+        if ( baseTypes.Over.has_value() )
+        {
+            os << " : IOver<" << baseTypes.Over.value().tagType.name << '>';
+        }
+
         os << std::endl << "{" << std::endl;
 
         if ( insertStaticSortGetter )
@@ -1346,7 +1439,10 @@ public:
 
         if ( baseTypes.Over.has_value() ) // XXX: assumed to be the first base
         {
-            os << "    public readonly uint IndexAndSort;" << std::endl;
+            const auto& over = baseTypes.Over.value();
+            os << "    private readonly uint IndexAndSort;" << std::endl;
+            //os << "    public Index Index => (Index)(IndexAndSort & 0b" << std::string( over.valuePrecision, '1' ) << ");" << std::endl;
+            //os << "    public " << over.tagType.name << " Sort => (" << over.tagType.name << ")(IndexAndSort >> " << ( 32 - over.tagPrecision ) << ");" << std::endl;
         }
 
         for ( const auto& member : baseTypes.MembersToInline )
@@ -1549,6 +1645,91 @@ public:
                             << '.' << CsIdentifier{ member.fieldName } << ';' << std::endl;
                     }
                 }
+                else if ( innerDeclaration.index.sort() == ifc::DeclSort::Alias )
+                {
+                    const auto alias = reader.get<ifc::symbolic::AliasDecl>( innerDeclaration.index );
+                    std::cout << getIdentity( reader, innerDeclaration.index ) << std::endl;
+                    DeclaratorVisitor visitor( reader );
+                    visitor.visitAlias( alias );
+                    if ( baseTypes.Over.has_value() )
+                    {
+                        std::cout << getIdentity( reader, innerDeclaration.index ) << std::endl;
+                    }
+                }
+                else if ( innerDeclaration.index.sort() == ifc::DeclSort::Template )
+                {
+                    const auto templ = reader.get<ifc::symbolic::TemplateDecl>( innerDeclaration.index );
+                    std::cout << getIdentity( reader, innerDeclaration.index ) << std::endl;
+                    if ( baseTypes.Over.has_value() )
+                    {
+                        std::cout << getIdentity( reader, innerDeclaration.index ) << std::endl;
+                    }
+                }
+                else if ( innerDeclaration.index.sort() == ifc::DeclSort::InheritedConstructor )
+                {
+                    if ( baseTypes.Over.has_value() )
+                    {
+                        size_t tagPrecision{}, valuePrecision{};
+
+                        const auto ctor = reader.get<ifc::symbolic::InheritedConstructorDecl>( innerDeclaration.index );
+
+                        if ( mName == "MacroIndex" )
+                        {
+                            std::cout << "";
+                        }
+
+                        if ( auto* mapping_def = reader.try_find<ifc::symbolic::trait::MappingExpr>( ctor.base_ctor ) )
+                        {
+                            if ( mapping_def->trait.initializers.sort() == ifc::ExprSort::Tuple )
+                            {
+                                const auto& tuple = reader.get<ifc::symbolic::TupleExpr>( mapping_def->trait.initializers );
+
+                                for ( const auto& item : reader.sequence( tuple ) )
+                                {
+                                    if ( item.sort() == ifc::ExprSort::MemberInitializer )
+                                    {
+                                        const auto& init = reader.get<ifc::symbolic::MemberInitializerExpr>( item );
+                                        if ( init.member.sort() == ifc::DeclSort::Bitfield )
+                                        {
+                                            const auto& bitfieldDecl = reader.get<ifc::symbolic::BitfieldDecl>( init.member );
+                                            const auto name = getIdentity( reader, init.member );
+
+                                            if ( name == "tag" )
+                                            {
+                                                tagPrecision = getLiteralValue( reader, bitfieldDecl.width );
+                                            }
+                                            else if ( name == "value" )
+                                            {
+                                                valuePrecision = getLiteralValue( reader, bitfieldDecl.width );
+                                            }
+
+                                            //const auto& home = infoByIndex.at( bitfieldDecl.home_scope );
+                                            //const auto& info = infoByIndex.at( init.member );
+                                            std::cout << "";
+                                        }
+                                    }
+                                }
+
+                                assert( tagPrecision != 0 && valuePrecision != 0 );
+                                assert( tagPrecision + valuePrecision == 32 );
+
+                                const auto& over = baseTypes.Over.value();
+                                os << "    public Index Index => (Index)(IndexAndSort & 0b" << std::string( valuePrecision, '1' ) << ");" << std::endl;
+                                os << "    public " << over.tagType.name << " Sort => (" << over.tagType.name << ")(IndexAndSort >> " << ( 32 - tagPrecision ) << ");" << std::endl;
+                            }
+                        }
+
+                        // not all Index types have a member initializer expr (e.g. MacroIndex)?!? why?
+
+                        //assert( tagPrecision != 0 && valuePrecision != 0 );
+                        //assert( tagPrecision + valuePrecision == 32 );
+
+                        //const auto& over = baseTypes.Over.value();
+                        //os << "    private readonly uint IndexAndSort;" << std::endl;
+                        //os << "    public Index Index => (Index)(IndexAndSort & 0b" << std::string( valuePrecision, '1' ) << ");" << std::endl;
+                        //os << "    public " << over.tagType.name << " Sort => (" << over.tagType.name << ")(IndexAndSort >> " << ( 32 - tagPrecision ) << ");" << std::endl;
+                    }
+                }
                 else
                 {
                     // ignore other (e.g. Constructor)
@@ -1659,35 +1840,6 @@ namespace IfcSharpLib
 
     updateFileWithHash( validationOutputFile, os.str() );
 }
-
-template<class F>
-concept StructFieldVisitor = std::invocable<F, ifc::DeclIndex, const ifc::symbolic::FieldDecl&> and std::invocable<F, ifc::DeclIndex, const ifc::symbolic::BitfieldDecl&>;
-
-struct StructFieldEnumerator
-{
-    ifc::DeclIndex ScopeIndex{};
-
-    template<StructFieldVisitor F>
-    void visit( ifc::Reader& reader, F&& f )
-    {
-        const auto& scope = reader.get<ifc::symbolic::ScopeDecl>( ScopeIndex );
-
-        if ( const auto* initScope = reader.try_get( scope.initializer ) )
-        {
-            for ( const auto& innerDeclaration : reader.sequence( *initScope ) )
-            {
-                if ( innerDeclaration.index.sort() == ifc::DeclSort::Field )
-                {
-                    f( innerDeclaration.index, reader.get<ifc::symbolic::FieldDecl>( innerDeclaration.index ) );
-                }
-                else if ( innerDeclaration.index.sort() == ifc::DeclSort::Bitfield )
-                {
-                    f( innerDeclaration.index, reader.get<ifc::symbolic::BitfieldDecl>( innerDeclaration.index ) );
-                }
-            }
-        }
-    }
-};
 
 std::span<const std::string_view> QualifiedNameTable::getRefereeQualifier( const StructInfo& referer, const InfoBase& referee ) const
 {
@@ -1840,6 +1992,17 @@ int main() // TODO: bool handling
     public interface IHasSort<T> : IHasSort
     {
     }
+
+    public interface IOver
+    {
+        Index Index { get; }
+    }
+
+    public interface IOver<T> : IOver
+    {
+        T Sort { get; }
+    }
+
     )" << std::endl;
     osCode << "public class OverAttribute : Attribute { }" << std::endl << std::endl;
     osCode << "public class OverAttribute<T> : OverAttribute { }" << std::endl << std::endl;

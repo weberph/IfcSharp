@@ -10,4 +10,5 @@ namespace ifchelper
     std::string_view to_string( ifc::DeclSort val ) noexcept;
     std::string_view to_string( ifc::ExprSort val ) noexcept;
     std::string_view to_string( ifc::symbolic::TypeBasis val ) noexcept;
+    std::string_view to_string( ifc::ChartSort val ) noexcept;
 }

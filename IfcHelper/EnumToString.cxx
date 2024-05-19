@@ -182,4 +182,17 @@ namespace ifchelper
             default: return "<unnamed>";
         }
     }
+
+    std::string_view to_string( const ifc::ChartSort val ) noexcept
+    {
+        switch ( val )
+        {
+            case ifc::ChartSort::None: return "None";
+            case ifc::ChartSort::Unilevel: return "Unilevel";
+            case ifc::ChartSort::Multilevel: return "Multilevel";
+            case ifc::ChartSort::Count: return "Count";
+
+            default: return "<unnamed>";
+        }
+    }
 }

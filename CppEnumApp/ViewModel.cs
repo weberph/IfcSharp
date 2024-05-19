@@ -1,7 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using CppEnumStringGenerator;
+using ifc;
+using ifc.symbolic;
 using IfcBuilderLib;
+using IfcSharpLib;
 using System.IO;
 using System.Text;
 
@@ -17,6 +19,14 @@ namespace CppEnumApp
 
     internal class IfcProcessingException(Exception exception) : Exception(exception.Message, exception)
     {
+    }
+
+    public class IfcEnum(string name, string @namespace, bool enumClass, string[] members)
+    {
+        public string Name { get; } = name;
+        public string Namespace { get; } = @namespace;
+        public bool EnumClass { get; } = enumClass;
+        public string[] Members { get; } = members;
     }
 
     internal class AppEnumData(string name, string @namespace, bool enumClass, string[] members) : IfcEnum(name, @namespace, enumClass, members)
@@ -185,14 +195,14 @@ namespace CppEnumApp
                 throw new UserException("Only a single ifc file can be loaded.");
             }
 
-            return Task.Run(async () =>
+            return Task.Run(() =>
             {
                 var ifcPath = filesOrDirectory[0];
                 if (!isAnyIfc)
                 {
                     try
                     {
-                        ifcPath = await CreateIfcAsync(filesOrDirectory);
+                        ifcPath = CreateIfcAsync(filesOrDirectory).Result;
                     }
                     catch (Exception e)
                     {
@@ -202,12 +212,25 @@ namespace CppEnumApp
 
                 try
                 {
-                    using var ifc = new Ifc(ifcPath);
-                    var rawEnums = ifc.GetEnums();
-                    var enums = new AppEnumData[rawEnums.Count];
+                    var reader = new Reader(ifcPath);
+                    var decls = reader.Partition<EnumerationDecl>();
+
+                    var enums = new AppEnumData[decls.Length];
                     for (int i = 0; i < enums.Length; i++)
                     {
-                        enums[i] = new AppEnumData(rawEnums[i].Name, rawEnums[i].Namespace, rawEnums[i].EnumClass, rawEnums[i].Members);
+                        var name = reader.GetString(decls[i].identity.name);
+                        var sb = new StringBuilder();
+                        var current = decls[i].home_scope;
+                        while (current != (DeclIndex)0)
+                        {
+
+                        }
+
+                        var @namespace = "";
+                        bool enumClass = true;
+                        string[] members = [];
+
+                        enums[i] = new AppEnumData(name, @namespace, enumClass, members);
                     }
                     return enums;
                 }
