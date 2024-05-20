@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CppEnumApp"
-        mc:Ignorable="d" d:DataContext="{d:DesignInstance local:ViewModel, IsDesignTimeCreatable=True}"
+        mc:Ignorable="d" d:DataContext="{d:DesignInstance local:MainViewModel, IsDesignTimeCreatable=True}"
         Title="C++ Enums" Height="800" Width="1400" WindowStartupLocation="CenterScreen" AllowDrop="True"
         Drop="Window_Drop"
         >
@@ -83,22 +83,30 @@
 
                     <ListView.View>
                         <GridView>
-                            <GridViewColumn Header="Name" Width="250"  DisplayMemberBinding="{Binding Name}" />
-                            <GridViewColumn Header="Namespace" Width="200"  DisplayMemberBinding="{Binding Namespace}" />
+                            <GridViewColumn Header="Name" Width="250" DisplayMemberBinding="{Binding Name}" />
+                            <GridViewColumn Header="Namespace" Width="200" DisplayMemberBinding="{Binding Namespace}" />
                         </GridView>
                     </ListView.View>
                 </ListView>
             </Grid>
         </Grid>
 
-        <TextBox x:Name="MainTextBox" Margin="3" Grid.Row="1" Grid.Column="1" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Visible"
+        <TabControl Grid.Row="1" Grid.Column="1">
+            <TabItem Name="CodeTab" Header="Output">
+                <TextBox x:Name="MainTextBox" Margin="3" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Visible"
                  FontFamily="Cascadia Mono" FontSize="10pt" IsReadOnly="True" IsReadOnlyCaretVisible="True">
-            <TextBox.Text>
-                <PriorityBinding>
-                    <Binding Path="SelectedEnum.EnumToString" Mode="OneWay" />
-                    <Binding Path="ErrorText" Mode="OneWay" />
-                </PriorityBinding>
-            </TextBox.Text>
-        </TextBox>
+                    <TextBox.Text>
+                        <PriorityBinding>
+                            <Binding Path="SelectedEnum.EnumToString" Mode="OneWay" />
+                            <Binding Path="ErrorText" Mode="OneWay" />
+                        </PriorityBinding>
+                    </TextBox.Text>
+                </TextBox>
+            </TabItem>
+
+            <TabItem Name="SettingsTab" Header="Compiler Settings">
+                <local:SettingsEditor />
+            </TabItem>
+        </TabControl>
     </Grid>
 </Window>

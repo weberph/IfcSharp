@@ -1,9 +1,10 @@
 /.vs/
 
+_publish/
+
 bin/
 obj/
 x64/
-publish/
 
 *.user
 *.aps

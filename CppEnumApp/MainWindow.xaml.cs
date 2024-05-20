@@ -4,11 +4,11 @@ namespace CppEnumApp
 {
     public partial class MainWindow : Window
     {
-        private readonly ViewModel _vm;
+        private readonly MainViewModel _vm;
 
         public MainWindow()
         {
-            DataContext = _vm = new ViewModel();
+            DataContext = _vm = new MainViewModel();
 
             InitializeComponent();
 

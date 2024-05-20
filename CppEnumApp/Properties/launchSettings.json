@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "CppEnumApp": {
+      "commandName": "Project",
+      "nativeDebugging": false
+    }
+  }
+}

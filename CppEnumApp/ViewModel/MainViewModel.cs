@@ -1,6 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using ifc;
 using ifc.symbolic;
 using IfcBuilderLib;
 using IfcSharpLib;
@@ -22,7 +21,7 @@ namespace CppEnumApp
     {
     }
 
-    public class IfcEnum(string name, string @namespace, bool enumClass, string[] members)
+    internal class IfcEnum(string name, string @namespace, bool enumClass, string[] members)
     {
         public string Name { get; } = name;
         public string Namespace { get; } = @namespace;
@@ -66,12 +65,8 @@ namespace CppEnumApp
         }
     }
 
-    internal partial class ViewModel : ObservableObject
+    internal partial class MainViewModel : ObservableObject
     {
-        // TODO: configuration
-        private const string VcvarsPath1 = @"c:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvars64.bat";
-        private const string VcvarsPath2 = @"c:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat";
-
         private AppEnumData[] _enums = [];
 
         [ObservableProperty]
@@ -119,28 +114,46 @@ namespace CppEnumApp
 
         public event ErrorHandler? Error;
 
-        private Task<DeveloperEnvironment> _environment = Task.Run(async () =>
+        private Task<DeveloperEnvironment?> _environment;
+        private string? _currentVcvarsPath;
+
+        public MainViewModel()
+        {
+            IfcMeta.Init();
+
+            _environment = Task.Run(async () =>
+            {
+                if (SettingsViewModel.TryGetVcvarsPath(out var vcvarsPath))
+                {
+                    return await CreateEnvironmentAsync(vcvarsPath);
+                }
+
+                return null;
+            });
+
+            Properties.Settings.Default.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(Properties.Settings.VcvarsPath))
+                {
+                    var value = Properties.Settings.Default.VcvarsPath;
+                    if (value != _currentVcvarsPath && File.Exists(value))
+                    {
+                        _currentVcvarsPath = value;
+
+                        (_environment = CreateEnvironmentAsync(value))
+                            .ContinueWith(_ => GoCommand.NotifyCanExecuteChanged(), TaskScheduler.FromCurrentSynchronizationContext());
+                        GoCommand.NotifyCanExecuteChanged();
+                    }
+                }
+            };
+        }
+
+        private static async Task<DeveloperEnvironment?> CreateEnvironmentAsync(string vcvarsPath)
         {
             var env = new DeveloperEnvironment();
-
-            if (Directory.Exists(Path.GetDirectoryName(VcvarsPath2)))
-            {
-                await env.ActivateDeveloperEnvironmentAsync(VcvarsPath2);
-            }
-            else if (Directory.Exists(Path.GetDirectoryName(VcvarsPath1)))
-            {
-                await env.ActivateDeveloperEnvironmentAsync(VcvarsPath1);
-            }
-            else
-            {
-                var vcvarsPath = Environment.GetEnvironmentVariable("ENUM_VCVARS") ?? throw new IfcCreationException(new Exception("vcvars64.bat not found"));
-                await env.ActivateDeveloperEnvironmentAsync(vcvarsPath);
-            }
-
+            await env.ActivateDeveloperEnvironmentAsync(vcvarsPath);
             return env;
-        });
-
-        public ViewModel() => IfcMeta.Init();
+        }
 
         private async Task<string> CreateIfcAsync(string[] filesOrDirectory)
         {
@@ -154,19 +167,37 @@ namespace CppEnumApp
                 throw new UserException("Files and directories can't be mixed. Either provide a list of files or a single directory.");
             }
 
+            var includeDirs = new List<string>();
             Amalgamation? CreateAmalgamation()
             {
                 if (filesOrDirectory.Length == 1 && isAnyDirectory)
                 {
+                    includeDirs.Add(filesOrDirectory[0]);
+                    var parentDir = Path.GetDirectoryName(filesOrDirectory[0]);
+                    if (parentDir != null)
+                    {
+                        includeDirs.Add(parentDir);
+                    }
                     return new Amalgamation(filesOrDirectory[0], extensions);
                 }
 
                 if (filesOrDirectory.Length > 1)
                 {
+                    includeDirs.AddRange(filesOrDirectory.Select(Path.GetDirectoryName)
+                                                         .Distinct()
+                                                         .Where(s => !string.IsNullOrEmpty(s) && Directory.Exists(s))
+                                                         .Select(s => s!));
+
                     return new Amalgamation(filesOrDirectory);
                 }
 
                 return null;
+            }
+
+            var env = _environment.Result;
+            if (env == null)
+            {
+                throw new Exception("Could not load developer environment. Check vcvars path in settings.");
             }
 
             using var amalgamation = await Task.Run(CreateAmalgamation).ConfigureAwait(false);
@@ -175,13 +206,9 @@ namespace CppEnumApp
 
             var outputFile = Path.Combine(Directory.GetCurrentDirectory(), "current.ifc");
 
-            // TODO: configuration
-            // string[] includeDirs = [@"d:\workspace\.source\Microsoft\GSL\include", @"d:\workspace\.source\Microsoft\ifc\include"];
+            includeDirs.AddRange((Properties.Settings.Default.IncludeDirectories ?? []).Cast<string>());
 
-            string[] includeDirs = Environment.GetEnvironmentVariable("ENUM_INCLUDES")?.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [];
-
-            var env = _environment.Result;
-            var (stdout, stderr, exitCode) = await env.CreateIfcAsync(inputFile, includeDirs, outputFile).ConfigureAwait(false);
+            var (stdout, stderr, exitCode) = await env.CreateIfcAsync(inputFile, includeDirs.ToArray(), outputFile).ConfigureAwait(false);
             if (exitCode != 0)
             {
                 throw new Exception($"Failed to build the ifc. Exit code of cl.exe: {exitCode}. Error:\n{stdout}\n{stderr}");
@@ -250,7 +277,7 @@ namespace CppEnumApp
             });
         }
 
-        private bool CanGo() => !string.IsNullOrWhiteSpace(InputPath) && Path.Exists(InputPath);
+        private bool CanGo() => !string.IsNullOrWhiteSpace(InputPath) && Path.Exists(InputPath) && _environment.IsCompletedSuccessfully && _environment.Result != null;
 
         [RelayCommand(CanExecute = nameof(CanGo))]
         private async Task Go(object? argument)
