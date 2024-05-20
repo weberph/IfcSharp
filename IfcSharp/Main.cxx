@@ -1130,6 +1130,35 @@ static std::ostream& operator<<( std::ostream& os, const CsIdentifier csIdentifi
     return os;
 }
 
+template<index_like::MultiSorted T>
+std::tuple<size_t, size_t> getTagIndexPrecision()
+{
+    return { index_like::tag_precision<typename T::SortType>, index_like::index_precision<typename T::SortType> };
+}
+
+std::tuple<size_t, size_t> getTagIndexPrecision( const std::string_view name )
+{
+    static std::unordered_map<std::string_view, std::tuple<size_t, size_t>> map = {
+        { "StringIndex", getTagIndexPrecision<ifc::StringIndex>() },
+        { "NameIndex", getTagIndexPrecision<ifc::NameIndex>() },
+        { "ChartIndex", getTagIndexPrecision<ifc::ChartIndex>() },
+        { "DeclIndex", getTagIndexPrecision<ifc::DeclIndex>() },
+        { "TypeIndex", getTagIndexPrecision<ifc::TypeIndex>() },
+        { "SyntaxIndex", getTagIndexPrecision<ifc::SyntaxIndex>() },
+        { "LitIndex", getTagIndexPrecision<ifc::LitIndex>() },
+        { "StmtIndex", getTagIndexPrecision<ifc::StmtIndex>() },
+        { "ExprIndex", getTagIndexPrecision<ifc::ExprIndex>() },
+        { "MacroIndex", getTagIndexPrecision<ifc::MacroIndex>() },
+        { "PragmaIndex", getTagIndexPrecision<ifc::PragmaIndex>() },
+        { "AttrIndex", getTagIndexPrecision<ifc::AttrIndex>() },
+        { "DirIndex", getTagIndexPrecision<ifc::DirIndex>() },
+        { "UnitIndex", getTagIndexPrecision<ifc::UnitIndex>() },
+        { "FormIndex", getTagIndexPrecision<ifc::FormIndex>() }
+    };
+
+    return map.at( name );
+}
+
 class StructInfo;
 
 class StructInfo : public InfoBaseT<ifc::symbolic::ScopeDecl, InfoBaseType::Struct>
@@ -1191,8 +1220,6 @@ public:
     struct OverBase
     {
         EnumerationIndexAndName tagType{};
-        size_t tagPrecision{};
-        size_t valuePrecision{};
     };
 
     struct SpecialBaseTypes
@@ -1240,41 +1267,8 @@ public:
                     if ( templateName == "Over" )
                     {
                         // special handling: Over is in index_like which is currently ignored
-
-                        size_t tagPrecision{}, valuePrecision{};
-                        StructFieldEnumerator fieldEnumerator{ templateDecl.entity.decl };
-                        fieldEnumerator.visit( reader, overloaded{
-                            []( const ifc::DeclIndex, const ifc::symbolic::FieldDecl& ) {},
-                            [&]( const ifc::DeclIndex, const ifc::symbolic::BitfieldDecl& field ) {
-                                const auto fieldName = getStringView( reader, field.identity );
-                                if ( fieldName == "tag" )
-                                {
-                                    tagPrecision = getLiteralValue( reader, field.width );
-                                }
-                                else if ( fieldName == "value" )
-                                {
-                                    valuePrecision = getLiteralValue( reader, field.width );
-                                }
-                                else
-                                {
-                                    assert( "tag/value members renamed?" );
-                                }
-                            }
-                            } );
-
-                        if ( auto* specializations = reader.try_find<ifc::symbolic::trait::Specializations>( declarator.index() ) )
-                        {
-                            for ( auto& decl : reader.sequence( specializations->trait ) )
-                            {
-                                std::cout << "";
-                            }
-                        }
-
-                        assert( tagPrecision != 0 && valuePrecision != 0 );
-                        //assert( tagPrecision + valuePrecision == 32 );
-
                         const auto enumerationIndex = std::get<Declarator>( declarator.templateArgs.at( 0 ) ).index();
-                        Over.emplace( OverBase{ enumerationIndex, getIdentity( reader, enumerationIndex ), tagPrecision, valuePrecision } );
+                        Over.emplace( OverBase{ enumerationIndex, getIdentity( reader, enumerationIndex ) } );
                     }
                     else
                     {
@@ -1440,9 +1434,12 @@ public:
         if ( baseTypes.Over.has_value() ) // XXX: assumed to be the first base
         {
             const auto& over = baseTypes.Over.value();
+            const auto [tagPrecision, valuePrecision] = getTagIndexPrecision( mName );
+            assert( tagPrecision + valuePrecision == 32 );
             os << "    private readonly uint IndexAndSort;" << std::endl;
-            //os << "    public Index Index => (Index)(IndexAndSort & 0b" << std::string( over.valuePrecision, '1' ) << ");" << std::endl;
-            //os << "    public " << over.tagType.name << " Sort => (" << over.tagType.name << ")(IndexAndSort >> " << ( 32 - over.tagPrecision ) << ");" << std::endl;
+            os << "    public Index Index => (Index)(IndexAndSort >> " << tagPrecision << ");" << std::endl;
+            os << "    public " << over.tagType.name << " Sort => (" << over.tagType.name << ")(IndexAndSort & 0b" << std::string( tagPrecision, '1' ) << ");" << std::endl;
+            os << "    public bool IsNull => IndexAndSort == 0;" << std::endl;
         }
 
         for ( const auto& member : baseTypes.MembersToInline )
@@ -1643,91 +1640,6 @@ public:
                         os << member.typeName << ' ' << CsIdentifier{ member.fieldName } << " => "
                             << gsl::narrow_cast<char>( std::tolower( unionInfo.mName[0] ) ) << unionInfo.mName.substr( 1 )
                             << '.' << CsIdentifier{ member.fieldName } << ';' << std::endl;
-                    }
-                }
-                else if ( innerDeclaration.index.sort() == ifc::DeclSort::Alias )
-                {
-                    const auto alias = reader.get<ifc::symbolic::AliasDecl>( innerDeclaration.index );
-                    std::cout << getIdentity( reader, innerDeclaration.index ) << std::endl;
-                    DeclaratorVisitor visitor( reader );
-                    visitor.visitAlias( alias );
-                    if ( baseTypes.Over.has_value() )
-                    {
-                        std::cout << getIdentity( reader, innerDeclaration.index ) << std::endl;
-                    }
-                }
-                else if ( innerDeclaration.index.sort() == ifc::DeclSort::Template )
-                {
-                    const auto templ = reader.get<ifc::symbolic::TemplateDecl>( innerDeclaration.index );
-                    std::cout << getIdentity( reader, innerDeclaration.index ) << std::endl;
-                    if ( baseTypes.Over.has_value() )
-                    {
-                        std::cout << getIdentity( reader, innerDeclaration.index ) << std::endl;
-                    }
-                }
-                else if ( innerDeclaration.index.sort() == ifc::DeclSort::InheritedConstructor )
-                {
-                    if ( baseTypes.Over.has_value() )
-                    {
-                        size_t tagPrecision{}, valuePrecision{};
-
-                        const auto ctor = reader.get<ifc::symbolic::InheritedConstructorDecl>( innerDeclaration.index );
-
-                        if ( mName == "MacroIndex" )
-                        {
-                            std::cout << "";
-                        }
-
-                        if ( auto* mapping_def = reader.try_find<ifc::symbolic::trait::MappingExpr>( ctor.base_ctor ) )
-                        {
-                            if ( mapping_def->trait.initializers.sort() == ifc::ExprSort::Tuple )
-                            {
-                                const auto& tuple = reader.get<ifc::symbolic::TupleExpr>( mapping_def->trait.initializers );
-
-                                for ( const auto& item : reader.sequence( tuple ) )
-                                {
-                                    if ( item.sort() == ifc::ExprSort::MemberInitializer )
-                                    {
-                                        const auto& init = reader.get<ifc::symbolic::MemberInitializerExpr>( item );
-                                        if ( init.member.sort() == ifc::DeclSort::Bitfield )
-                                        {
-                                            const auto& bitfieldDecl = reader.get<ifc::symbolic::BitfieldDecl>( init.member );
-                                            const auto name = getIdentity( reader, init.member );
-
-                                            if ( name == "tag" )
-                                            {
-                                                tagPrecision = getLiteralValue( reader, bitfieldDecl.width );
-                                            }
-                                            else if ( name == "value" )
-                                            {
-                                                valuePrecision = getLiteralValue( reader, bitfieldDecl.width );
-                                            }
-
-                                            //const auto& home = infoByIndex.at( bitfieldDecl.home_scope );
-                                            //const auto& info = infoByIndex.at( init.member );
-                                            std::cout << "";
-                                        }
-                                    }
-                                }
-
-                                assert( tagPrecision != 0 && valuePrecision != 0 );
-                                assert( tagPrecision + valuePrecision == 32 );
-
-                                const auto& over = baseTypes.Over.value();
-                                os << "    public Index Index => (Index)(IndexAndSort & 0b" << std::string( valuePrecision, '1' ) << ");" << std::endl;
-                                os << "    public " << over.tagType.name << " Sort => (" << over.tagType.name << ")(IndexAndSort >> " << ( 32 - tagPrecision ) << ");" << std::endl;
-                            }
-                        }
-
-                        // not all Index types have a member initializer expr (e.g. MacroIndex)?!? why?
-
-                        //assert( tagPrecision != 0 && valuePrecision != 0 );
-                        //assert( tagPrecision + valuePrecision == 32 );
-
-                        //const auto& over = baseTypes.Over.value();
-                        //os << "    private readonly uint IndexAndSort;" << std::endl;
-                        //os << "    public Index Index => (Index)(IndexAndSort & 0b" << std::string( valuePrecision, '1' ) << ");" << std::endl;
-                        //os << "    public " << over.tagType.name << " Sort => (" << over.tagType.name << ")(IndexAndSort >> " << ( 32 - tagPrecision ) << ");" << std::endl;
                     }
                 }
                 else
@@ -1996,6 +1908,7 @@ int main() // TODO: bool handling
     public interface IOver
     {
         Index Index { get; }
+        bool IsNull { get; }
     }
 
     public interface IOver<T> : IOver

@@ -4,6 +4,7 @@ using ifc;
 using ifc.symbolic;
 using IfcBuilderLib;
 using IfcSharpLib;
+using IfcSharpLib.Util;
 using System.IO;
 using System.Text;
 
@@ -122,13 +123,13 @@ namespace CppEnumApp
         {
             var env = new DeveloperEnvironment();
 
-            if (Directory.Exists(VcvarsPath1))
-            {
-                await env.ActivateDeveloperEnvironmentAsync(VcvarsPath1);
-            }
-            else if (Directory.Exists(VcvarsPath2))
+            if (Directory.Exists(Path.GetDirectoryName(VcvarsPath2)))
             {
                 await env.ActivateDeveloperEnvironmentAsync(VcvarsPath2);
+            }
+            else if (Directory.Exists(Path.GetDirectoryName(VcvarsPath1)))
+            {
+                await env.ActivateDeveloperEnvironmentAsync(VcvarsPath1);
             }
             else
             {
@@ -138,6 +139,8 @@ namespace CppEnumApp
 
             return env;
         });
+
+        public ViewModel() => IfcMeta.Init();
 
         private async Task<string> CreateIfcAsync(string[] filesOrDirectory)
         {
@@ -216,22 +219,28 @@ namespace CppEnumApp
                     var decls = reader.Partition<EnumerationDecl>();
 
                     var enums = new AppEnumData[decls.Length];
-                    for (int i = 0; i < enums.Length; i++)
+                    var index = 0;
+                    foreach (var decl in decls)
                     {
-                        var name = reader.GetString(decls[i].identity.name);
-                        var sb = new StringBuilder();
-                        var current = decls[i].home_scope;
-                        while (current != (DeclIndex)0)
+                        var name = reader.GetString(decl.identity);
+                        if (name.StartsWith('<') || !QualifiedName.TryBuildFullyQualifiedName(reader, decl.home_scope, out var @namespace))
                         {
-
+                            continue;
                         }
 
-                        var @namespace = "";
                         bool enumClass = true;
-                        string[] members = [];
 
-                        enums[i] = new AppEnumData(name, @namespace, enumClass, members);
+                        var initializers = reader.Sequence(decl.initializer);
+                        var members = new string[initializers.Length];
+                        for (int j = 0; j < initializers.Length; j++)
+                        {
+                            members[j] = reader.GetString(initializers[j].identity);
+                        }
+
+                        enums[index++] = new AppEnumData(name, @namespace, enumClass, members);
                     }
+
+                    Array.Resize(ref enums, index);
                     return enums;
                 }
                 catch (Exception e)

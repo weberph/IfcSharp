@@ -13,7 +13,6 @@ namespace IfcSharpLib
         private readonly ReadOnlyMemory<byte> _tocMemory;
         private readonly ReadOnlyMemory<byte> _stringMemory;
 
-        //private ref readonly TableOfContents Toc => ref MemoryMarshal.AsRef<TableOfContents>(_tocMemory.Span);
         private ReadOnlySpan<PartitionSummaryData> PartitionTables => MemoryMarshal.Cast<byte, PartitionSummaryData>(_tocMemory.Span);
 
         private Header _header;
@@ -45,20 +44,36 @@ namespace IfcSharpLib
             }
         }
 
+        public ref readonly T Get<T, U>(IOver<U> index) where T : struct, IHasSort<U> where U : Enum
+        {
+            return ref Partition<T>()[(int)index.Index];
+        }
+
+        public ReadOnlySpan<T> Sequence<T>(Sequence<T> sequence) where T : struct, IHasSort
+        {
+            return Partition<T>().Slice((int)sequence.start, (int)sequence.cardinality);
+        }
+
         public string GetString(TextOffset index)
         {
             var span = _stringMemory.Span[(int)index..];
             return Encoding.UTF8.GetString(span[..span.IndexOf((byte)0)]);
         }
 
-        /*      
-            template<typename T, typename Index>
-            const T& get(Index index) const
+        public string GetString(Identity<TextOffset> index)
+        {
+            return GetString(index.name);
+        }
+
+        public string GetString(Identity<NameIndex> index)
+        {
+            if (index.name.Sort != NameSort.Identifier)
             {
-                IFCASSERT(T::algebra_sort == index.sort());
-                return view_entry_at<T>(toc.offset(index));
+                throw new NotImplementedException("TODO: NameIndex");
             }
-         */
+
+            return GetString((TextOffset)index.name.Index);
+        }
 
         public ref readonly PartitionSummaryData PartitionSummary<T>()
             where T : struct, IHasSort
@@ -95,32 +110,4 @@ namespace IfcSharpLib
             return MemoryMarshal.Cast<byte, T>(_memory.Span.Slice((int)summary.offset, size));
         }
     }
-
-    //static class MemoryCast
-    //{
-    //    public static Memory<TTo> Cast<TFrom, TTo>(Memory<TFrom> from)
-    //        where TFrom : unmanaged
-    //        where TTo : unmanaged
-    //    {
-    //        // avoid the extra allocation/indirection, at the cost of a gen-0 box
-    //        if (typeof(TFrom) == typeof(TTo)) return (Memory<TTo>)(object)from;
-
-    //        return new CastMemoryManager<TFrom, TTo>(from).Memory;
-    //    }
-
-    //    private sealed class CastMemoryManager<TFrom, TTo> : MemoryManager<TTo>
-    //        where TFrom : unmanaged
-    //        where TTo : unmanaged
-    //    {
-    //        private readonly Memory<TFrom> _from;
-
-    //        public CastMemoryManager(Memory<TFrom> from) => _from = from;
-
-    //        public override Span<TTo> GetSpan() => MemoryMarshal.Cast<TFrom, TTo>(_from.Span);
-
-    //        protected override void Dispose(bool disposing) { }
-    //        public override MemoryHandle Pin(int elementIndex = 0) => throw new NotSupportedException();
-    //        public override void Unpin() => throw new NotSupportedException();
-    //    }
-    //}
 }

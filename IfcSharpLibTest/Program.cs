@@ -1,5 +1,10 @@
-﻿using ifc.symbolic;
+﻿using ifc;
+using ifc.symbolic;
 using IfcSharpLib;
+using IfcSharpLib.Util;
+using System.Collections.Specialized;
+using System.Diagnostics;
+using System.Text;
 
 namespace IfcSharpLibTest
 {
@@ -10,19 +15,32 @@ namespace IfcSharpLibTest
             IfcSizeValidation.Test();
             IfcMeta.Init();
 
-            var reader = new Reader(@"d:\.projects\.unsorted\2024\WrapAllInModuleTest\WrapAllInModuleTest\x64\Debug\Everything.ixx.ifc");
+            var reader = new Reader(@"d:\.projects\.unsorted\2024\IfcSharp\IfcTestData\x64\Debug\IfcHeaderUnit.ixx.ifc");
 
             var enums = reader.Partition<EnumerationDecl>();
 
-            foreach (var e in enums)
+            for (int i = 0; i < enums.Length; i++)
             {
-                if (e.identity.locus.column == 0 && e.identity.locus.line == 0)
+                var name = reader.GetString(enums[i].identity);
+                if (name.StartsWith('<'))
                 {
                     continue;
                 }
 
-                var name = reader.GetString(e.identity.name);
-                Console.WriteLine(name);
+                if (!QualifiedName.TryBuildFullyQualifiedName(reader, enums[i].home_scope, out var @namespace))
+                {
+                    continue;
+                }
+
+                var initializers = reader.Sequence(enums[i].initializer);
+                var members = new string[initializers.Length];
+                for (int j = 0; j < initializers.Length; j++)
+                {
+                    members[j] = reader.GetString(initializers[j].identity);
+                    Console.WriteLine(members[j]);
+                }
+
+                Console.WriteLine($"  @ {@namespace}, Members: " + members.Length);
             }
         }
     }
