@@ -49,6 +49,16 @@ namespace IfcSharpLib
             return ref Partition<T>()[(int)index.Index];
         }
 
+        public ref readonly T Get<T>(TypeIndex index) where T : struct, IHasSort<TypeSort>
+        {
+            return ref Partition<T>()[(int)index.Index];
+        }
+
+        public ref readonly T Get<T>(DeclIndex index) where T : struct, IHasSort<DeclSort>
+        {
+            return ref Partition<T>()[(int)index.Index];
+        }
+
         public ReadOnlySpan<T> Sequence<T>(Sequence<T> sequence) where T : struct, IHasSort
         {
             return Partition<T>().Slice((int)sequence.start, (int)sequence.cardinality);

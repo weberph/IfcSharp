@@ -8,6 +8,11 @@
         Title="C++ Enums" Height="800" Width="1400" WindowStartupLocation="CenterScreen" AllowDrop="True"
         Drop="Window_Drop"
         >
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    </Window.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
@@ -31,7 +36,7 @@
                     <ColumnDefinition Width="auto" />
                 </Grid.ColumnDefinitions>
 
-                <Label Grid.Row="0" Grid.Column="0" Content="Source/header file or directory:" />
+                <Label Grid.Row="0" Grid.Column="0" Content="Source, header or .ifc file or directory:" />
                 <TextBox Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" Text="{Binding InputPath, UpdateSourceTrigger=PropertyChanged}" />
 
                 <Label Grid.Row="0" Grid.Column="2"  Content="Directory search pattern:"  />
@@ -57,16 +62,43 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
-                    <Label Grid.Row="0" Grid.Column="0" Content="Filter namespace: " />
-                    <TextBox Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" Text="{Binding NamespaceFilter, UpdateSourceTrigger=PropertyChanged}" />
+                    <Label Grid.Column="0" Content="Search:" />
 
-                    <Label Grid.Row="1" Grid.Column="0" Content="Filter type name: " />
-                    <TextBox Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" Text="{Binding TypeNameFilter, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBox x:Name="TypeNameTextBox" Grid.Column="1" VerticalAlignment="Center" Text="{Binding TypeNameFilter, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,5,0" />
+
+                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Margin="3,0,0,0" IsHitTestVisible="False" Text="type name" Foreground="LightGray" FontStyle="Italic">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Text, ElementName=TypeNameTextBox}" Value="">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+
+                    <TextBox x:Name="NamespaceTextBox" Grid.Column="2" VerticalAlignment="Center" Text="{Binding NamespaceFilter, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <TextBlock Grid.Column="2" VerticalAlignment="Center" Margin="3,0,0,0" IsHitTestVisible="False" Text="namespace" Foreground="LightGray" FontStyle="Italic">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Text, ElementName=NamespaceTextBox}" Value="">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
 
                     <Label Grid.Row="2" Grid.Column="0" Content="Exclude: " />
-                    <StackPanel Orientation="Horizontal" Grid.Row="2" Grid.Column="1">
+                    <StackPanel Orientation="Horizontal" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2">
                         <CheckBox Content="std" IsChecked="{Binding ExcludeStd}" VerticalAlignment="Center" Margin="0,0,15,0" />
                         <CheckBox Content="global" IsChecked="{Binding ExcludeGlobal}" VerticalAlignment="Center" Margin="0,0,15,0" />
                         <CheckBox Content="no members" IsChecked="{Binding ExcludeNoMembers}" VerticalAlignment="Center" Margin="0,0,15,0" />
@@ -94,7 +126,7 @@
         <TabControl Grid.Row="1" Grid.Column="1">
             <TabItem Name="CodeTab" Header="Output">
                 <TextBox x:Name="MainTextBox" Margin="3" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Visible"
-                 FontFamily="Cascadia Mono" FontSize="10pt" IsReadOnly="True" IsReadOnlyCaretVisible="True">
+                         FontFamily="Cascadia Mono" FontSize="10pt" IsReadOnly="True" IsReadOnlyCaretVisible="True">
                     <TextBox.Text>
                         <PriorityBinding>
                             <Binding Path="SelectedEnum.EnumToString" Mode="OneWay" />

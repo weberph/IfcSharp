@@ -19,9 +19,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IfcTestData", "IfcTestData\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IfcSharpLib", "IfcSharpLib\IfcSharpLib.csproj", "{A9831084-7E58-4906-91D9-9572F559C267}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IfcSharpLibTest", "IfcSharpLibTest\IfcSharpLibTest.csproj", "{C4AD16B9-D276-4A0C-BE5A-29E1AD83DF95}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ifc-printer", "..\..\..\..\workspace\.source\Microsoft\ifc\build\ifc-printer.vcxproj", "{77DBB861-9D14-3E31-9553-72F7CB155DAF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IfcSharpLibTest", "IfcSharpLibTest\IfcSharpLibTest.csproj", "{C4AD16B9-D276-4A0C-BE5A-29E1AD83DF95}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -171,22 +169,6 @@ Global
 		{C4AD16B9-D276-4A0C-BE5A-29E1AD83DF95}.RelWithDebInfo|Any CPU.Build.0 = Release|Any CPU
 		{C4AD16B9-D276-4A0C-BE5A-29E1AD83DF95}.RelWithDebInfo|x64.ActiveCfg = Release|Any CPU
 		{C4AD16B9-D276-4A0C-BE5A-29E1AD83DF95}.RelWithDebInfo|x64.Build.0 = Release|Any CPU
-		{77DBB861-9D14-3E31-9553-72F7CB155DAF}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{77DBB861-9D14-3E31-9553-72F7CB155DAF}.Debug|Any CPU.Build.0 = Debug|x64
-		{77DBB861-9D14-3E31-9553-72F7CB155DAF}.Debug|x64.ActiveCfg = Debug|x64
-		{77DBB861-9D14-3E31-9553-72F7CB155DAF}.Debug|x64.Build.0 = Debug|x64
-		{77DBB861-9D14-3E31-9553-72F7CB155DAF}.MinSizeRel|Any CPU.ActiveCfg = MinSizeRel|x64
-		{77DBB861-9D14-3E31-9553-72F7CB155DAF}.MinSizeRel|Any CPU.Build.0 = MinSizeRel|x64
-		{77DBB861-9D14-3E31-9553-72F7CB155DAF}.MinSizeRel|x64.ActiveCfg = MinSizeRel|x64
-		{77DBB861-9D14-3E31-9553-72F7CB155DAF}.MinSizeRel|x64.Build.0 = MinSizeRel|x64
-		{77DBB861-9D14-3E31-9553-72F7CB155DAF}.Release|Any CPU.ActiveCfg = Release|x64
-		{77DBB861-9D14-3E31-9553-72F7CB155DAF}.Release|Any CPU.Build.0 = Release|x64
-		{77DBB861-9D14-3E31-9553-72F7CB155DAF}.Release|x64.ActiveCfg = Release|x64
-		{77DBB861-9D14-3E31-9553-72F7CB155DAF}.Release|x64.Build.0 = Release|x64
-		{77DBB861-9D14-3E31-9553-72F7CB155DAF}.RelWithDebInfo|Any CPU.ActiveCfg = RelWithDebInfo|x64
-		{77DBB861-9D14-3E31-9553-72F7CB155DAF}.RelWithDebInfo|Any CPU.Build.0 = RelWithDebInfo|x64
-		{77DBB861-9D14-3E31-9553-72F7CB155DAF}.RelWithDebInfo|x64.ActiveCfg = RelWithDebInfo|x64
-		{77DBB861-9D14-3E31-9553-72F7CB155DAF}.RelWithDebInfo|x64.Build.0 = RelWithDebInfo|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

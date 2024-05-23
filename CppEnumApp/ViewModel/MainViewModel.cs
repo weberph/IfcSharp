@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using ifc;
 using ifc.symbolic;
 using IfcBuilderLib;
 using IfcSharpLib;
@@ -39,7 +40,13 @@ namespace CppEnumApp
 
         private string CreateEnumToString()
         {
-            var name = Namespace.Length == 0 ? Name : $"{Namespace}::{Name}";
+            var (qualifier, name) = (Namespace.Length, EnumClass) switch
+            {
+                (0, false) => (string.Empty, Name),
+                (_, false) => (Namespace, $"{Namespace}::{Name}"),
+                (0, true) => (Name, Name),
+                (_, true) => ($"{Namespace}::{Name}", $"{Namespace}::{Name}")
+            };
 
             var sb = new StringBuilder();
             foreach (var member in Members)
@@ -48,7 +55,7 @@ namespace CppEnumApp
                 {
                     sb.Append(' ', 8);
                 }
-                sb.AppendLine($"case {name}::{member}: return \"{member}\";");
+                sb.AppendLine($"case {qualifier}::{member}: return \"{member}\";");
             }
 
             return
@@ -70,7 +77,7 @@ namespace CppEnumApp
         private AppEnumData[] _enums = [];
 
         [ObservableProperty]
-        private AppEnumData[] _filteredEnums = [new AppEnumData("Test", "", true, [])];
+        private AppEnumData[] _filteredEnums = [];
 
         [ObservableProperty]
         private string _inputPath = string.Empty;
@@ -157,41 +164,21 @@ namespace CppEnumApp
 
         private async Task<string> CreateIfcAsync(string[] filesOrDirectory)
         {
-            var extensions = Extensions.Split((char[])[' ', ',', ';', '|'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
-            var isOnlyFiles = filesOrDirectory.All(File.Exists);
-            var isAnyDirectory = filesOrDirectory.Any(Directory.Exists);
-
-            if (filesOrDirectory.Length > 1 && isAnyDirectory)
-            {
-                throw new UserException("Files and directories can't be mixed. Either provide a list of files or a single directory.");
-            }
+            var extensions = Extensions.Split((char[])[' ', ',', ';', '|'], StringSplitOptions.TrimEntries); // keeping empty entries intentionally
 
             var includeDirs = new List<string>();
-            Amalgamation? CreateAmalgamation()
+
+            foreach (var path in filesOrDirectory)
             {
-                if (filesOrDirectory.Length == 1 && isAnyDirectory)
+                if (Directory.Exists(path))
                 {
-                    includeDirs.Add(filesOrDirectory[0]);
-                    var parentDir = Path.GetDirectoryName(filesOrDirectory[0]);
-                    if (parentDir != null)
-                    {
-                        includeDirs.Add(parentDir);
-                    }
-                    return new Amalgamation(filesOrDirectory[0], extensions);
+                    includeDirs.Add(path);
                 }
 
-                if (filesOrDirectory.Length > 1)
+                if (Path.GetDirectoryName(path) is { } parent && Directory.Exists(parent))
                 {
-                    includeDirs.AddRange(filesOrDirectory.Select(Path.GetDirectoryName)
-                                                         .Distinct()
-                                                         .Where(s => !string.IsNullOrEmpty(s) && Directory.Exists(s))
-                                                         .Select(s => s!));
-
-                    return new Amalgamation(filesOrDirectory);
+                    includeDirs.Add(parent);
                 }
-
-                return null;
             }
 
             var env = _environment.Result;
@@ -200,7 +187,7 @@ namespace CppEnumApp
                 throw new Exception("Could not load developer environment. Check vcvars path in settings.");
             }
 
-            using var amalgamation = await Task.Run(CreateAmalgamation).ConfigureAwait(false);
+            using var amalgamation = await Task.Run(() => new Amalgamation(filesOrDirectory, extensions)).ConfigureAwait(false);
 
             var inputFile = amalgamation?.FilePath ?? filesOrDirectory[0];
 
@@ -217,7 +204,7 @@ namespace CppEnumApp
             return outputFile;
         }
 
-        private Task<AppEnumData[]> GetEnums(string[] filesOrDirectory)
+        private Task<(string, AppEnumData[])> GetEnums(string[] filesOrDirectory)
         {
             var isAnyIfc = filesOrDirectory.Any(f => f.ToLower().EndsWith(".ifc"));
             if (filesOrDirectory.Length > 1 && isAnyIfc)
@@ -250,13 +237,14 @@ namespace CppEnumApp
                     foreach (var decl in decls)
                     {
                         var name = reader.GetString(decl.identity);
-                        if (name.StartsWith('<') || !QualifiedName.TryBuildFullyQualifiedName(reader, decl.home_scope, out var @namespace))
+                        if (name.StartsWith('<')
+                            || decl.type.Sort != TypeSort.Fundamental
+                            || !QualifiedName.TryBuildFullyQualifiedName(reader, decl.home_scope, out var @namespace))
                         {
                             continue;
                         }
 
-                        bool enumClass = true;
-
+                        bool enumClass = reader.Get<FundamentalType>(decl.type).basis is TypeBasis.Class or TypeBasis.Struct;
                         var initializers = reader.Sequence(decl.initializer);
                         var members = new string[initializers.Length];
                         for (int j = 0; j < initializers.Length; j++)
@@ -268,7 +256,7 @@ namespace CppEnumApp
                     }
 
                     Array.Resize(ref enums, index);
-                    return enums;
+                    return (ifcPath, enums);
                 }
                 catch (Exception e)
                 {
@@ -287,8 +275,13 @@ namespace CppEnumApp
                 ErrorText = string.Empty;
                 FilteredEnums = [];
 
-                _enums = await GetEnums(argument as string[] ?? [InputPath]);
+                var (ifcPath, enums) = await GetEnums(argument as string[] ?? [InputPath]);
+                if (string.IsNullOrWhiteSpace(InputPath))
+                {
+                    InputPath = ifcPath;
+                }
 
+                _enums = enums;
                 ApplyFilters();
             }
             catch (Exception exception)

@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using System.Windows.Input;
 
 namespace CppEnumApp
 {
@@ -13,6 +14,14 @@ namespace CppEnumApp
             InitializeComponent();
 
             _vm.Error += OnViewModelError;
+
+            _vm.GoCommand.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(_vm.GoCommand.IsRunning))
+                {
+                    Mouse.OverrideCursor = _vm.GoCommand.IsRunning ? Cursors.Wait : null;
+                }
+            };
         }
 
         private void OnViewModelError(string messageText)

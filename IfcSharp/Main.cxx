@@ -3,7 +3,6 @@
 #include <cstdlib>
 #include <deque>
 #include <filesystem>
-#include <format>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -63,10 +62,10 @@ namespace
         return gStringTable.emplace_back( std::move( str ) );
     }
 
-    template<class T>
+    template<index_like::MultiSorted T>
     void print( const std::string& prefix, const T t )
     {
-        std::cout << prefix << ifchelper::to_string( t ) << std::endl;
+        std::cout << prefix << ifchelper::to_string( t.sort() ) << std::endl;
     }
 
     template<class... Ts>
@@ -79,7 +78,7 @@ namespace
 
     template<class T, size_t Extent>
         requires ( sizeof( T ) == 1 )
-    constexpr std::string toHex( const std::span<const T, Extent> span ) noexcept
+    constexpr std::string toHex( const std::span<const T, Extent> span )
     {
         std::string result( span.size() * 2, '\0' );
         for ( size_t index = 0; const auto t : span )
@@ -153,7 +152,7 @@ std::string_view getIdentity( const ifc::Reader& reader, const ifc::DeclIndex de
             return query.identity( &ifc::symbolic::BitfieldDecl::identity );
 
         default:
-            print( "getIdentity not implemented: ", declIndex.sort() );
+            print( "getIdentity not implemented: ", declIndex );
             assert( false );
             break;
     }
@@ -163,11 +162,12 @@ std::string_view getIdentity( const ifc::Reader& reader, const ifc::DeclIndex de
 
 int64_t getLiteralValue( const ifc::Reader& reader, const ifc::symbolic::LiteralExpr literalExpr )
 {
-    const auto visitor = [&]( const ifc::LitIndex index ) {
-        return index.sort() == ifc::LiteralSort::Immediate ? ifc::to_underlying( index.index() ) : gsl::narrow_cast<uint32_t>( reader.get<int64_t>( index ) );
-    };
-
-    return Query( reader, literalExpr.value ).visit( visitor );
+    switch ( literalExpr.value.sort() )
+    {
+        case ifc::LiteralSort::Immediate: return ifc::to_underlying( literalExpr.value.index() );
+        case ifc::LiteralSort::Integer: return reader.get<int64_t>( literalExpr.value );
+        default: throw std::runtime_error( "Unexpected literal type" );
+    }
 }
 
 int64_t getLiteralValue( const ifc::Reader& reader, const ifc::ExprIndex literalExprIndex )
@@ -427,7 +427,7 @@ public:
                 break;
 
             default:
-                print( "TypeSort not implemented: ", typeIndex.sort() );
+                print( "TypeSort not implemented: ", typeIndex );
                 throw std::runtime_error( "dispatchTypeIndex: TypeSort not implemented" );
         }
     }
@@ -445,7 +445,7 @@ public:
                 break;
 
             default:
-                print( "ExprIndex not implemented: ", exprIndex.sort() );
+                print( "ExprIndex not implemented: ", exprIndex );
                 throw std::runtime_error( "dispatchExprIndex: ExprIndex not implemented" );
         }
     }
@@ -483,7 +483,7 @@ public:
         }
         else
         {
-            print( "ExprIndex not implemented: ", exprIndex.sort() );
+            print( "ExprIndex not implemented: ", exprIndex );
             throw std::runtime_error( "getTypeArgumentList: ExprIndex not implemented" );
         }
     }
@@ -635,8 +635,7 @@ void enumToCS( ifc::Reader& reader,
 
         if ( val.initializer.sort() == ifc::ExprSort::Literal )
         {
-            const auto& literalEx = reader.get<ifc::symbolic::LiteralExpr>( val.initializer );
-            const uint64_t value = literalEx.value.sort() == ifc::LiteralSort::Immediate ? ifc::to_underlying( literalEx.value.index() ) : reader.get<int64_t>( literalEx.value );
+            const uint64_t value = getLiteralValue( reader, val.initializer );
 
             printExplicitValues |= value != index;
 
@@ -1260,8 +1259,6 @@ public:
                 const auto foundIt = infoByIndex.find( declarator.index() );
                 if ( foundIt == infoByIndex.end() or foundIt->second.get().type() != InfoBaseType::Template )
                 {
-                    const auto& templateDecl = Query( reader, declarator.index() ).get<ifc::symbolic::TemplateDecl>();
-
                     const auto templateName = getIdentity( reader, declarator.index() );
 
                     if ( templateName == "Over" )
@@ -1892,7 +1889,8 @@ int main() // TODO: bool handling
 
     std::ostringstream osCode;
 
-    osCode << "using System.Runtime.InteropServices;" << std::endl;
+    osCode << "using System.Runtime.InteropServices;" << std::endl << std::endl;
+    osCode << "#pragma warning disable CS0649 // Field '...' is never assigned to, and will always have its default value 0" << std::endl << std::endl;
     osCode << "namespace ifc" << std::endl << '{' << std::endl;
     osCode << "public enum Index : uint { }" << std::endl;
     osCode << R"(

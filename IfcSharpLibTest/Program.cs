@@ -15,24 +15,33 @@ namespace IfcSharpLibTest
             IfcSizeValidation.Test();
             IfcMeta.Init();
 
-            var reader = new Reader(@"d:\.projects\.unsorted\2024\IfcSharp\IfcTestData\x64\Debug\IfcHeaderUnit.ixx.ifc");
+            var reader = new Reader(@"d:\.projects\.unsorted\2024\IfcSharp\CppEnumApp\bin\x64\Debug\net8.0-windows\current.ifc");
 
             var enums = reader.Partition<EnumerationDecl>();
 
             for (int i = 0; i < enums.Length; i++)
             {
-                var name = reader.GetString(enums[i].identity);
-                if (name.StartsWith('<'))
+                var current = enums[i];
+                var name = reader.GetString(current.identity);
+                if (name.StartsWith('<') || current.type.Sort != TypeSort.Fundamental)
                 {
                     continue;
                 }
 
-                if (!QualifiedName.TryBuildFullyQualifiedName(reader, enums[i].home_scope, out var @namespace))
+                if (!QualifiedName.TryBuildFullyQualifiedName(reader, current.home_scope, out var @namespace))
                 {
                     continue;
                 }
 
-                var initializers = reader.Sequence(enums[i].initializer);
+                if (reader.Get<FundamentalType>(current.type).basis is TypeBasis.Class or TypeBasis.Struct)
+                {
+                    Console.WriteLine("enum class: ");
+                }
+
+                if (name == "_TaskInliningMode") Debugger.Break();
+                if (name == "_Invoker_strategy") Debugger.Break();
+
+                var initializers = reader.Sequence(current.initializer);
                 var members = new string[initializers.Length];
                 for (int j = 0; j < initializers.Length; j++)
                 {
