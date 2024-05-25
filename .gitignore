@@ -1,5 +1,6 @@
 /.vs/
 
+_external/
 _publish/
 
 bin/

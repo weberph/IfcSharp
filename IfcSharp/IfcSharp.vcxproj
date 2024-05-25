@@ -50,7 +50,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\IfcHelper;d:\workspace\.source\Microsoft\ifc\include\;d:\workspace\.source\Microsoft\GSL\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\IfcHelper;$(ProjectDir)..\_external\ifc\include\;$(ProjectDir)..\_external\ifc\build\vcpkg_installed\x64-windows-static-md\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -66,7 +66,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\IfcHelper;d:\workspace\.source\Microsoft\ifc\include\;d:\workspace\.source\Microsoft\GSL\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\IfcHelper;$(ProjectDir)..\_external\ifc\include\;$(ProjectDir)..\_external\ifc\build\vcpkg_installed\x64-windows-static-md\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -79,14 +79,14 @@
     <ClCompile Include="Main.cxx" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\..\workspace\.source\Microsoft\ifc\build\ifc-dom.vcxproj">
-      <Project>{addbbe15-b5e5-3b22-8778-114c580e8d77}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\..\..\workspace\.source\Microsoft\ifc\build\ifc-reader.vcxproj">
-      <Project>{ba3c56ef-d049-34af-972b-c273401d7de3}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\IfcHelper\IfcHelper.vcxproj">
       <Project>{0b2d2d21-9465-4086-b6fe-fbb070f7438f}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\_external\ifc\build\ifc-dom.vcxproj">
+      <Project>{326a0e0a-db8e-33f6-b9da-9d0f0687fa37}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\_external\ifc\build\ifc-reader.vcxproj">
+      <Project>{1a8cd0aa-7c31-3b93-ac1e-6b7c187ad30d}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
