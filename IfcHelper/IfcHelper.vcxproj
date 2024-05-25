@@ -79,16 +79,13 @@
     <ClInclude Include="EnumToString.hxx" />
     <ClInclude Include="File.hxx" />
     <ClInclude Include="GetStringView.hxx" />
-    <ClInclude Include="IfcHelper.hxx" />
     <ClInclude Include="IfcReader.hxx" />
     <ClInclude Include="Query.hxx" />
-    <ClInclude Include="TypeName.hxx" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Assert.cxx" />
     <ClCompile Include="EnumToString.cxx" />
     <ClCompile Include="File.cxx" />
-    <ClCompile Include="TypeName.cxx" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\_external\ifc\build\ifc-dom.vcxproj">

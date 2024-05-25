@@ -11,13 +11,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="TypeName.hxx">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="File.hxx">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="IfcHelper.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="IfcReader.hxx">
@@ -34,9 +28,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="TypeName.cxx">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="File.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>

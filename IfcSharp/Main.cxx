@@ -17,10 +17,11 @@
 #include <variant>
 #include <vector>
 
-#include <IfcHelper.hxx>
+#include <File.hxx>
 #include <EnumToString.hxx>
-#include <Query.hxx>
 #include <GetStringView.hxx>
+#include <IfcReader.hxx>
+#include <Query.hxx>
 
 #include <ifc/reader.hxx>
 #include <ifc/util.hxx>
@@ -1071,21 +1072,6 @@ struct StructFieldEnumerator
                 else if ( innerDeclaration.index.sort() == ifc::DeclSort::Bitfield )
                 {
                     f( innerDeclaration.index, reader.get<ifc::symbolic::BitfieldDecl>( innerDeclaration.index ) );
-                }
-                else if ( innerDeclaration.index.sort() == ifc::DeclSort::Constructor )
-                {
-                    const auto ctor = reader.get<ifc::symbolic::ConstructorDecl>( innerDeclaration.index );
-                    if ( auto* mapping_def = reader.try_find<ifc::symbolic::trait::MappingExpr>( innerDeclaration.index ) )
-                    {
-                        return;
-                    }
-
-                    // Inline functions (and all other under a switch to be added).
-                    if ( auto* mapping_def = reader.try_find<ifc::symbolic::trait::MsvcCodegenMappingExpr>( innerDeclaration.index ) )
-                    {
-                        return;
-                    }
-
                 }
             }
         }
