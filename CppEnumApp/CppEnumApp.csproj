@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\IfcBuilder\IfcBuilderLib\IfcBuilderLib.csproj" />
+    <ProjectReference Include="..\IfcBuilderLib\IfcBuilderLib.csproj" />
     <ProjectReference Include="..\IfcSharpLib\IfcSharpLib.csproj" />
   </ItemGroup>
 

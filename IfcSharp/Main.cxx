@@ -1893,36 +1893,6 @@ int main() // TODO: bool handling
     osCode << "using System.Runtime.InteropServices;" << std::endl << std::endl;
     osCode << "#pragma warning disable CS0649 // Field '...' is never assigned to, and will always have its default value 0" << std::endl << std::endl;
     osCode << "namespace ifc" << std::endl << '{' << std::endl;
-#if 0
-    osCode << "public enum Index : uint { }" << std::endl;
-    osCode << R"(
-    public interface IHasSort
-    {
-        static abstract int Sort{ get; }
-    }
-
-    public interface IHasSort<T> : IHasSort
-    {
-    }
-
-    public interface IOver
-    {
-        Index Index { get; }
-        bool IsNull { get; }
-    }
-
-    public interface IOver<T> : IOver
-    {
-        T Sort { get; }
-    }
-
-    )" << std::endl;
-    osCode << "public class OverAttribute : Attribute { }" << std::endl << std::endl;
-    osCode << "public class OverAttribute<T> : OverAttribute { }" << std::endl << std::endl;
-    osCode << "public class TagAttribute : Attribute { }" << std::endl << std::endl;
-    osCode << "public class TagAttribute<T>(T sort) : TagAttribute { public T Sort { get; } = sort; }" << std::endl << std::endl;
-#endif
-
     osCode << "public readonly struct Sequence<T> { public readonly Index start; public readonly Cardinality cardinality; }" << std::endl << std::endl;
     osCode << "public readonly struct Identity<T> { public readonly T name; public readonly symbolic.SourceLocation locus; }" << std::endl << std::endl;
     osCode << '}' << std::endl << std::endl;
