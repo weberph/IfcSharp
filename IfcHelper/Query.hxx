@@ -87,7 +87,7 @@ namespace ifchelper
         const ifc::Reader& reader;
         const TIndex index{};
 
-        operator bool() const noexcept
+        operator bool() const
         {
             return not index_like::null( index );
         }

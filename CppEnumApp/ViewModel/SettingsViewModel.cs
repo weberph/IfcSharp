@@ -6,11 +6,11 @@ using System.IO;
 
 namespace CppEnumApp
 {
-    internal record IncludeDirectory(string Path)
+    internal sealed record IncludeDirectory(string Path)
     {
     }
 
-    internal partial class SettingsViewModel : ObservableObject
+    internal sealed partial class SettingsViewModel : ObservableObject
     {
         private const string VcvarsPath1 = @"c:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvars64.bat";
         private const string VcvarsPath2 = @"c:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat";
@@ -29,7 +29,7 @@ namespace CppEnumApp
         partial void OnSelectedIncludeDirectoryChanged(IncludeDirectory? value) => RemoveCommand.NotifyCanExecuteChanged();
         partial void OnAddInputChanged(string value) => AddCommand.NotifyCanExecuteChanged();
 
-        private bool _saveVcvarsOnChange = false;
+        private readonly bool _saveVcvarsOnChange;
         partial void OnVcvarsPathChanged(string value)
         {
             if (_saveVcvarsOnChange && File.Exists(value))

@@ -2,6 +2,8 @@
 
 namespace IfcSharpLib
 {
+    public sealed class IfcSelfTestException(string message) : Exception(message) { }
+
     public static partial class IfcSizeValidation
     {
         private static void AssertSize<T>(int expected)
@@ -11,7 +13,7 @@ namespace IfcSharpLib
             {
                 var msg = $"{typeof(T).Name} as unexpected size: {actual} instead of expected {expected}.";
                 Console.WriteLine(msg);
-                throw new Exception(msg);
+                throw new IfcSelfTestException(msg);
             }
         }
 

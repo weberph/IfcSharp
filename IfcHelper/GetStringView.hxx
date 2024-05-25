@@ -29,7 +29,7 @@ namespace ifchelper
 
             switch ( index.sort() )
             {
-                case ifc::NameSort::Identifier: return ( *this )( reader, ifc::TextOffset( index.index() ) );
+                case ifc::NameSort::Identifier: return ( *this )( reader, static_cast<ifc::TextOffset>( index.index() ) );
                 case ifc::NameSort::Operator: return ( *this )( reader, reader.get<ifc::symbolic::OperatorFunctionId>( index ).name );
                 case ifc::NameSort::Conversion: return ( *this )( reader, reader.get<ifc::symbolic::ConversionFunctionId>( index ).name );
                 case ifc::NameSort::Literal: return ( *this )( reader, reader.get<ifc::symbolic::LiteralOperatorId>( index ).name_index );

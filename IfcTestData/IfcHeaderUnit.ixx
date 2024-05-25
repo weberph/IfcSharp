@@ -1,6 +1,7 @@
 #pragma once
 
 #pragma warning( disable : 5244 ) // '#include <...>' in the purview of module '...' appears erroneous.
+#pragma warning( disable : 5260 ) // the constant variable 'gsl::dynamic_extent' has internal linkage in an included header file context ...
 
 #include <ifc/abstract-sgraph.hxx>
 #include <ifc/assertions.hxx>

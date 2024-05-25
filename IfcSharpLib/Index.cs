@@ -49,12 +49,15 @@
         static abstract SortType Type { get; }
     }
 
-
+    [AttributeUsage(AttributeTargets.Struct)]
     public class OverAttribute : Attribute { }
 
+    [AttributeUsage(AttributeTargets.Struct)]
     public class OverAttribute<T> : OverAttribute { }
 
+    [AttributeUsage(AttributeTargets.Struct)]
     public class TagAttribute : Attribute { }
 
+    [AttributeUsage(AttributeTargets.Struct)]
     public class TagAttribute<T>(T sort) : TagAttribute { public T Sort { get; } = sort; }
 }

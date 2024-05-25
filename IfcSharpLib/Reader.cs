@@ -6,6 +6,8 @@ using System.Text;
 
 namespace IfcSharpLib
 {
+    public sealed class InvalidIfcFileSignatureException() : Exception("Invalid ifc signature") { }
+
     public class Reader
     {
         private static readonly uint InterfaceSignatureBe = 0x5451451A;
@@ -25,7 +27,7 @@ namespace IfcSharpLib
             var span = _memory.Span;
             if (BinaryPrimitives.ReadUInt32BigEndian(span) != InterfaceSignatureBe)
             {
-                throw new Exception("Invalid ifc signature");
+                throw new InvalidIfcFileSignatureException();
             }
 
             var offset = 4;

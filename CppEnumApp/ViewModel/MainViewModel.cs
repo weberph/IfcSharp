@@ -10,17 +10,10 @@ using System.Text;
 
 namespace CppEnumApp
 {
-    internal class UserException(string userMessage) : Exception(userMessage)
-    {
-    }
-
-    internal class IfcCreationException(Exception exception) : Exception(exception.Message, exception)
-    {
-    }
-
-    internal class IfcProcessingException(Exception exception) : Exception(exception.Message, exception)
-    {
-    }
+    internal sealed class UserException(string userMessage) : Exception(userMessage) { }
+    internal sealed class IfcBuildException(string message) : Exception(message) { }
+    internal sealed class IfcCreationException(Exception exception) : Exception(exception.Message, exception) { }
+    internal sealed class IfcProcessingException(Exception exception) : Exception(exception.Message, exception) { }
 
     internal class IfcEnum(string name, string @namespace, bool enumClass, string[] members)
     {
@@ -30,10 +23,10 @@ namespace CppEnumApp
         public string[] Members { get; } = members;
     }
 
-    internal class AppEnumData(string name, string @namespace, bool enumClass, string[] members) : IfcEnum(name, @namespace, enumClass, members)
+    internal sealed class AppEnumData(string name, string @namespace, bool enumClass, string[] members) : IfcEnum(name, @namespace, enumClass, members)
     {
-        public string LowerName { get; } = name.ToLower();
-        public string LowerNamespace { get; } = @namespace.ToLower();
+        public string LowerName { get; } = name.ToLowerInvariant();
+        public string LowerNamespace { get; } = @namespace.ToLowerInvariant();
         public string EnumToString => _enumToString ??= CreateEnumToString();
 
         private string? _enumToString;
@@ -72,7 +65,7 @@ namespace CppEnumApp
         }
     }
 
-    internal partial class MainViewModel : ObservableObject
+    internal sealed partial class MainViewModel : ObservableObject
     {
         private AppEnumData[] _enums = [];
 
@@ -179,11 +172,7 @@ namespace CppEnumApp
                 }
             }
 
-            var env = _environment.Result;
-            if (env == null)
-            {
-                throw new Exception("Could not load developer environment. Check vcvars path in settings.");
-            }
+            var env = _environment.Result ?? throw new UserException("Could not load developer environment. Check vcvars path in settings."); ;
 
             using var amalgamation = await Task.Run(() => new Amalgamation(filesOrDirectory, extensions)).ConfigureAwait(false);
 
@@ -193,10 +182,10 @@ namespace CppEnumApp
 
             includeDirs.AddRange((Properties.Settings.Default.IncludeDirectories ?? []).Cast<string>());
 
-            var (stdout, stderr, exitCode) = await env.CreateIfcAsync(inputFile, includeDirs.ToArray(), outputFile).ConfigureAwait(false);
+            var (stdout, stderr, exitCode) = await env.CreateIfcAsync(inputFile, [.. includeDirs], outputFile).ConfigureAwait(false);
             if (exitCode != 0)
             {
-                throw new Exception($"Failed to build the ifc. Exit code of cl.exe: {exitCode}. Error:\n{stdout}\n{stderr}");
+                throw new IfcBuildException($"Failed to build the ifc. Exit code of cl.exe: {exitCode}. Error:\n{stdout}\n{stderr}");
             }
 
             return outputFile;
@@ -204,7 +193,7 @@ namespace CppEnumApp
 
         private Task<(string, AppEnumData[])> GetEnums(string[] filesOrDirectory)
         {
-            var isAnyIfc = filesOrDirectory.Any(f => f.ToLower().EndsWith(".ifc"));
+            var isAnyIfc = filesOrDirectory.Any(f => f.ToLowerInvariant().EndsWith(".ifc"));
             if (filesOrDirectory.Length > 1 && isAnyIfc)
             {
                 throw new UserException("Only a single ifc file can be loaded.");
@@ -299,17 +288,16 @@ namespace CppEnumApp
 
         private void ApplyFilters()
         {
-            var namespaceFilter = NamespaceFilter.ToLower();
-            var typeNameFilter = TypeNameFilter.ToLower();
-            FilteredEnums = _enums
+            var namespaceFilter = NamespaceFilter.ToLowerInvariant();
+            var typeNameFilter = TypeNameFilter.ToLowerInvariant();
+            FilteredEnums = [.. _enums
                                   .Where(e => !ExcludeGlobal || e.Namespace.Length > 0)
                                   .Where(e => !ExcludeStd || !e.Namespace.StartsWith("std"))
                                   .Where(e => !ExcludeNoMembers || e.Members.Length > 0)
                                   .Where(e => !ExcludeInternal || (e.Namespace.Length == 0 || e.Namespace[0] is not ('_' or '?')))
                                   .Where(e => string.IsNullOrWhiteSpace(namespaceFilter) || e.LowerNamespace.Contains(namespaceFilter))
                                   .Where(e => string.IsNullOrWhiteSpace(typeNameFilter) || e.LowerName.Contains(typeNameFilter))
-                                  .OrderBy(e => e.Name)
-                                  .ToArray();
+                                  .OrderBy(e => e.Name)];
         }
     }
 }

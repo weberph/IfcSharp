@@ -2,7 +2,7 @@
 
 namespace IfcSharpLibTest
 {
-    internal partial class Program
+    internal sealed partial class Program
     {
         static partial void Test(string[] args);
 
