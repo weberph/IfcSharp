@@ -13,7 +13,6 @@ namespace IfcSharpLibTest
         static void Main(string[] args)
         {
             IfcSizeValidation.Test();
-            IfcMeta.Init();
 
             var reader = new Reader(@"d:\.projects\.unsorted\2024\IfcSharp\CppEnumApp\bin\x64\Debug\net8.0-windows\current.ifc");
 

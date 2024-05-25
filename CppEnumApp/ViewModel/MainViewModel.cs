@@ -126,8 +126,6 @@ namespace CppEnumApp
 
         public MainViewModel()
         {
-            IfcMeta.Init();
-
             _environment = Task.Run(async () =>
             {
                 if (SettingsViewModel.TryGetVcvarsPath(out var vcvarsPath))

@@ -27,7 +27,6 @@ namespace IfcSharpLib
         static TocMapping()
         {
             DeclsortTableReverse = Reverse(DeclsortTable);
-            DeclsortTableReverse = Reverse(DeclsortTable);
             TypesortTableReverse = Reverse(TypesortTable);
             StmtsortTableReverse = Reverse(StmtsortTable);
             ExprsortTableReverse = Reverse(ExprsortTable);
@@ -96,24 +95,6 @@ namespace IfcSharpLib
                 //{ "dirs", (ref TableOfContents toc, PartitionSummaryData d) => toc.dirs = d },
                 { "implementation_pragmas", (ref TableOfContents toc, PartitionSummaryData d) => toc.implementation_pragmas = d },
             }.ToFrozenDictionary();
-
-        //private static readonly FrozenDictionary<string, IndexablePartition> PartitionDispatchTable = new Dictionary<string, IndexablePartition>
-        //{
-        //    { "decl.", IndexablePartition.Decls },
-        //    { "type.", IndexablePartition.Types },
-        //    { "name.", IndexablePartition.Names },
-        //    { "expr.", IndexablePartition.Exprs },
-        //    { "stmt.", IndexablePartition.Stmts },
-        //    { "syntax.", IndexablePartition.Elements },
-        //    { "macro.", IndexablePartition.Macros },
-        //    { "heap.", IndexablePartition.Heaps },
-        //    { "pragma-directive.", IndexablePartition.PragmaDirectives },
-        //    { "pp.", IndexablePartition.Forms },
-        //    { "trait.", IndexablePartition.Traits },
-        //    { "attr.", IndexablePartition.Attrs },
-        //    { "dir.", IndexablePartition.Dirs },
-        //    { ".msvc.", IndexablePartition.MsvcTraits },
-        //}.ToFrozenDictionary();
 
         private static readonly FrozenDictionary<string, AssignIndexed> PartitionDispatchTable;
 

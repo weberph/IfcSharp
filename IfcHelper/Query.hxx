@@ -183,7 +183,6 @@ namespace ifchelper
         template<index_like::Fiber U, index_like::MultiSorted UIndex>
         Query<UIndex> get( detail::Ptm<UIndex, U> ptm ) const
         {
-            static_assert( std::convertible_to<TIndex::SortType, decltype( U::algebra_sort )>, "Invalid query: the stored index does not match the type being requested." );
             detail::sameSortOrThrow( index.sort(), U::algebra_sort );
             const auto& ref = reader.get<U>( index );
             return { reader, ref.*ptm };

@@ -1130,29 +1130,29 @@ static std::ostream& operator<<( std::ostream& os, const CsIdentifier csIdentifi
 }
 
 template<index_like::MultiSorted T>
-std::tuple<size_t, size_t> getTagIndexPrecision()
+std::tuple<size_t, size_t> getMultisortedTagIndexPrecision()
 {
     return { index_like::tag_precision<typename T::SortType>, index_like::index_precision<typename T::SortType> };
 }
 
-std::tuple<size_t, size_t> getTagIndexPrecision( const std::string_view name )
+std::tuple<size_t, size_t> getMultisortedTagIndexPrecision( const std::string_view name )
 {
     static std::unordered_map<std::string_view, std::tuple<size_t, size_t>> map = {
-        { "StringIndex", getTagIndexPrecision<ifc::StringIndex>() },
-        { "NameIndex", getTagIndexPrecision<ifc::NameIndex>() },
-        { "ChartIndex", getTagIndexPrecision<ifc::ChartIndex>() },
-        { "DeclIndex", getTagIndexPrecision<ifc::DeclIndex>() },
-        { "TypeIndex", getTagIndexPrecision<ifc::TypeIndex>() },
-        { "SyntaxIndex", getTagIndexPrecision<ifc::SyntaxIndex>() },
-        { "LitIndex", getTagIndexPrecision<ifc::LitIndex>() },
-        { "StmtIndex", getTagIndexPrecision<ifc::StmtIndex>() },
-        { "ExprIndex", getTagIndexPrecision<ifc::ExprIndex>() },
-        { "MacroIndex", getTagIndexPrecision<ifc::MacroIndex>() },
-        { "PragmaIndex", getTagIndexPrecision<ifc::PragmaIndex>() },
-        { "AttrIndex", getTagIndexPrecision<ifc::AttrIndex>() },
-        { "DirIndex", getTagIndexPrecision<ifc::DirIndex>() },
-        { "UnitIndex", getTagIndexPrecision<ifc::UnitIndex>() },
-        { "FormIndex", getTagIndexPrecision<ifc::FormIndex>() }
+        { "StringIndex", getMultisortedTagIndexPrecision<ifc::StringIndex>() },
+        { "NameIndex", getMultisortedTagIndexPrecision<ifc::NameIndex>() },
+        { "ChartIndex", getMultisortedTagIndexPrecision<ifc::ChartIndex>() },
+        { "DeclIndex", getMultisortedTagIndexPrecision<ifc::DeclIndex>() },
+        { "TypeIndex", getMultisortedTagIndexPrecision<ifc::TypeIndex>() },
+        { "SyntaxIndex", getMultisortedTagIndexPrecision<ifc::SyntaxIndex>() },
+        { "LitIndex", getMultisortedTagIndexPrecision<ifc::LitIndex>() },
+        { "StmtIndex", getMultisortedTagIndexPrecision<ifc::StmtIndex>() },
+        { "ExprIndex", getMultisortedTagIndexPrecision<ifc::ExprIndex>() },
+        { "MacroIndex", getMultisortedTagIndexPrecision<ifc::MacroIndex>() },
+        { "PragmaIndex", getMultisortedTagIndexPrecision<ifc::PragmaIndex>() },
+        { "AttrIndex", getMultisortedTagIndexPrecision<ifc::AttrIndex>() },
+        { "DirIndex", getMultisortedTagIndexPrecision<ifc::DirIndex>() },
+        { "UnitIndex", getMultisortedTagIndexPrecision<ifc::UnitIndex>() },
+        { "FormIndex", getMultisortedTagIndexPrecision<ifc::FormIndex>() }
     };
 
     return map.at( name );
@@ -1420,7 +1420,9 @@ public:
 
         if ( insertStaticSortGetter )
         {
-            os << "    public static int Sort => (int)" << baseTypes.Tag.value().parent.name << '.' << baseTypes.Tag.value().name << ";" << std::endl << std::endl;
+            const auto& tag = baseTypes.Tag.value();
+            os << "    public static int Sort => (int)" << tag.parent.name << '.' << tag.name << ";" << std::endl;
+            os << "    public static SortType Type => SortType." << ( tag.parent.name.substr( 0, tag.parent.name.size() - 4 ) ) << ';' << std::endl << std::endl;
         }
 
         if ( writeNested )
@@ -1431,12 +1433,13 @@ public:
         if ( baseTypes.Over.has_value() ) // XXX: assumed to be the first base
         {
             const auto& over = baseTypes.Over.value();
-            const auto [tagPrecision, valuePrecision] = getTagIndexPrecision( mName );
+            const auto [tagPrecision, valuePrecision] = getMultisortedTagIndexPrecision( mName );
             assert( tagPrecision + valuePrecision == 32 );
             os << "    private readonly uint IndexAndSort;" << std::endl;
             os << "    public Index Index => (Index)(IndexAndSort >> " << tagPrecision << ");" << std::endl;
             os << "    public " << over.tagType.name << " Sort => (" << over.tagType.name << ")(IndexAndSort & 0b" << std::string( tagPrecision, '1' ) << ");" << std::endl;
             os << "    public bool IsNull => IndexAndSort == 0;" << std::endl;
+            os << "    public static SortType Type => SortType." << ( over.tagType.name.substr( 0, over.tagType.name.size() - 4 ) ) << ';' << std::endl;
         }
 
         for ( const auto& member : baseTypes.MembersToInline )
@@ -1892,6 +1895,7 @@ int main() // TODO: bool handling
     osCode << "using System.Runtime.InteropServices;" << std::endl << std::endl;
     osCode << "#pragma warning disable CS0649 // Field '...' is never assigned to, and will always have its default value 0" << std::endl << std::endl;
     osCode << "namespace ifc" << std::endl << '{' << std::endl;
+#if 0
     osCode << "public enum Index : uint { }" << std::endl;
     osCode << R"(
     public interface IHasSort
@@ -1919,6 +1923,8 @@ int main() // TODO: bool handling
     osCode << "public class OverAttribute<T> : OverAttribute { }" << std::endl << std::endl;
     osCode << "public class TagAttribute : Attribute { }" << std::endl << std::endl;
     osCode << "public class TagAttribute<T>(T sort) : TagAttribute { public T Sort { get; } = sort; }" << std::endl << std::endl;
+#endif
+
     osCode << "public readonly struct Sequence<T> { public readonly Index start; public readonly Cardinality cardinality; }" << std::endl << std::endl;
     osCode << "public readonly struct Identity<T> { public readonly T name; public readonly symbolic.SourceLocation locus; }" << std::endl << std::endl;
     osCode << '}' << std::endl << std::endl;

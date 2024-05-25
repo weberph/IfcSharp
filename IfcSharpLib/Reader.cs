@@ -1,5 +1,6 @@
 ﻿using ifc;
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -12,11 +13,10 @@ namespace IfcSharpLib
         private readonly ReadOnlyMemory<byte> _memory;
         private readonly ReadOnlyMemory<byte> _tocMemory;
         private readonly ReadOnlyMemory<byte> _stringMemory;
+        private readonly Header _header;
+        private readonly TableOfContents _toc;
 
         private ReadOnlySpan<PartitionSummaryData> PartitionTables => MemoryMarshal.Cast<byte, PartitionSummaryData>(_tocMemory.Span);
-
-        private Header _header;
-        private TableOfContents _toc;
 
         public Reader(string file)
         {
@@ -44,22 +44,28 @@ namespace IfcSharpLib
             }
         }
 
-        public ref readonly T Get<T, U>(IOver<U> index) where T : struct, IHasSort<U> where U : Enum
+        public ReadOnlySpan<T> Partition<T>()
+            where T : struct, IHasSort
         {
-            return ref Partition<T>()[(int)index.Index];
+            ref readonly var summary = ref PartitionSummary<T>();
+            var size = (int)summary.cardinality * Marshal.SizeOf<T>();
+            return MemoryMarshal.Cast<byte, T>(_memory.Span.Slice((int)summary.offset, size));
         }
 
-        public ref readonly T Get<T>(TypeIndex index) where T : struct, IHasSort<TypeSort>
+        public ref readonly T Get<T>(TypeIndex index)
+            where T : struct, IHasSort<TypeSort>
         {
-            return ref Partition<T>()[(int)index.Index];
+            return ref Partition<T>(_toc.types[(int)index.Sort])[(int)index.Index];
         }
 
-        public ref readonly T Get<T>(DeclIndex index) where T : struct, IHasSort<DeclSort>
+        public ref readonly T Get<T>(DeclIndex index)
+            where T : struct, IHasSort<DeclSort>
         {
-            return ref Partition<T>()[(int)index.Index];
+            return ref Partition<T>(_toc.decls[(int)index.Sort])[(int)index.Index];
         }
 
-        public ReadOnlySpan<T> Sequence<T>(Sequence<T> sequence) where T : struct, IHasSort
+        public ReadOnlySpan<T> Sequence<T>(Sequence<T> sequence)
+            where T : struct, IHasSort
         {
             return Partition<T>().Slice((int)sequence.start, (int)sequence.cardinality);
         }
@@ -85,39 +91,41 @@ namespace IfcSharpLib
             return GetString((TextOffset)index.name.Index);
         }
 
-        public ref readonly PartitionSummaryData PartitionSummary<T>()
+        private ReadOnlySpan<T> Partition<T>(in PartitionSummaryData summary)
             where T : struct, IHasSort
         {
-            var indexablePartition = IfcMeta.PartitionByType<T>();
-
-            switch (indexablePartition)
-            {
-                case IndexablePartition.Names: return ref _toc.names[T.Sort];
-                case IndexablePartition.Decls: return ref _toc.decls[T.Sort];
-                case IndexablePartition.Types: return ref _toc.types[T.Sort];
-                case IndexablePartition.Stmts: return ref _toc.states;
-                case IndexablePartition.Exprs: return ref _toc.exprs[T.Sort];
-                case IndexablePartition.Elements: return ref _toc.elements[T.Sort];
-                case IndexablePartition.Forms: return ref _toc.forms[T.Sort];
-                case IndexablePartition.Traits: return ref _toc.traits[T.Sort];
-                case IndexablePartition.MsvcTraits: return ref _toc.msvc_traits[T.Sort];
-                case IndexablePartition.Heaps: return ref _toc.heaps[T.Sort];
-                case IndexablePartition.Macros: return ref _toc.macros[T.Sort];
-                case IndexablePartition.PragmaDirectives: return ref _toc.pragma_directives[T.Sort];
-                case IndexablePartition.Attrs: return ref _toc.attrs[T.Sort];
-                case IndexablePartition.Dirs: return ref _toc.dirs[T.Sort];
-                default:
-                    throw new NotImplementedException();
-            }
-            throw new NotImplementedException();
+            Debug.Assert(Marshal.SizeOf<T>() == (int)summary.entry_size);
+            var size = (int)summary.cardinality * (int)summary.entry_size;
+            return MemoryMarshal.Cast<byte, T>(_memory.Span.Slice((int)summary.offset, size));
         }
 
-        public ReadOnlySpan<T> Partition<T>()
+        private ref readonly PartitionSummaryData PartitionSummary<T>()
             where T : struct, IHasSort
         {
-            ref readonly var summary = ref PartitionSummary<T>();
-            var size = (int)summary.cardinality * Marshal.SizeOf<T>();
-            return MemoryMarshal.Cast<byte, T>(_memory.Span.Slice((int)summary.offset, size));
+            switch (T.Type)
+            {
+                case SortType.Name: return ref _toc.names[T.Sort];
+                case SortType.Decl: return ref _toc.decls[T.Sort];
+                case SortType.Type: return ref _toc.types[T.Sort];
+                case SortType.Stmt: return ref _toc.stmts[T.Sort];
+                case SortType.Expr: return ref _toc.exprs[T.Sort];
+                case SortType.Syntax: return ref _toc.elements[T.Sort];
+                case SortType.Form: return ref _toc.forms[T.Sort];
+                case SortType.Trait: return ref _toc.traits[T.Sort];
+                case SortType.MsvcTrait: return ref _toc.msvc_traits[T.Sort];
+                case SortType.Heap: return ref _toc.heaps[T.Sort];
+                case SortType.Macro: return ref _toc.macros[T.Sort];
+                case SortType.Pragma: return ref _toc.pragma_directives[T.Sort];
+                case SortType.Attr: return ref _toc.attrs[T.Sort];
+                case SortType.Dir: return ref _toc.dirs[T.Sort];
+                case SortType.String: return ref _toc.string_literals;
+                case SortType.Scope: return ref _toc.scopes;
+                case SortType.Chart when ((ChartSort)T.Sort == ChartSort.Unilevel): return ref _toc.charts;
+                case SortType.Chart when ((ChartSort)T.Sort == ChartSort.Multilevel): return ref _toc.multi_charts;
+                case SortType.Literal when ((LiteralSort)T.Sort == LiteralSort.Integer): return ref _toc.u64s;
+                case SortType.Literal when ((LiteralSort)T.Sort == LiteralSort.FloatingPoint): return ref _toc.fps;
+            }
+            throw new NotImplementedException();
         }
     }
 }

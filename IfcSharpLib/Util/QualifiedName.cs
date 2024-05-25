@@ -20,7 +20,7 @@ namespace IfcSharpLib.Util
                     return false;
                 }
 
-                ref readonly var scope = ref reader.Get<ScopeDecl, DeclSort>(declIndex);
+                ref readonly var scope = ref reader.Get<ScopeDecl>(declIndex);
                 if (!TryBuildFullyQualifiedName(reader, scope.home_scope, sb))
                 {
                     return false;
