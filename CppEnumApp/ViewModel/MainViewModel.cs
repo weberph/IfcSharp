@@ -155,7 +155,7 @@ namespace CppEnumApp
 
         private async Task<string> CreateIfcAsync(string[] filesOrDirectory)
         {
-            var extensions = Extensions.Split((char[])[' ', ',', ';', '|'], StringSplitOptions.TrimEntries); // keeping empty entries intentionally
+            var extensions = Extensions.Split([' ', ',', ';', '|'], StringSplitOptions.TrimEntries); // keeping empty entries intentionally
 
             var includeDirs = new List<string>();
 
@@ -176,7 +176,7 @@ namespace CppEnumApp
 
             using var amalgamation = await Task.Run(() => new Amalgamation(filesOrDirectory, extensions)).ConfigureAwait(false);
 
-            var inputFile = amalgamation?.FilePath ?? filesOrDirectory[0];
+            var inputFile = amalgamation.FilePath;
 
             var outputFile = Path.Combine(Directory.GetCurrentDirectory(), "current.ifc");
 

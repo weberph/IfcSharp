@@ -46,14 +46,6 @@ namespace IfcSharpLib
             }
         }
 
-        public ReadOnlySpan<T> Partition<T>()
-            where T : struct, IHasSort
-        {
-            ref readonly var summary = ref PartitionSummary<T>();
-            var size = (int)summary.cardinality * Marshal.SizeOf<T>();
-            return MemoryMarshal.Cast<byte, T>(_memory.Span.Slice((int)summary.offset, size));
-        }
-
         public ref readonly T Get<T>(TypeIndex index)
             where T : struct, IHasSort<TypeSort>
         {
@@ -91,6 +83,12 @@ namespace IfcSharpLib
             }
 
             return GetString((TextOffset)index.name.Index);
+        }
+
+        public ReadOnlySpan<T> Partition<T>()
+            where T : struct, IHasSort
+        {
+            return Partition<T>(PartitionSummary<T>());
         }
 
         private ReadOnlySpan<T> Partition<T>(in PartitionSummaryData summary)
