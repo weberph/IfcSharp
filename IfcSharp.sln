@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.9.34728.123
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IfcSharp", "IfcSharp\IfcSharp.vcxproj", "{06521F36-00BC-4763-98F7-5915640A4D3A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A02141C2-8FFB-4DE2-BED8-2ACE31C3B413} = {A02141C2-8FFB-4DE2-BED8-2ACE31C3B413}
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CppEnumApp", "CppEnumApp\CppEnumApp.csproj", "{48A159CD-A802-4812-8795-FAB17255A497}"
 EndProject

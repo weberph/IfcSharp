@@ -1767,15 +1767,24 @@ std::span<const std::string_view> QualifiedNameTable::getRefereeQualifier( const
     return refereeNames.subspan( skipCount );
 }
 
+constexpr std::string_view IfcSharpOutDir = IFCSHARP_OUTDIR;
+constexpr std::string_view IfcSharpRepoDir = IFCSHARP_REPODIR;
+
 int main() // TODO: bool handling
 {
-    const std::string ifcFile = R"(d:\.projects\.unsorted\2024\IfcSharp\IfcTestData\x64\Debug\IfcHeaderUnit.ixx.ifc)";
-    const std::string validationInputFile = R"(d:\.projects\.unsorted\2024\IfcSharp\IfcTestData\x64\Debug\IfcSizeValidation.ixx.ifc)";
-    const std::string validationOutputFile = R"(d:\.projects\.unsorted\2024\IfcSharp\IfcSharpLib\IfcSizeValidation.Generated.cs)";
+    const std::filesystem::path ifcSharpOutDir( IfcSharpOutDir );
+    const auto ifcInputFile = ifcSharpOutDir / "IfcTestData" / "IfcHeaderUnit.ixx.ifc";
+    const auto validationInputFile = ifcSharpOutDir / "IfcTestData" / "IfcSizeValidation.ixx.ifc";
 
-    updateValidationData( validationInputFile, validationOutputFile );
+    const std::filesystem::path ifcSharpRepoDir( IfcSharpRepoDir );
+    const auto validationOutputFile = ifcSharpRepoDir / "IfcSharpLib" / "IfcSizeValidation.Generated.cs";
+    const auto ifcOutputFile = ifcSharpRepoDir / "IfcSharpLib" / "Ifc.Generated.cs";
 
-    auto ifc = ifchelper::IfcReader::loadFile( ifcFile );
+    const auto testOutputFile = ifcSharpRepoDir / "IfcTestData" / "IfcSizeValidation.ixx";
+
+    updateValidationData( validationInputFile.string(), validationOutputFile.string() );
+
+    auto ifc = ifchelper::IfcReader::loadFile( ifcInputFile.string() );
     auto& reader = ifc.reader();
 
     ScopeInfo scopeInfo;
@@ -1989,8 +1998,7 @@ int main() // TODO: bool handling
 
     std::cout << std::endl << std::string( 80, '=' ) << std::endl << std::endl;
 
-    const std::string outputFile = R"(d:\.projects\.unsorted\2024\IfcSharp\IfcSharpLib\Ifc.Generated.cs)";
-    if ( updateFileWithHash( outputFile, osCode.str() ) )
+    if ( updateFileWithHash( ifcOutputFile.string(), osCode.str() ) )
     {
         std::cout << "### Output file changed ###" << std::endl;
     }
@@ -2024,8 +2032,7 @@ int main() // TODO: bool handling
     } );
     osTest << '}' << std::endl; // close export
 
-    const std::string testOutputFile = R"(d:\.projects\.unsorted\2024\IfcSharp\IfcTestData\IfcSizeValidation.ixx)";
-    if ( updateFileWithHash( testOutputFile, osTest.str() ) )
+    if ( updateFileWithHash( testOutputFile.string(), osTest.str() ) )
     {
         std::cout << "### Test output file changed ###" << std::endl;
     }

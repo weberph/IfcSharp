@@ -47,7 +47,7 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>IFCSHARP_OUTDIR=R"($(OutDir))";IFCSHARP_REPODIR=R"($(SolutionDir))";_CONSOLE;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <AdditionalIncludeDirectories>$(ProjectDir)..\IfcHelper;$(ProjectDir)..\_external\ifc\include\;$(ProjectDir)..\_external\ifc\build\vcpkg_installed\x64-windows-static-md\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -63,7 +63,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>IFCSHARP_OUTDIR=R"($(OutDir))";IFCSHARP_REPODIR=R"($(SolutionDir))";_CONSOLE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <AdditionalIncludeDirectories>$(ProjectDir)..\IfcHelper;$(ProjectDir)..\_external\ifc\include\;$(ProjectDir)..\_external\ifc\build\vcpkg_installed\x64-windows-static-md\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
