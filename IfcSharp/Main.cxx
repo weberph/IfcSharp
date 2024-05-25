@@ -370,7 +370,7 @@ namespace
                                 ++parametersFound;
                                 const ifc::symbolic::ParameterDecl& parameter = parameterDecl.value();
                                 assert( parameter.position - 1 == i ); // assume parameters are in order
-                                merged[i] = outerArgs.at( parameter.position - 1 );
+                                merged[i] = outerArgs.at( gsl::narrow_cast<size_t>( parameter.position ) - 1 );
                                 continue;
                             }
                         }
@@ -607,60 +607,40 @@ namespace
         const ifc::TypeIndex baseIndex,
         std::ostream& os )
     {
-        os << "public enum " << typeName;
+        std::print( os, "public enum {}", typeName );
 
-        if ( not index_like::null( baseIndex ) )
+        if ( const auto base = fundamentalToCS( Query( reader, baseIndex ).get<ifc::symbolic::FundamentalType>() ); base != "int" )
         {
-            if ( baseIndex.sort() != ifc::TypeSort::Fundamental ) throw std::runtime_error( "unexpected enum base" );
-            if ( const auto base = fundamentalToCS( reader.get<ifc::symbolic::FundamentalType>( baseIndex ) ); base != "int" )
-            {
-                os << " : " << base;
-            }
+            std::print( os, " : {}", base );
         }
 
-        os << std::endl << "{" << std::endl;
+        std::println( os, "\n{{" );
 
         bool first = true;
         bool printExplicitValues = false;
         int64_t index = 0;
         for ( const auto& val : reader.sequence( initializer ) ) // XXX: not const?
         {
-            if ( first )
+            if ( not std::exchange( first, false ) )
             {
-                first = false;
+                std::println( os, "," );
+            }
+
+            const auto value = getLiteralValue( reader, val.initializer );
+            printExplicitValues |= value != index++;
+
+            if ( printExplicitValues )
+            {
+                std::print( os, "    {} = {}", getStringView( reader, val.identity ), value );
             }
             else
             {
-                os << ',' << std::endl;
+                std::print( os, "    {}", getStringView( reader, val.identity ) );
             }
-
-            os << "    " << getStringView( reader, val.identity );
-
-            if ( val.initializer.sort() == ifc::ExprSort::Literal )
-            {
-                const auto value = getLiteralValue( reader, val.initializer );
-
-                printExplicitValues |= value != index;
-
-                if ( printExplicitValues )
-                {
-                    os << " = " << value;
-                }
-            }
-            else
-            {
-                assert( false );
-            }
-
-            ++index;
         }
 
-        if ( !first )
-        {
-            os << std::endl;
-        }
 
-        os << '}' << std::endl << std::endl;
+        std::println( os, "{}}}\n", first ? "" : "\n" );
     }
 
     template<class T>
@@ -1288,13 +1268,13 @@ namespace
                         else
                         {
                             // TODO: emit templates so that they don't need to be inlined
-                            const auto templateArgs = declarator.templateArgs;
                             for ( const auto& field : templateInfo.fields() )
                             {
                                 if ( std::holds_alternative<ifc::symbolic::ParameterDecl>( field.param ) )
                                 {
-                                    const auto& argExpr = templateArgs.at( std::get<ifc::symbolic::ParameterDecl>( field.param ).position - 1 ); // XXX unsure about ordering/indexing
-                                    const auto fieldDeclarator = std::get<Declarator>( argExpr );
+                                    const auto argIndex = gsl::narrow_cast<size_t>( std::get<ifc::symbolic::ParameterDecl>( field.param ).position ) - 1;
+                                    const auto& argExpr = declarator.templateArgs.at( argIndex ); // XXX unsure about ordering/indexing
+                                    const auto& fieldDeclarator = std::get<Declarator>( argExpr );
 
                                     const auto typeName = getCsTypeName( reader, fieldDeclarator );
                                     std::ostringstream oss;
@@ -1608,7 +1588,7 @@ namespace
                         const bool isUnionDeclaration = isStructClassOrUnion( reader, scope.type, isUnionArg ) && isUnionArg;
                         assert( isUnionDeclaration );
 
-                        const auto unionInfo = infoByIndex.at( scopeIndex ).get().as<StructInfo>();
+                        const auto& unionInfo = infoByIndex.at( scopeIndex ).get().as<StructInfo>();
 
                         os << "    private ";
                         if ( isReadonlyStruct )
@@ -1653,7 +1633,7 @@ namespace
 
             os << "}" << std::endl << std::endl;
 
-            for ( const auto [helperTypeName, typeName, bound] : inlineArrays )
+            for ( const auto& [helperTypeName, typeName, bound] : inlineArrays )
             {
                 os << "[System.Runtime.CompilerServices.InlineArray(" << bound << ")]" << std::endl;
                 os << "public struct " << helperTypeName << std::endl << '{' << std::endl;
