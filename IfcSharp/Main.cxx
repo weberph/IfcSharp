@@ -563,7 +563,9 @@ namespace
             case ifc::symbolic::TypePrecision::Default:
                 switch ( type.basis )
                 {
-                    case ifc::symbolic::TypeBasis::Bool: // bool has 4 bytes -> requires [MarshalAs(UnmanagedType.U1)] until then: use byte
+                    case ifc::symbolic::TypeBasis::Bool:
+                        return "bool";
+
                     case ifc::symbolic::TypeBasis::Char:
                         return type.sign == ifc::symbolic::TypeSign::Unsigned ? "byte" : "sbyte";
 
@@ -1465,11 +1467,6 @@ namespace
                         {
                             os << "[FieldOffset(0)]" << std::endl;
                         }
-                        os << "    public ";
-                        if ( isReadonlyStruct )
-                        {
-                            os << "readonly ";
-                        }
 
                         const auto& innerDecl = reader.get<ifc::symbolic::FieldDecl>( innerDeclaration.index );
                         assert( index_like::null( innerDecl.alignment ) );
@@ -1479,6 +1476,16 @@ namespace
                         const auto& declarator = visitor.declarator();
 
                         std::string_view typeName = getCsTypeName( reader, declarator );
+                        if ( typeName == "bool" )
+                        {
+                            std::println( os, "[MarshalAs(UnmanagedType.U1)]" );
+                        }
+
+                        os << "    public ";
+                        if ( isReadonlyStruct )
+                        {
+                            os << "readonly ";
+                        }
 
                         if ( typeName == "basic_string_view" || typeName == "Pathname" )
                         {
@@ -1739,7 +1746,7 @@ namespace IfcSharpLib
     constexpr std::string_view IfcSharpRepoDir = IFCSHARP_REPODIR;
 }
 
-int main() // TODO: bool handling
+int main()
 {
     const std::filesystem::path ifcSharpOutDir( IfcSharpOutDir );
     const auto ifcInputFile = ifcSharpOutDir / "IfcTestData" / "IfcHeaderUnit.ixx.ifc";
