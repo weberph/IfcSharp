@@ -1,0 +1,23 @@
+<Project>
+
+  <PropertyGroup>
+    <AnalysisMode>recommended</AnalysisMode>
+    <AnalysisLevel>latest</AnalysisLevel>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <IfcSharpOutDir>$([MSBuild]::NormalizeDirectory('$(SolutionDir)', 'build', '$(Platform)', '$(Configuration)'))</IfcSharpOutDir>
+    <IfcSharpIntDir>$([MSBuild]::NormalizeDirectory('$(IfcSharpOutDir)', '$(MSBuildProjectName)'))</IfcSharpIntDir>
+    
+    <OutDir>$(IfcSharpOutDir)</OutDir>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.csproj'">
+    <BaseIntermediateOutputPath>$(IfcSharpIntDir)</BaseIntermediateOutputPath>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.vcxproj'">
+    <IntDir>$(IfcSharpIntDir)</IntDir>
+  </PropertyGroup>
+  
+</Project>
