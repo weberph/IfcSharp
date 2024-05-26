@@ -1,4 +1,4 @@
-// hash: cc1fcb6f48a03a6719cb8c59da9d0bed53f6e602ba93143ec1b6804ab0a85b96
+// hash: d53b10de825263d4df7d85be06205b176a8c7e875d63be335a9967b836f10a61
 
 using System.Runtime.InteropServices;
 
@@ -2658,29 +2658,45 @@ namespace ifc
             public readonly Cardinality cardinality;
         }
 
-        public readonly struct BlockStmt
+        [Tag<StmtSort>(StmtSort.Block)]
+        public readonly struct BlockStmt : IHasSort<StmtSort>
         {
+            public static int Sort => (int)StmtSort.Block;
+            public static SortType Type => SortType.Stmt;
+
             public readonly SourceLocation locus;
             public readonly Index start;
             public readonly Cardinality cardinality;
         }
 
-        public readonly struct TryStmt
+        [Tag<StmtSort>(StmtSort.Try)]
+        public readonly struct TryStmt : IHasSort<StmtSort>
         {
+            public static int Sort => (int)StmtSort.Try;
+            public static SortType Type => SortType.Stmt;
+
             public readonly SourceLocation locus;
             public readonly Index start;
             public readonly Cardinality cardinality;
             public readonly StmtIndex handlers;
         }
 
-        public readonly struct ExpressionStmt
+        [Tag<StmtSort>(StmtSort.Expression)]
+        public readonly struct ExpressionStmt : IHasSort<StmtSort>
         {
+            public static int Sort => (int)StmtSort.Expression;
+            public static SortType Type => SortType.Stmt;
+
             public readonly SourceLocation locus;
             public readonly ExprIndex expr;
         }
 
-        public readonly struct IfStmt
+        [Tag<StmtSort>(StmtSort.If)]
+        public readonly struct IfStmt : IHasSort<StmtSort>
         {
+            public static int Sort => (int)StmtSort.If;
+            public static SortType Type => SortType.Stmt;
+
             public readonly SourceLocation locus;
             public readonly StmtIndex init;
             public readonly StmtIndex condition;
@@ -2688,22 +2704,34 @@ namespace ifc
             public readonly StmtIndex alternative;
         }
 
-        public readonly struct WhileStmt
+        [Tag<StmtSort>(StmtSort.While)]
+        public readonly struct WhileStmt : IHasSort<StmtSort>
         {
+            public static int Sort => (int)StmtSort.While;
+            public static SortType Type => SortType.Stmt;
+
             public readonly SourceLocation locus;
             public readonly StmtIndex condition;
             public readonly StmtIndex body;
         }
 
-        public readonly struct DoWhileStmt
+        [Tag<StmtSort>(StmtSort.DoWhile)]
+        public readonly struct DoWhileStmt : IHasSort<StmtSort>
         {
+            public static int Sort => (int)StmtSort.DoWhile;
+            public static SortType Type => SortType.Stmt;
+
             public readonly SourceLocation locus;
             public readonly ExprIndex condition;
             public readonly StmtIndex body;
         }
 
-        public readonly struct ForStmt
+        [Tag<StmtSort>(StmtSort.For)]
+        public readonly struct ForStmt : IHasSort<StmtSort>
         {
+            public static int Sort => (int)StmtSort.For;
+            public static SortType Type => SortType.Stmt;
+
             public readonly SourceLocation locus;
             public readonly StmtIndex init;
             public readonly StmtIndex condition;
@@ -2711,67 +2739,107 @@ namespace ifc
             public readonly StmtIndex body;
         }
 
-        public readonly struct BreakStmt
+        [Tag<StmtSort>(StmtSort.Break)]
+        public readonly struct BreakStmt : IHasSort<StmtSort>
         {
+            public static int Sort => (int)StmtSort.Break;
+            public static SortType Type => SortType.Stmt;
+
             public readonly SourceLocation locus;
         }
 
-        public readonly struct ContinueStmt
+        [Tag<StmtSort>(StmtSort.Continue)]
+        public readonly struct ContinueStmt : IHasSort<StmtSort>
         {
+            public static int Sort => (int)StmtSort.Continue;
+            public static SortType Type => SortType.Stmt;
+
             public readonly SourceLocation locus;
         }
 
-        public readonly struct GotoStmt
+        [Tag<StmtSort>(StmtSort.Goto)]
+        public readonly struct GotoStmt : IHasSort<StmtSort>
         {
+            public static int Sort => (int)StmtSort.Goto;
+            public static SortType Type => SortType.Stmt;
+
             public readonly SourceLocation locus;
             public readonly ExprIndex target;
         }
 
-        public readonly struct SwitchStmt
+        [Tag<StmtSort>(StmtSort.Switch)]
+        public readonly struct SwitchStmt : IHasSort<StmtSort>
         {
+            public static int Sort => (int)StmtSort.Switch;
+            public static SortType Type => SortType.Stmt;
+
             public readonly SourceLocation locus;
             public readonly StmtIndex init;
             public readonly ExprIndex control;
             public readonly StmtIndex body;
         }
 
-        public readonly struct LabeledStmt
+        [Tag<StmtSort>(StmtSort.Labeled)]
+        public readonly struct LabeledStmt : IHasSort<StmtSort>
         {
+            public static int Sort => (int)StmtSort.Labeled;
+            public static SortType Type => SortType.Stmt;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly ExprIndex label;
             public readonly StmtIndex statement;
         }
 
-        public readonly struct DeclStmt
+        [Tag<StmtSort>(StmtSort.Decl)]
+        public readonly struct DeclStmt : IHasSort<StmtSort>
         {
+            public static int Sort => (int)StmtSort.Decl;
+            public static SortType Type => SortType.Stmt;
+
             public readonly SourceLocation locus;
             public readonly DeclIndex decl;
         }
 
-        public readonly struct ReturnStmt
+        [Tag<StmtSort>(StmtSort.Return)]
+        public readonly struct ReturnStmt : IHasSort<StmtSort>
         {
+            public static int Sort => (int)StmtSort.Return;
+            public static SortType Type => SortType.Stmt;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly ExprIndex expr;
             public readonly TypeIndex function_type;
         }
 
-        public readonly struct HandlerStmt
+        [Tag<StmtSort>(StmtSort.Handler)]
+        public readonly struct HandlerStmt : IHasSort<StmtSort>
         {
+            public static int Sort => (int)StmtSort.Handler;
+            public static SortType Type => SortType.Stmt;
+
             public readonly SourceLocation locus;
             public readonly DeclIndex exception;
             public readonly StmtIndex body;
         }
 
-        public readonly struct ExpansionStmt
+        [Tag<StmtSort>(StmtSort.Expansion)]
+        public readonly struct ExpansionStmt : IHasSort<StmtSort>
         {
+            public static int Sort => (int)StmtSort.Expansion;
+            public static SortType Type => SortType.Stmt;
+
             public readonly SourceLocation locus;
             public readonly StmtIndex operand;
         }
 
-        public readonly struct TupleStmt
+        [Tag<StmtSort>(StmtSort.Tuple)]
+        public readonly struct TupleStmt : IHasSort<StmtSort>
         {
+            public static int Sort => (int)StmtSort.Tuple;
+            public static SortType Type => SortType.Stmt;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly Index start;
@@ -2785,59 +2853,91 @@ namespace ifc
             public readonly TextOffset suffix;
         }
 
-        public readonly struct TypeExpr
+        [Tag<ExprSort>(ExprSort.Type)]
+        public readonly struct TypeExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.Type;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly TypeIndex denotation;
         }
 
-        public readonly struct StringExpr
+        [Tag<ExprSort>(ExprSort.String)]
+        public readonly struct StringExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.String;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly StringIndex @string;
         }
 
-        public readonly struct FunctionStringExpr
+        [Tag<ExprSort>(ExprSort.FunctionString)]
+        public readonly struct FunctionStringExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.FunctionString;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly TextOffset macro;
         }
 
-        public readonly struct CompoundStringExpr
+        [Tag<ExprSort>(ExprSort.CompoundString)]
+        public readonly struct CompoundStringExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.CompoundString;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly TextOffset prefix;
             public readonly ExprIndex @string;
         }
 
-        public readonly struct StringSequenceExpr
+        [Tag<ExprSort>(ExprSort.StringSequence)]
+        public readonly struct StringSequenceExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.StringSequence;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly ExprIndex strings;
         }
 
-        public readonly struct UnresolvedIdExpr
+        [Tag<ExprSort>(ExprSort.UnresolvedId)]
+        public readonly struct UnresolvedIdExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.UnresolvedId;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly NameIndex name;
         }
 
-        public readonly struct TemplateIdExpr
+        [Tag<ExprSort>(ExprSort.TemplateId)]
+        public readonly struct TemplateIdExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.TemplateId;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly ExprIndex primary_template;
             public readonly ExprIndex arguments;
         }
 
-        public readonly struct TemplateReferenceExpr
+        [Tag<ExprSort>(ExprSort.TemplateReference)]
+        public readonly struct TemplateReferenceExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.TemplateReference;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly DeclIndex member;
@@ -2846,36 +2946,56 @@ namespace ifc
             public readonly ExprIndex template_arguments;
         }
 
-        public readonly struct NamedDeclExpr
+        [Tag<ExprSort>(ExprSort.NamedDecl)]
+        public readonly struct NamedDeclExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.NamedDecl;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly DeclIndex decl;
         }
 
-        public readonly struct LiteralExpr
+        [Tag<ExprSort>(ExprSort.Literal)]
+        public readonly struct LiteralExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.Literal;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly LitIndex value;
         }
 
-        public readonly struct EmptyExpr
+        [Tag<ExprSort>(ExprSort.Empty)]
+        public readonly struct EmptyExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.Empty;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
         }
 
-        public readonly struct PathExpr
+        [Tag<ExprSort>(ExprSort.Path)]
+        public readonly struct PathExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.Path;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly ExprIndex scope;
             public readonly ExprIndex member;
         }
 
-        public readonly struct ReadExpr
+        [Tag<ExprSort>(ExprSort.Read)]
+        public readonly struct ReadExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.Read;
+            public static SortType Type => SortType.Expr;
+
             public enum Kind : byte
             {
                 Unknown,
@@ -2892,8 +3012,12 @@ namespace ifc
             public readonly Kind kind;
         }
 
-        public readonly struct MonadicExpr
+        [Tag<ExprSort>(ExprSort.Monad)]
+        public readonly struct MonadicExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.Monad;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly DeclIndex impl;
@@ -2906,8 +3030,12 @@ namespace ifc
         {
             private ExprIndex _element;
         }
-        public readonly struct DyadicExpr
+        [Tag<ExprSort>(ExprSort.Dyad)]
+        public readonly struct DyadicExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.Dyad;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly DeclIndex impl;
@@ -2920,8 +3048,12 @@ namespace ifc
         {
             private ExprIndex _element;
         }
-        public readonly struct TriadicExpr
+        [Tag<ExprSort>(ExprSort.Triad)]
+        public readonly struct TriadicExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.Triad;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly DeclIndex impl;
@@ -2934,8 +3066,12 @@ namespace ifc
         {
             private ExprIndex _element;
         }
-        public readonly struct HierarchyConversionExpr
+        [Tag<ExprSort>(ExprSort.HierarchyConversion)]
+        public readonly struct HierarchyConversionExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.HierarchyConversion;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly ExprIndex source;
@@ -2945,8 +3081,12 @@ namespace ifc
             public readonly DyadicOperator assort;
         }
 
-        public readonly struct DestructorCallExpr
+        [Tag<ExprSort>(ExprSort.DestructorCall)]
+        public readonly struct DestructorCallExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.DestructorCall;
+            public static SortType Type => SortType.Expr;
+
             public enum Kind : byte
             {
                 Unknown,
@@ -2961,73 +3101,113 @@ namespace ifc
             public readonly Kind kind;
         }
 
-        public readonly struct TupleExpr
+        [Tag<ExprSort>(ExprSort.Tuple)]
+        public readonly struct TupleExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.Tuple;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly Index start;
             public readonly Cardinality cardinality;
         }
 
-        public readonly struct PlaceholderExpr
+        [Tag<ExprSort>(ExprSort.Placeholder)]
+        public readonly struct PlaceholderExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.Placeholder;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
         }
 
-        public readonly struct ExpansionExpr
+        [Tag<ExprSort>(ExprSort.Expansion)]
+        public readonly struct ExpansionExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.Expansion;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly ExprIndex operand;
         }
 
-        public readonly struct TokenExpr
+        [Tag<ExprSort>(ExprSort.Tokens)]
+        public readonly struct TokenExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.Tokens;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly SentenceIndex tokens;
         }
 
-        public readonly struct CallExpr
+        [Tag<ExprSort>(ExprSort.Call)]
+        public readonly struct CallExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.Call;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly ExprIndex function;
             public readonly ExprIndex arguments;
         }
 
-        public readonly struct TemporaryExpr
+        [Tag<ExprSort>(ExprSort.Temporary)]
+        public readonly struct TemporaryExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.Temporary;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly uint index;
         }
 
-        public readonly struct DynamicDispatchExpr
+        [Tag<ExprSort>(ExprSort.DynamicDispatch)]
+        public readonly struct DynamicDispatchExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.DynamicDispatch;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly ExprIndex postfix_expr;
         }
 
-        public readonly struct VirtualFunctionConversionExpr
+        [Tag<ExprSort>(ExprSort.VirtualFunctionConversion)]
+        public readonly struct VirtualFunctionConversionExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.VirtualFunctionConversion;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly DeclIndex function;
         }
 
-        public readonly struct RequiresExpr
+        [Tag<ExprSort>(ExprSort.Requires)]
+        public readonly struct RequiresExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.Requires;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly SyntaxIndex parameters;
             public readonly SyntaxIndex body;
         }
 
-        public readonly struct UnaryFoldExpr
+        [Tag<ExprSort>(ExprSort.UnaryFold)]
+        public readonly struct UnaryFoldExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.UnaryFold;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly ExprIndex expr;
@@ -3035,8 +3215,12 @@ namespace ifc
             public readonly Associativity assoc;
         }
 
-        public readonly struct BinaryFoldExpr
+        [Tag<ExprSort>(ExprSort.BinaryFold)]
+        public readonly struct BinaryFoldExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.BinaryFold;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly ExprIndex left;
@@ -3045,23 +3229,35 @@ namespace ifc
             public readonly Associativity assoc;
         }
 
-        public readonly struct StatementExpr
+        [Tag<ExprSort>(ExprSort.Statement)]
+        public readonly struct StatementExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.Statement;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly StmtIndex stmt;
         }
 
-        public readonly struct TypeTraitIntrinsicExpr
+        [Tag<ExprSort>(ExprSort.TypeTraitIntrinsic)]
+        public readonly struct TypeTraitIntrinsicExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.TypeTraitIntrinsic;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly TypeIndex arguments;
             public readonly Operator intrinsic;
         }
 
-        public readonly struct MemberInitializerExpr
+        [Tag<ExprSort>(ExprSort.MemberInitializer)]
+        public readonly struct MemberInitializerExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.MemberInitializer;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly DeclIndex member;
@@ -3069,8 +3265,12 @@ namespace ifc
             public readonly ExprIndex expression;
         }
 
-        public readonly struct MemberAccessExpr
+        [Tag<ExprSort>(ExprSort.MemberAccess)]
+        public readonly struct MemberAccessExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.MemberAccess;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly ExprIndex offset;
@@ -3078,22 +3278,34 @@ namespace ifc
             public readonly TextOffset name;
         }
 
-        public readonly struct InheritancePathExpr
+        [Tag<ExprSort>(ExprSort.InheritancePath)]
+        public readonly struct InheritancePathExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.InheritancePath;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly ExprIndex path;
         }
 
-        public readonly struct InitializerListExpr
+        [Tag<ExprSort>(ExprSort.InitializerList)]
+        public readonly struct InitializerListExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.InitializerList;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly ExprIndex elements;
         }
 
-        public readonly struct InitializerExpr
+        [Tag<ExprSort>(ExprSort.Initializer)]
+        public readonly struct InitializerExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.Initializer;
+            public static SortType Type => SortType.Expr;
+
             public enum Kind : byte
             {
                 Unknown,
@@ -3107,8 +3319,12 @@ namespace ifc
             public readonly Kind kind;
         }
 
-        public readonly struct CastExpr
+        [Tag<ExprSort>(ExprSort.Cast)]
+        public readonly struct CastExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.Cast;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly ExprIndex source;
@@ -3116,15 +3332,23 @@ namespace ifc
             public readonly DyadicOperator assort;
         }
 
-        public readonly struct ConditionExpr
+        [Tag<ExprSort>(ExprSort.Condition)]
+        public readonly struct ConditionExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.Condition;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly ExprIndex expression;
         }
 
-        public readonly struct SimpleIdentifierExpr
+        [Tag<ExprSort>(ExprSort.SimpleIdentifier)]
+        public readonly struct SimpleIdentifierExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.SimpleIdentifier;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly NameIndex name;
@@ -3139,8 +3363,12 @@ namespace ifc
             public readonly SourceLocation locus;
         }
 
-        public readonly struct UnqualifiedIdExpr
+        [Tag<ExprSort>(ExprSort.UnqualifiedId)]
+        public readonly struct UnqualifiedIdExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.UnqualifiedId;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly NameIndex name;
@@ -3148,16 +3376,24 @@ namespace ifc
             public readonly SourceLocation template_keyword;
         }
 
-        public readonly struct QualifiedNameExpr
+        [Tag<ExprSort>(ExprSort.QualifiedName)]
+        public readonly struct QualifiedNameExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.QualifiedName;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly ExprIndex elements;
             public readonly SourceLocation typename_keyword;
         }
 
-        public readonly struct DesignatedInitializerExpr
+        [Tag<ExprSort>(ExprSort.DesignatedInitializer)]
+        public readonly struct DesignatedInitializerExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.DesignatedInitializer;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly TextOffset member;
@@ -3193,41 +3429,65 @@ namespace ifc
             public readonly ExprIndex initializer;
         }
 
-        public readonly struct SizeofTypeExpr
+        [Tag<ExprSort>(ExprSort.SizeofType)]
+        public readonly struct SizeofTypeExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.SizeofType;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly TypeIndex operand;
         }
 
-        public readonly struct AlignofExpr
+        [Tag<ExprSort>(ExprSort.Alignof)]
+        public readonly struct AlignofExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.Alignof;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly TypeIndex type_id;
         }
 
-        public readonly struct LabelExpr
+        [Tag<ExprSort>(ExprSort.Label)]
+        public readonly struct LabelExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.Label;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly ExprIndex designator;
         }
 
-        public readonly struct NullptrExpr
+        [Tag<ExprSort>(ExprSort.Nullptr)]
+        public readonly struct NullptrExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.Nullptr;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
         }
 
-        public readonly struct ThisExpr
+        [Tag<ExprSort>(ExprSort.This)]
+        public readonly struct ThisExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.This;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
         }
 
-        public readonly struct PackedTemplateArgumentsExpr
+        [Tag<ExprSort>(ExprSort.PackedTemplateArguments)]
+        public readonly struct PackedTemplateArgumentsExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.PackedTemplateArguments;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly ExprIndex arguments;
@@ -3246,8 +3506,12 @@ namespace ifc
             public readonly SyntaxIndex body;
         }
 
-        public readonly struct TypeidExpr
+        [Tag<ExprSort>(ExprSort.Typeid)]
+        public readonly struct TypeidExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.Typeid;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly TypeIndex operand;
@@ -3262,8 +3526,12 @@ namespace ifc
             public readonly SyntaxIndex syntax;
         }
 
-        public readonly struct ProductTypeValueExpr
+        [Tag<ExprSort>(ExprSort.ProductTypeValue)]
+        public readonly struct ProductTypeValueExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.ProductTypeValue;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly TypeIndex structure;
@@ -3271,8 +3539,12 @@ namespace ifc
             public readonly ExprIndex base_class_values;
         }
 
-        public readonly struct SumTypeValueExpr
+        [Tag<ExprSort>(ExprSort.SumTypeValue)]
+        public readonly struct SumTypeValueExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.SumTypeValue;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly TypeIndex variant;
@@ -3280,8 +3552,12 @@ namespace ifc
             public readonly ExprIndex value;
         }
 
-        public readonly struct ArrayValueExpr
+        [Tag<ExprSort>(ExprSort.ArrayValue)]
+        public readonly struct ArrayValueExpr : IHasSort<ExprSort>
         {
+            public static int Sort => (int)ExprSort.ArrayValue;
+            public static SortType Type => SortType.Expr;
+
             public readonly SourceLocation locus;
             public readonly TypeIndex type;
             public readonly ExprIndex elements;
@@ -3436,53 +3712,85 @@ namespace ifc
             public readonly Cardinality cardinality;
         }
 
-        public readonly struct EmptyDir
+        [Tag<DirSort>(DirSort.Empty)]
+        public readonly struct EmptyDir : IHasSort<DirSort>
         {
+            public static int Sort => (int)DirSort.Empty;
+            public static SortType Type => SortType.Dir;
+
             public readonly SourceLocation locus;
         }
 
-        public readonly struct AttributeDir
+        [Tag<DirSort>(DirSort.Attribute)]
+        public readonly struct AttributeDir : IHasSort<DirSort>
         {
+            public static int Sort => (int)DirSort.Attribute;
+            public static SortType Type => SortType.Dir;
+
             public readonly SourceLocation locus;
             public readonly AttrIndex attr;
         }
 
-        public readonly struct PragmaDir
+        [Tag<DirSort>(DirSort.Pragma)]
+        public readonly struct PragmaDir : IHasSort<DirSort>
         {
+            public static int Sort => (int)DirSort.Pragma;
+            public static SortType Type => SortType.Dir;
+
             public readonly SourceLocation locus;
             public readonly SentenceIndex words;
         }
 
-        public readonly struct UsingDir
+        [Tag<DirSort>(DirSort.Using)]
+        public readonly struct UsingDir : IHasSort<DirSort>
         {
+            public static int Sort => (int)DirSort.Using;
+            public static SortType Type => SortType.Dir;
+
             public readonly SourceLocation locus;
             public readonly ExprIndex nominated;
             public readonly DeclIndex resolution;
         }
 
-        public readonly struct UsingDeclarationDir
+        [Tag<DirSort>(DirSort.DeclUse)]
+        public readonly struct UsingDeclarationDir : IHasSort<DirSort>
         {
+            public static int Sort => (int)DirSort.DeclUse;
+            public static SortType Type => SortType.Dir;
+
             public readonly SourceLocation locus;
             public readonly ExprIndex path;
             public readonly DeclIndex result;
         }
 
-        public readonly struct ExprDir
+        [Tag<DirSort>(DirSort.Expr)]
+        public readonly struct ExprDir : IHasSort<DirSort>
         {
+            public static int Sort => (int)DirSort.Expr;
+            public static SortType Type => SortType.Dir;
+
             public readonly SourceLocation locus;
             public readonly ExprIndex expr;
             public readonly Phases phases;
         }
 
-        public readonly struct StructuredBindingDir
+        [Tag<DirSort>(DirSort.StructuredBinding)]
+        public readonly struct StructuredBindingDir : IHasSort<DirSort>
         {
+            public static int Sort => (int)DirSort.StructuredBinding;
+            public static SortType Type => SortType.Dir;
+
             public readonly SourceLocation locus;
             public readonly Sequence<DeclIndex> bindings;
             public readonly Sequence<TextOffset> names;
         }
 
-        public readonly struct SpecifiersSpreadDir
+        [Tag<DirSort>(DirSort.SpecifiersSpread)]
+        public readonly struct SpecifiersSpreadDir : IHasSort<DirSort>
         {
+            public static int Sort => (int)DirSort.SpecifiersSpread;
+            public static SortType Type => SortType.Dir;
+
             public readonly SourceLocation locus;
         }
 

@@ -1247,27 +1247,14 @@ namespace
                         const auto& templateInfo = foundIt->second.get().as<TemplateInfo>();
                         const auto templateName = templateInfo.name();
 
-                        if ( templateInfo.fields().empty() )
+                        if ( templateName == "Tag" or templateName == "TraitTag" or templateName == "Location" or templateName == "LocationAndType" )
                         {
-                            if ( templateName == "Tag" or templateName == "TraitTag" or templateName == "Location" or templateName == "LocationAndType" )
-                            {
-                                const auto& enumerator = std::get<Declarator>( declarator.templateArgs.at( 0 ) );
-                                const auto enumerationDeclIndex = enumerator.containingType.value();
-                                Tag.emplace( EnumeratorIndexAndName{ { enumerationDeclIndex, getIdentity( reader, enumerationDeclIndex ) }, enumerator.index(), getIdentity( reader, enumerator.index() ) } );
-                            }
-                            else
-                            {
-                                if ( templateName == "constant_traits" )
-                                {
-                                    // TODO emit tag?
-                                }
-                                else
-                                {
-                                    assert( false ); // new type?
-                                }
-                            }
+                            const auto& enumerator = std::get<Declarator>( declarator.templateArgs.at( 0 ) );
+                            const auto enumerationDeclIndex = enumerator.containingType.value();
+                            Tag.emplace( EnumeratorIndexAndName{ { enumerationDeclIndex, getIdentity( reader, enumerationDeclIndex ) }, enumerator.index(), getIdentity( reader, enumerator.index() ) } );
                         }
-                        else
+
+                        if ( not templateInfo.fields().empty() )
                         {
                             // TODO: emit templates so that they don't need to be inlined
                             for ( const auto& field : templateInfo.fields() )
@@ -1288,6 +1275,17 @@ namespace
                                 {
                                     MembersToInline.emplace_back( getCsTypeName( reader, std::get<Declarator>( field.param ) ), field.fieldName );
                                 }
+                            }
+                        }
+                        else
+                        {
+                            if ( templateName == "constant_traits" )
+                            {
+                                // TODO emit tag?
+                            }
+                            else
+                            {
+                                assert( templateName == "Tag" or templateName == "TraitTag" ); // new type?
                             }
                         }
                     }
