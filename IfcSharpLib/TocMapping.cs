@@ -1,5 +1,6 @@
 ﻿using ifc;
 using System.Collections.Frozen;
+using System.Diagnostics;
 
 namespace IfcSharpLib
 {
@@ -10,9 +11,11 @@ namespace IfcSharpLib
 
         public static void SetSummaryByName(ref TableOfContents toc, string name, PartitionSummaryData summary)
         {
+            bool found = false;
             if (DirectAssign.TryGetValue(name, out var assigner))
             {
                 assigner(ref toc, summary);
+                found = true;
             }
 
             foreach (var (prefix, dispatch) in PartitionDispatchTable)
@@ -20,8 +23,11 @@ namespace IfcSharpLib
                 if (name.StartsWith(prefix))
                 {
                     dispatch(ref toc, name, summary);
+                    found = true;
                 }
             }
+
+            Debug.Assert(found);
         }
 
         static TocMapping()
@@ -64,18 +70,18 @@ namespace IfcSharpLib
         private static readonly FrozenDictionary<string, Assign> DirectAssign = new Dictionary<string, Assign>
         {
             { "command_line", (ref TableOfContents toc, PartitionSummaryData d) => toc.command_line = d },
-            { "exported_modules", (ref TableOfContents toc, PartitionSummaryData d) => toc.exported_modules = d },
-            { "imported_modules", (ref TableOfContents toc, PartitionSummaryData d) => toc.imported_modules = d },
-            { "u64s", (ref TableOfContents toc, PartitionSummaryData d) => toc.u64s = d },
-            { "fps", (ref TableOfContents toc, PartitionSummaryData d) => toc.fps = d },
-            { "string_literals", (ref TableOfContents toc, PartitionSummaryData d) => toc.string_literals = d },
-            { "states", (ref TableOfContents toc, PartitionSummaryData d) => toc.states = d },
-            { "lines", (ref TableOfContents toc, PartitionSummaryData d) => toc.lines = d },
-            { "words", (ref TableOfContents toc, PartitionSummaryData d) => toc.words = d },
-            { "sentences", (ref TableOfContents toc, PartitionSummaryData d) => toc.sentences = d },
-            { "scopes", (ref TableOfContents toc, PartitionSummaryData d) => toc.scopes = d },
-            { "entities", (ref TableOfContents toc, PartitionSummaryData d) => toc.entities = d },
-            { "spec_forms", (ref TableOfContents toc, PartitionSummaryData d) => toc.spec_forms = d },
+            { "module.exported", (ref TableOfContents toc, PartitionSummaryData d) => toc.exported_modules = d },
+            { "module.imported", (ref TableOfContents toc, PartitionSummaryData d) => toc.imported_modules = d },
+            { "const.i64", (ref TableOfContents toc, PartitionSummaryData d) => toc.u64s = d },
+            { "const.f64", (ref TableOfContents toc, PartitionSummaryData d) => toc.fps = d },
+            { "const.str", (ref TableOfContents toc, PartitionSummaryData d) => toc.string_literals = d },
+            { "pragma.state", (ref TableOfContents toc, PartitionSummaryData d) => toc.states = d },
+            { "src.line", (ref TableOfContents toc, PartitionSummaryData d) => toc.lines = d },
+            { "src.word", (ref TableOfContents toc, PartitionSummaryData d) => toc.words = d },
+            { "src.sentence", (ref TableOfContents toc, PartitionSummaryData d) => toc.sentences = d },
+            { "scope.desc", (ref TableOfContents toc, PartitionSummaryData d) => toc.scopes = d },
+            { "scope.member", (ref TableOfContents toc, PartitionSummaryData d) => toc.entities = d },
+            { "form.spec", (ref TableOfContents toc, PartitionSummaryData d) => toc.spec_forms = d },
             //{ "names", (ref TableOfContents toc, PartitionSummaryData d) => toc.names = d },
             //{ "decls", (ref TableOfContents toc, PartitionSummaryData d) => toc.decls = d },
             //{ "types", (ref TableOfContents toc, PartitionSummaryData d) => toc.types = d },
@@ -85,15 +91,15 @@ namespace IfcSharpLib
             //{ "forms", (ref TableOfContents toc, PartitionSummaryData d) => toc.forms = d },
             //{ "traits", (ref TableOfContents toc, PartitionSummaryData d) => toc.traits = d },
             //{ "msvc_traits", (ref TableOfContents toc, PartitionSummaryData d) => toc.msvc_traits = d },
-            { "charts", (ref TableOfContents toc, PartitionSummaryData d) => toc.charts = d },
-            { "multi_charts", (ref TableOfContents toc, PartitionSummaryData d) => toc.multi_charts = d },
+            { "chart.unilevel", (ref TableOfContents toc, PartitionSummaryData d) => toc.charts = d },
+            { "chart.multilevel", (ref TableOfContents toc, PartitionSummaryData d) => toc.multi_charts = d },
             //{ "heaps", (ref TableOfContents toc, PartitionSummaryData d) => toc.heaps = d },
             { "suppressed_warnings", (ref TableOfContents toc, PartitionSummaryData d) => toc.suppressed_warnings = d },
             //{ "macros", (ref TableOfContents toc, PartitionSummaryData d) => toc.macros = d },
             //{ "pragma_directives", (ref TableOfContents toc, PartitionSummaryData d) => toc.pragma_directives = d },
             //{ "attrs", (ref TableOfContents toc, PartitionSummaryData d) => toc.attrs = d },
             //{ "dirs", (ref TableOfContents toc, PartitionSummaryData d) => toc.dirs = d },
-            { "implementation_pragmas", (ref TableOfContents toc, PartitionSummaryData d) => toc.implementation_pragmas = d },
+            { ".msvc.trait.impl-pragmas", (ref TableOfContents toc, PartitionSummaryData d) => toc.implementation_pragmas = d },
         }.ToFrozenDictionary();
 
         private static readonly FrozenDictionary<string, AssignIndexed> PartitionDispatchTable;
