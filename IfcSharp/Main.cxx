@@ -1376,7 +1376,7 @@ namespace
             if ( baseTypes.Tag.has_value() )
             {
                 insertStaticSortGetter = true;
-                os << " : IHasSort<" << baseTypes.Tag.value().parent.name << '>';
+                os << " : IHasSort<" << mName << ", " << baseTypes.Tag.value().parent.name << '>';
             }
 
             if ( baseTypes.Over.has_value() )
@@ -1389,7 +1389,7 @@ namespace
             if ( insertStaticSortGetter )
             {
                 const auto& tag = baseTypes.Tag.value();
-                os << "    public static int Sort => (int)" << tag.parent.name << '.' << tag.name << ";" << std::endl;
+                os << "    public static " << tag.parent.name << " Sort => " << tag.parent.name << '.' << tag.name << ";" << std::endl;
                 os << "    public static SortType Type => SortType." << ( tag.parent.name.substr( 0, tag.parent.name.size() - 4 ) ) << ';' << std::endl << std::endl;
             }
 

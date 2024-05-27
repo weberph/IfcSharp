@@ -1,6 +1,8 @@
 ﻿using ifc;
+using ifc.symbolic;
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -47,15 +49,22 @@ namespace IfcSharpLib
         }
 
         public ref readonly T Get<T>(TypeIndex index)
-            where T : struct, IHasSort<TypeSort>
+            where T : struct, IHasSort<T, TypeSort>
         {
             return ref Partition<T>(_toc.types[(int)index.Sort])[(int)index.Index];
         }
 
         public ref readonly T Get<T>(DeclIndex index)
-            where T : struct, IHasSort<DeclSort>
+            where T : struct, IHasSort<T, DeclSort>
         {
             return ref Partition<T>(_toc.decls[(int)index.Sort])[(int)index.Index];
+        }
+
+        public ref readonly T Get<T>(NameIndex index)
+            where T : struct, IHasSort<T, NameSort>
+        {
+            ArgumentOutOfRangeException.ThrowIfEqual((byte)index.Sort, (byte)NameSort.Identifier, nameof(index));
+            return ref Partition<T>(_toc.names[(int)index.Sort - 1])[(int)index.Index];
         }
 
         public ReadOnlySpan<T> Sequence<T>(Sequence<T> sequence)
@@ -64,25 +73,69 @@ namespace IfcSharpLib
             return Partition<T>().Slice((int)sequence.start, (int)sequence.cardinality);
         }
 
+        public LiteralSort GetLiteral(LitIndex index, out ulong integer, out double fp)
+        {
+            (integer, fp) = index.Sort switch
+            {
+                LiteralSort.Immediate => ((ulong)index.Index, 0.0),
+                LiteralSort.Integer => (Partition<ulong>(_toc.u64s)[(int)index.Index], 0.0),
+                LiteralSort.FloatingPoint => (0UL, (Partition<FloatingPointLiteral>(_toc.fps)[(int)index.Index]).Value),
+                _ => throw new ArgumentException("Invalid LiteralSort", nameof(index))
+            };
+
+            return index.Sort;
+        }
+
+        public string GetString(StringIndex index)
+        {
+            var literal = Partition<StringLiteral>(_toc.string_literals)[(int)index.Index];
+            var span = _stringMemory.Span.Slice((int)literal.start, (int)literal.size);
+            return index.Sort switch
+            {
+                StringSort.Ordinary or StringSort.UTF8 => Encoding.UTF8.GetString(span[..^1]),
+                StringSort.UTF16 or StringSort.Wide => Encoding.Unicode.GetString(span[..^2]),
+                StringSort.UTF32 => Encoding.UTF32.GetString(span[..^4]),
+                _ => throw new ArgumentException("Invalid StringSort", nameof(index))
+            };
+        }
+
         public string GetString(TextOffset index)
         {
             var span = _stringMemory.Span[(int)index..];
             return Encoding.UTF8.GetString(span[..span.IndexOf((byte)0)]);
         }
 
-        public string GetString(Identity<TextOffset> index)
+        public string GetString(Identity<TextOffset> identity)
         {
-            return GetString(index.name);
+            return GetString(identity.name);
         }
 
-        public string GetString(Identity<NameIndex> index)
+        public string GetString(NameIndex index)
         {
-            if (index.name.Sort != NameSort.Identifier)
+            if (index.Sort == NameSort.Guide)
             {
-                throw new NotImplementedException("TODO: NameIndex");
+                return "<GuideName>"; // "TODO: complicated." -- ifc/test/basic.cxx
             }
 
-            return GetString((TextOffset)index.name.Index);
+            TextOffset GetTextOffset(NameIndex index_) => index_.Sort switch
+            {
+                NameSort.Identifier => (TextOffset)index_.Index,
+                NameSort.Operator => Get<OperatorFunctionId>(index_).name,
+                NameSort.Conversion => Get<ConversionFunctionId>(index_).name,
+                NameSort.Literal => Get<LiteralOperatorId>(index_).name_index,
+                NameSort.Template => GetTextOffset(Get<TemplateName>(index_).name),
+                NameSort.Specialization => GetTextOffset(Get<SpecializationName>(index_).primary_template),
+                NameSort.SourceFile => Get<SourceFileName>(index_).name,
+                // NameSort.Guide => handled above
+                _ => throw new ArgumentException("Invalid NameSort", nameof(index))
+            };
+
+            return GetString(GetTextOffset(index));
+        }
+
+        public string GetString(Identity<NameIndex> identity)
+        {
+            return GetString(identity.name);
         }
 
         public ReadOnlySpan<T> Partition<T>()
@@ -92,9 +145,9 @@ namespace IfcSharpLib
         }
 
         private ReadOnlySpan<T> Partition<T>(in PartitionSummaryData summary)
-            where T : struct, IHasSort
+            where T : struct
         {
-            Debug.Assert(Marshal.SizeOf<T>() == (int)summary.entry_size);
+            Debug.Assert(Marshal.SizeOf<T>() == (int)summary.entry_size || summary.cardinality == 0);
             var size = (int)summary.cardinality * (int)summary.entry_size;
             return MemoryMarshal.Cast<byte, T>(_memory.Span.Slice((int)summary.offset, size));
         }
@@ -118,14 +171,58 @@ namespace IfcSharpLib
                 case SortType.Pragma: return ref _toc.pragma_directives[T.Sort];
                 case SortType.Attr: return ref _toc.attrs[T.Sort];
                 case SortType.Dir: return ref _toc.dirs[T.Sort];
-                case SortType.String: return ref _toc.string_literals;
                 case SortType.Scope: return ref _toc.scopes;
                 case SortType.Chart when ((ChartSort)T.Sort == ChartSort.Unilevel): return ref _toc.charts;
                 case SortType.Chart when ((ChartSort)T.Sort == ChartSort.Multilevel): return ref _toc.multi_charts;
+
+                // remove? there are no types tagged with LiteralSort or StringSort
+                case SortType.String: return ref _toc.string_literals;
                 case SortType.Literal when ((LiteralSort)T.Sort == LiteralSort.Integer): return ref _toc.u64s;
                 case SortType.Literal when ((LiteralSort)T.Sort == LiteralSort.FloatingPoint): return ref _toc.fps;
             }
             throw new NotImplementedException();
         }
+
+        // for testing
+        public ref readonly T GetGeneric<T, U, TOver>(TOver index)
+            where T : struct, IHasSort<T, U>
+            where U : unmanaged, Enum
+            where TOver : IOver<U>
+        {
+#if DEBUG
+            // The following check should never fail due to type constraints
+            if (TOver.Type != T.Type || Unsafe.BitCast<U, byte>(index.Sort) != Unsafe.BitCast<U, byte>(T.Sort)) // avoid BitCast?
+            {
+                throw new SortMismatchException($"Sort mismatch: requested type/sort {T.Type}/{T.Sort} using index of type/sort {TOver.Type}/{index.Sort}");
+            }
+#endif
+
+            return ref Partition<T>()[(int)index.Index];
+        }
+
+        public T[] SequenceAsArray<T>(Sequence<T> sequence)
+            where T : struct, IHasSort
+        {
+            return [.. Sequence(sequence)];
+        }
+
+        public T[] PartitionAsArray<T>()
+            where T : struct, IHasSort
+        {
+            return [.. Partition<T>(PartitionSummary<T>())];
+        }
     }
+
+    /// <summary>
+    /// The first 8 bytes represent a 64-bit floating point value, in IEEE 754 little endian format.
+    /// The remaining 4 bytes have indeterminate values.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    internal readonly struct FloatingPointLiteral
+    {
+        public readonly double Value;
+        public readonly uint Indeterminate;
+    }
+
+    public sealed class SortMismatchException(string message) : Exception(message) { }
 }
