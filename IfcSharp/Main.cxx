@@ -1376,7 +1376,7 @@ namespace
             if ( baseTypes.Tag.has_value() )
             {
                 insertStaticSortGetter = true;
-                os << " : IHasSort<" << mName << ", " << baseTypes.Tag.value().parent.name << '>';
+                os << " : ITag<" << mName << ", " << baseTypes.Tag.value().parent.name << '>';
             }
 
             if ( baseTypes.Over.has_value() )

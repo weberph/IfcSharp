@@ -48,26 +48,26 @@ namespace IfcSharpLib
         }
 
         public ref readonly T Get<T>(TypeIndex index)
-            where T : struct, IHasSort<T, TypeSort>
+            where T : struct, ITag<T, TypeSort>
         {
             return ref Partition<T>(_toc.types[(int)index.Sort])[(int)index.Index];
         }
 
         public ref readonly T Get<T>(DeclIndex index)
-            where T : struct, IHasSort<T, DeclSort>
+            where T : struct, ITag<T, DeclSort>
         {
             return ref Partition<T>(_toc.decls[(int)index.Sort])[(int)index.Index];
         }
 
         public ref readonly T Get<T>(NameIndex index)
-            where T : struct, IHasSort<T, NameSort>
+            where T : struct, ITag<T, NameSort>
         {
             ArgumentOutOfRangeException.ThrowIfEqual((byte)index.Sort, (byte)NameSort.Identifier, nameof(index));
             return ref Partition<T>(_toc.names[(int)index.Sort - 1])[(int)index.Index];
         }
 
         public ReadOnlySpan<T> Sequence<T>(Sequence<T> sequence)
-            where T : struct, IHasSort
+            where T : struct, ITag
         {
             return Partition<T>().Slice((int)sequence.start, (int)sequence.cardinality);
         }
@@ -138,7 +138,7 @@ namespace IfcSharpLib
         }
 
         public ReadOnlySpan<T> Partition<T>()
-            where T : struct, IHasSort
+            where T : struct, ITag
         {
             return Partition<T>(PartitionSummary<T>());
         }
@@ -152,7 +152,7 @@ namespace IfcSharpLib
         }
 
         private ref readonly PartitionSummaryData PartitionSummary<T>()
-            where T : struct, IHasSort
+            where T : struct, ITag
         {
             switch (T.Type)
             {
@@ -184,7 +184,7 @@ namespace IfcSharpLib
 
         // for testing
         public ref readonly T GetGeneric<T, U, TOver>(TOver index)
-            where T : struct, IHasSort<T, U>
+            where T : struct, ITag<T, U>
             where U : unmanaged, Enum
             where TOver : IOver<U>
         {
@@ -200,13 +200,13 @@ namespace IfcSharpLib
         }
 
         public T[] SequenceAsArray<T>(Sequence<T> sequence)
-            where T : struct, IHasSort
+            where T : struct, ITag
         {
             return [.. Sequence(sequence)];
         }
 
         public T[] PartitionAsArray<T>()
-            where T : struct, IHasSort
+            where T : struct, ITag
         {
             return [.. Partition<T>(PartitionSummary<T>())];
         }

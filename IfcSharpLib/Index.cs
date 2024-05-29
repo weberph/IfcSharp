@@ -27,18 +27,18 @@ namespace ifc
         Scope
     }
 
-    public interface IHasSort
+    public interface ITag
     {
         static abstract byte Sort { get; }
 
         static abstract SortType Type { get; }
     }
 
-    public interface IHasSort<TImpl, T> : IHasSort
+    public interface ITag<TImpl, T> : ITag
         where T : unmanaged, Enum
-        where TImpl : IHasSort<TImpl, T>
+        where TImpl : ITag<TImpl, T>
     {
-        static byte IHasSort.Sort => Unsafe.BitCast<T, byte>(TImpl.Sort);
+        static byte ITag.Sort => Unsafe.BitCast<T, byte>(TImpl.Sort);
         static new abstract T Sort { get; }
     }
 
