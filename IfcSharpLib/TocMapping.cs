@@ -11,13 +11,13 @@ namespace IfcSharpLib
 
         public static void SetSummaryByName(ref TableOfContents toc, string name, PartitionSummaryData summary)
         {
-            bool found = false;
             if (DirectAssign.TryGetValue(name, out var assigner))
             {
                 assigner(ref toc, summary);
-                found = true;
+                return;
             }
 
+            bool found = false;
             foreach (var (prefix, dispatch) in PartitionDispatchTable)
             {
                 if (name.StartsWith(prefix))
@@ -94,7 +94,7 @@ namespace IfcSharpLib
             { "chart.unilevel", (ref TableOfContents toc, PartitionSummaryData d) => toc.charts = d },
             { "chart.multilevel", (ref TableOfContents toc, PartitionSummaryData d) => toc.multi_charts = d },
             //{ "heaps", (ref TableOfContents toc, PartitionSummaryData d) => toc.heaps = d },
-            { "suppressed_warnings", (ref TableOfContents toc, PartitionSummaryData d) => toc.suppressed_warnings = d },
+            { ".msvc.trait.suppressed-warnings", (ref TableOfContents toc, PartitionSummaryData d) => toc.suppressed_warnings = d },
             //{ "macros", (ref TableOfContents toc, PartitionSummaryData d) => toc.macros = d },
             //{ "pragma_directives", (ref TableOfContents toc, PartitionSummaryData d) => toc.pragma_directives = d },
             //{ "attrs", (ref TableOfContents toc, PartitionSummaryData d) => toc.attrs = d },

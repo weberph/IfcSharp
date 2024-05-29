@@ -32,9 +32,8 @@ namespace IfcSharpLib
                 throw new InvalidIfcFileSignatureException();
             }
 
-            var offset = 4;
             var headerSize = Marshal.SizeOf<Header>();
-            _header = MemoryMarshal.Cast<byte, Header>(span.Slice(offset, headerSize))[0];
+            _header = MemoryMarshal.Cast<byte, Header>(span.Slice(4, headerSize))[0];
 
             var tocSize = (int)_header.partition_count * Marshal.SizeOf<PartitionSummaryData>();
             _tocMemory = _memory.Slice((int)_header.toc, tocSize);
