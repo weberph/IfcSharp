@@ -133,10 +133,10 @@ namespace ifchelper
             if ( *this )
             {
                 detail::sameSortOrThrow( index.sort(), U::algebra_sort );
-                return std::optional{ reader.get<U>( index ) };
+                return reader.get<U>( index );
             }
 
-            return { };
+            return {};
         }
 
         template<index_like::Fiber U>
@@ -144,10 +144,10 @@ namespace ifchelper
         {
             if ( *this && index.sort() == U::algebra_sort )
             {
-                return std::optional{ reader.get<U>( index ) };
+                return reader.get<U>( index );
             }
 
-            return { };
+            return {};
         }
 
         template<std::invocable<decltype( reader ), decltype( index )> F>
@@ -155,7 +155,7 @@ namespace ifchelper
         {
             if ( *this )
             {
-                return std::optional( f( reader, index ) );
+                return f( reader, index );
             }
 
             return {};
