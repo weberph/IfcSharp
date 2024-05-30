@@ -19,6 +19,9 @@ namespace IfcSharpLib
         private readonly ReadOnlyMemory<byte> _stringMemory;
         private readonly Header _header;
         private readonly TableOfContents _toc;
+        private readonly Dictionary<StringIndex, string> _stringIndexCache = [];
+        private readonly Dictionary<NameIndex, string> _nameIndexCache = [];
+        private readonly Dictionary<TextOffset, string> _textOffsetCache = [];
 
         private ReadOnlySpan<PartitionSummaryData> PartitionTables => MemoryMarshal.Cast<byte, PartitionSummaryData>(_tocMemory.Span);
 
@@ -104,6 +107,11 @@ namespace IfcSharpLib
 
         public string GetString(StringIndex index)
         {
+            if (_stringIndexCache.TryGetValue(index, out var cached))
+            {
+                return cached;
+            }
+
             var literal = Partition<StringLiteral>(_toc.string_literals)[(int)index.Index];
             var span = _stringMemory.Span.Slice((int)literal.start, (int)literal.size);
             return index.Sort switch
@@ -117,6 +125,11 @@ namespace IfcSharpLib
 
         public string GetString(TextOffset index)
         {
+            if (_textOffsetCache.TryGetValue(index, out var cached))
+            {
+                return cached;
+            }
+
             var span = _stringMemory.Span[(int)index..];
             return Encoding.UTF8.GetString(span[..span.IndexOf((byte)0)]);
         }
@@ -131,6 +144,11 @@ namespace IfcSharpLib
             if (index.Sort == NameSort.Guide)
             {
                 return "<GuideName>"; // "TODO: complicated." -- ifc/test/basic.cxx
+            }
+
+            if (_nameIndexCache.TryGetValue(index, out var cached))
+            {
+                return cached;
             }
 
             TextOffset GetTextOffset(NameIndex index_) => index_.Sort switch

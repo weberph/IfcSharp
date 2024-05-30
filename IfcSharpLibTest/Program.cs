@@ -10,6 +10,8 @@ namespace IfcSharpLibTest
         {
             IfcSizeValidation.Test();
 
+            ReflectionTest.Run(args.Contains("-v"));
+
             Test(args);
         }
     }
