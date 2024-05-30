@@ -1,4 +1,4 @@
-// hash: a5d12df8be46f5ca2358bbc042594d047f0c29f392363d4d3b7c2906729b1afb
+// hash: d6daef18b393ede16a95c54bb68a4f407acc97377760f2a03982f5654f4730d1
 
 using System.Runtime.InteropServices;
 
@@ -3598,8 +3598,12 @@ namespace ifc
             public readonly SuppressedWarning suppressed_warning;
         }
 
-        public readonly struct IntegerLiteral
+        [Tag<LiteralSort>(LiteralSort.Integer)]
+        public readonly struct IntegerLiteral : ITag<IntegerLiteral, LiteralSort>
         {
+            public static LiteralSort Sort => LiteralSort.Integer;
+            public static SortType Type => SortType.Literal;
+
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 4)]
@@ -3609,8 +3613,12 @@ namespace ifc
             public readonly ushort size;
         }
 
-        public readonly struct FloatingPointLiteral
+        [Tag<LiteralSort>(LiteralSort.FloatingPoint)]
+        public readonly struct FloatingPointLiteral : ITag<FloatingPointLiteral, LiteralSort>
         {
+            public static LiteralSort Sort => LiteralSort.FloatingPoint;
+            public static SortType Type => SortType.Literal;
+
         }
 
         public readonly struct PragmaPushState
@@ -5523,7 +5531,7 @@ namespace ifc
             }
 
             [Tag<TraitSort>(TraitSort.MappingExpr)]
-            public readonly struct MappingExpr : ITag<MappingExpr, TraitSort>
+            public readonly struct MappingExpr : ITraitTag<MappingExpr, TraitSort>, IAssociatedTrait<DeclIndex, MappingDefinition>
             {
                 public static TraitSort Sort => TraitSort.MappingExpr;
                 public static SortType Type => SortType.Trait;
@@ -5533,7 +5541,7 @@ namespace ifc
             }
 
             [Tag<TraitSort>(TraitSort.AliasTemplate)]
-            public readonly struct AliasTemplate : ITag<AliasTemplate, TraitSort>
+            public readonly struct AliasTemplate : ITraitTag<AliasTemplate, TraitSort>, IAssociatedTrait<DeclIndex, SyntaxIndex>
             {
                 public static TraitSort Sort => TraitSort.AliasTemplate;
                 public static SortType Type => SortType.Trait;
@@ -5543,7 +5551,7 @@ namespace ifc
             }
 
             [Tag<TraitSort>(TraitSort.Friends)]
-            public readonly struct Friends : ITag<Friends, TraitSort>
+            public readonly struct Friends : ITraitTag<Friends, TraitSort>, IAssociatedTrait<DeclIndex, Sequence<Declaration>>
             {
                 public static TraitSort Sort => TraitSort.Friends;
                 public static SortType Type => SortType.Trait;
@@ -5553,7 +5561,7 @@ namespace ifc
             }
 
             [Tag<TraitSort>(TraitSort.Specializations)]
-            public readonly struct Specializations : ITag<Specializations, TraitSort>
+            public readonly struct Specializations : ITraitTag<Specializations, TraitSort>, IAssociatedTrait<DeclIndex, Sequence<Declaration>>
             {
                 public static TraitSort Sort => TraitSort.Specializations;
                 public static SortType Type => SortType.Trait;
@@ -5563,7 +5571,7 @@ namespace ifc
             }
 
             [Tag<TraitSort>(TraitSort.Requires)]
-            public readonly struct Requires : ITag<Requires, TraitSort>
+            public readonly struct Requires : ITraitTag<Requires, TraitSort>, IAssociatedTrait<DeclIndex, SyntaxIndex>
             {
                 public static TraitSort Sort => TraitSort.Requires;
                 public static SortType Type => SortType.Trait;
@@ -5573,7 +5581,7 @@ namespace ifc
             }
 
             [Tag<TraitSort>(TraitSort.Attributes)]
-            public readonly struct Attributes : ITag<Attributes, TraitSort>
+            public readonly struct Attributes : ITraitTag<Attributes, TraitSort>, IAssociatedTrait<SyntaxIndex, SyntaxIndex>
             {
                 public static TraitSort Sort => TraitSort.Attributes;
                 public static SortType Type => SortType.Trait;
@@ -5583,7 +5591,7 @@ namespace ifc
             }
 
             [Tag<TraitSort>(TraitSort.Deprecated)]
-            public readonly struct Deprecated : ITag<Deprecated, TraitSort>
+            public readonly struct Deprecated : ITraitTag<Deprecated, TraitSort>, IAssociatedTrait<DeclIndex, TextOffset>
             {
                 public static TraitSort Sort => TraitSort.Deprecated;
                 public static SortType Type => SortType.Trait;
@@ -5593,7 +5601,7 @@ namespace ifc
             }
 
             [Tag<TraitSort>(TraitSort.DeductionGuides)]
-            public readonly struct DeductionGuides : ITag<DeductionGuides, TraitSort>
+            public readonly struct DeductionGuides : ITraitTag<DeductionGuides, TraitSort>, IAssociatedTrait<DeclIndex, DeclIndex>
             {
                 public static TraitSort Sort => TraitSort.DeductionGuides;
                 public static SortType Type => SortType.Trait;
@@ -5638,7 +5646,7 @@ namespace ifc
                 private byte _element;
             }
             [Tag<MsvcTraitSort>(MsvcTraitSort.Uuid)]
-            public readonly struct MsvcUuid : ITag<MsvcUuid, MsvcTraitSort>
+            public readonly struct MsvcUuid : ITraitTag<MsvcUuid, MsvcTraitSort>, IAssociatedTrait<DeclIndex, StringIndex>
             {
                 public static MsvcTraitSort Sort => MsvcTraitSort.Uuid;
                 public static SortType Type => SortType.MsvcTrait;
@@ -5648,7 +5656,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.Segment)]
-            public readonly struct MsvcSegment : ITag<MsvcSegment, MsvcTraitSort>
+            public readonly struct MsvcSegment : ITraitTag<MsvcSegment, MsvcTraitSort>, IAssociatedTrait<DeclIndex, DeclIndex>
             {
                 public static MsvcTraitSort Sort => MsvcTraitSort.Segment;
                 public static SortType Type => SortType.MsvcTrait;
@@ -5658,7 +5666,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.SpecializationEncoding)]
-            public readonly struct MsvcSpecializationEncoding : ITag<MsvcSpecializationEncoding, MsvcTraitSort>
+            public readonly struct MsvcSpecializationEncoding : ITraitTag<MsvcSpecializationEncoding, MsvcTraitSort>, IAssociatedTrait<DeclIndex, TextOffset>
             {
                 public static MsvcTraitSort Sort => MsvcTraitSort.SpecializationEncoding;
                 public static SortType Type => SortType.MsvcTrait;
@@ -5668,7 +5676,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.SalAnnotation)]
-            public readonly struct MsvcSalAnnotation : ITag<MsvcSalAnnotation, MsvcTraitSort>
+            public readonly struct MsvcSalAnnotation : ITraitTag<MsvcSalAnnotation, MsvcTraitSort>, IAssociatedTrait<DeclIndex, TextOffset>
             {
                 public static MsvcTraitSort Sort => MsvcTraitSort.SalAnnotation;
                 public static SortType Type => SortType.MsvcTrait;
@@ -5678,7 +5686,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.FunctionParameters)]
-            public readonly struct MsvcFunctionParameters : ITag<MsvcFunctionParameters, MsvcTraitSort>
+            public readonly struct MsvcFunctionParameters : ITraitTag<MsvcFunctionParameters, MsvcTraitSort>, IAssociatedTrait<DeclIndex, ChartIndex>
             {
                 public static MsvcTraitSort Sort => MsvcTraitSort.FunctionParameters;
                 public static SortType Type => SortType.MsvcTrait;
@@ -5688,7 +5696,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.InitializerLocus)]
-            public readonly struct MsvcInitializerLocus : ITag<MsvcInitializerLocus, MsvcTraitSort>
+            public readonly struct MsvcInitializerLocus : ITraitTag<MsvcInitializerLocus, MsvcTraitSort>, IAssociatedTrait<DeclIndex, SourceLocation>
             {
                 public static MsvcTraitSort Sort => MsvcTraitSort.InitializerLocus;
                 public static SortType Type => SortType.MsvcTrait;
@@ -5698,7 +5706,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.CodegenExpression)]
-            public readonly struct MsvcCodegenExpression : ITag<MsvcCodegenExpression, MsvcTraitSort>
+            public readonly struct MsvcCodegenExpression : ITraitTag<MsvcCodegenExpression, MsvcTraitSort>, IAssociatedTrait<ExprIndex, ExprIndex>
             {
                 public static MsvcTraitSort Sort => MsvcTraitSort.CodegenExpression;
                 public static SortType Type => SortType.MsvcTrait;
@@ -5708,7 +5716,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.DeclAttributes)]
-            public readonly struct DeclAttributes : ITag<DeclAttributes, MsvcTraitSort>
+            public readonly struct DeclAttributes : ITraitTag<DeclAttributes, MsvcTraitSort>, IAssociatedTrait<DeclIndex, AttrIndex>
             {
                 public static MsvcTraitSort Sort => MsvcTraitSort.DeclAttributes;
                 public static SortType Type => SortType.MsvcTrait;
@@ -5718,7 +5726,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.StmtAttributes)]
-            public readonly struct StmtAttributes : ITag<StmtAttributes, MsvcTraitSort>
+            public readonly struct StmtAttributes : ITraitTag<StmtAttributes, MsvcTraitSort>, IAssociatedTrait<StmtIndex, AttrIndex>
             {
                 public static MsvcTraitSort Sort => MsvcTraitSort.StmtAttributes;
                 public static SortType Type => SortType.MsvcTrait;
@@ -5728,7 +5736,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.Vendor)]
-            public readonly struct MsvcVendor : ITag<MsvcVendor, MsvcTraitSort>
+            public readonly struct MsvcVendor : ITraitTag<MsvcVendor, MsvcTraitSort>, IAssociatedTrait<DeclIndex, VendorTraits>
             {
                 public static MsvcTraitSort Sort => MsvcTraitSort.Vendor;
                 public static SortType Type => SortType.MsvcTrait;
@@ -5738,7 +5746,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.CodegenMappingExpr)]
-            public readonly struct MsvcCodegenMappingExpr : ITag<MsvcCodegenMappingExpr, MsvcTraitSort>
+            public readonly struct MsvcCodegenMappingExpr : ITraitTag<MsvcCodegenMappingExpr, MsvcTraitSort>, IAssociatedTrait<DeclIndex, MappingDefinition>
             {
                 public static MsvcTraitSort Sort => MsvcTraitSort.CodegenMappingExpr;
                 public static SortType Type => SortType.MsvcTrait;
@@ -5748,7 +5756,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.DynamicInitVariable)]
-            public readonly struct MsvcDynamicInitVariable : ITag<MsvcDynamicInitVariable, MsvcTraitSort>
+            public readonly struct MsvcDynamicInitVariable : ITraitTag<MsvcDynamicInitVariable, MsvcTraitSort>, IAssociatedTrait<DeclIndex, DeclIndex>
             {
                 public static MsvcTraitSort Sort => MsvcTraitSort.DynamicInitVariable;
                 public static SortType Type => SortType.MsvcTrait;
@@ -5758,7 +5766,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.CodegenLabelProperties)]
-            public readonly struct MsvcCodegenLabelProperties : ITag<MsvcCodegenLabelProperties, MsvcTraitSort>
+            public readonly struct MsvcCodegenLabelProperties : ITraitTag<MsvcCodegenLabelProperties, MsvcTraitSort>, IAssociatedTrait<ExprIndex, MsvcLabelProperties>
             {
                 public static MsvcTraitSort Sort => MsvcTraitSort.CodegenLabelProperties;
                 public static SortType Type => SortType.MsvcTrait;
@@ -5768,7 +5776,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.CodegenSwitchType)]
-            public readonly struct MsvcCodegenSwitchType : ITag<MsvcCodegenSwitchType, MsvcTraitSort>
+            public readonly struct MsvcCodegenSwitchType : ITraitTag<MsvcCodegenSwitchType, MsvcTraitSort>, IAssociatedTrait<StmtIndex, TypeIndex>
             {
                 public static MsvcTraitSort Sort => MsvcTraitSort.CodegenSwitchType;
                 public static SortType Type => SortType.MsvcTrait;
@@ -5778,7 +5786,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.CodegenDoWhileStmt)]
-            public readonly struct MsvcCodegenDoWhileStmt : ITag<MsvcCodegenDoWhileStmt, MsvcTraitSort>
+            public readonly struct MsvcCodegenDoWhileStmt : ITraitTag<MsvcCodegenDoWhileStmt, MsvcTraitSort>, IAssociatedTrait<StmtIndex, StmtIndex>
             {
                 public static MsvcTraitSort Sort => MsvcTraitSort.CodegenDoWhileStmt;
                 public static SortType Type => SortType.MsvcTrait;
@@ -5788,7 +5796,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.LexicalScopeIndex)]
-            public readonly struct MsvcLexicalScopeIndices : ITag<MsvcLexicalScopeIndices, MsvcTraitSort>
+            public readonly struct MsvcLexicalScopeIndices : ITraitTag<MsvcLexicalScopeIndices, MsvcTraitSort>, IAssociatedTrait<DeclIndex, MsvcLexicalScopeIndex>
             {
                 public static MsvcTraitSort Sort => MsvcTraitSort.LexicalScopeIndex;
                 public static SortType Type => SortType.MsvcTrait;
@@ -5798,7 +5806,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.FileBoundary)]
-            public readonly struct MsvcFileBoundary : ITag<MsvcFileBoundary, MsvcTraitSort>
+            public readonly struct MsvcFileBoundary : ITraitTag<MsvcFileBoundary, MsvcTraitSort>, IAssociatedTrait<NameIndex, MsvcFileBoundaryProperties>
             {
                 public static MsvcTraitSort Sort => MsvcTraitSort.FileBoundary;
                 public static SortType Type => SortType.MsvcTrait;
@@ -5808,7 +5816,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.HeaderUnitSourceFile)]
-            public readonly struct MsvcHeaderUnitSourceFile : ITag<MsvcHeaderUnitSourceFile, MsvcTraitSort>
+            public readonly struct MsvcHeaderUnitSourceFile : ITraitTag<MsvcHeaderUnitSourceFile, MsvcTraitSort>, IAssociatedTrait<TextOffset, NameIndex>
             {
                 public static MsvcTraitSort Sort => MsvcTraitSort.HeaderUnitSourceFile;
                 public static SortType Type => SortType.MsvcTrait;
@@ -5818,7 +5826,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.FileHash)]
-            public readonly struct MsvcFileHash : ITag<MsvcFileHash, MsvcTraitSort>
+            public readonly struct MsvcFileHash : ITraitTag<MsvcFileHash, MsvcTraitSort>, IAssociatedTrait<NameIndex, MsvcFileHashData>
             {
                 public static MsvcTraitSort Sort => MsvcTraitSort.FileHash;
                 public static SortType Type => SortType.MsvcTrait;

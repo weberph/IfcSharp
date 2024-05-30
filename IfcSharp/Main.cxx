@@ -1197,6 +1197,8 @@ namespace
             std::optional<EnumeratorIndexAndName> Tag;
             std::optional<std::tuple<StructIndexAndName, std::optional<EnumeratorIndexAndName>>> Sequence;
             std::vector<std::tuple<std::string_view, std::string_view>> MembersToInline; // XXX no type, only name
+            bool IsTrait{};
+            std::optional<std::tuple<Declarator, Declarator>> AssociatedTrait;
 
             EnumeratorIndexAndName extractEnumeratorIndexAndName( const ifc::Reader& reader, const ifc::ExprIndex expr )
             {
@@ -1247,11 +1249,18 @@ namespace
                         const auto& templateInfo = foundIt->second.get().as<TemplateInfo>();
                         const auto templateName = templateInfo.name();
 
-                        if ( templateName == "Tag" or templateName == "TraitTag" or templateName == "Location" or templateName == "LocationAndType" )
+                        if ( templateName == "Tag" or templateName == "TraitTag" or templateName == "Location" or templateName == "LocationAndType" or templateName == "constant_traits" )
                         {
-                            const auto& enumerator = std::get<Declarator>( declarator.templateArgs.at( 0 ) );
+                            IsTrait = templateName == "TraitTag";
+                            const auto& enumerator = std::get<Declarator>( declarator.templateArgs.at( templateName == "constant_traits" ? 1 : 0 ) );
                             const auto enumerationDeclIndex = enumerator.containingType.value();
                             Tag.emplace( EnumeratorIndexAndName{ { enumerationDeclIndex, getIdentity( reader, enumerationDeclIndex ) }, enumerator.index(), getIdentity( reader, enumerator.index() ) } );
+                        }
+                        else if ( templateName == "AssociatedTrait" )
+                        {
+                            const auto keyDeclIndex = std::get<Declarator>( declarator.templateArgs.at( 0 ) );
+                            const auto valueDeclIndex = std::get<Declarator>( declarator.templateArgs.at( 1 ) );
+                            AssociatedTrait.emplace( keyDeclIndex, valueDeclIndex );
                         }
 
                         if ( not templateInfo.fields().empty() )
@@ -1279,14 +1288,7 @@ namespace
                         }
                         else
                         {
-                            if ( templateName == "constant_traits" )
-                            {
-                                // TODO emit tag?
-                            }
-                            else
-                            {
-                                assert( templateName == "Tag" or templateName == "TraitTag" ); // new type?
-                            }
+                            assert( templateName == "Tag" or templateName == "TraitTag" or templateName == "constant_traits" ); // new type?
                         }
                     }
                 }
@@ -1363,6 +1365,20 @@ namespace
                 }
             }
 
+            const auto printQualifiedTypePrefix = [&]( const Declarator& d ) {
+                if ( not d.isFundamental() )
+                {
+                    if ( const auto foundIt = infoByIndex.find( d.index() ); foundIt != infoByIndex.end() )
+                    {
+                        const auto qualifiers = nameTable.getRefereeQualifier( *this, foundIt->second.get() );
+                        for ( const auto refereeQualifier : qualifiers )
+                        {
+                            os << refereeQualifier << ".";
+                        }
+                    }
+                }
+            };
+
             os << "public ";
             if ( isReadonlyStruct )
             {
@@ -1376,7 +1392,29 @@ namespace
             if ( baseTypes.Tag.has_value() )
             {
                 insertStaticSortGetter = true;
-                os << " : ITag<" << mName << ", " << baseTypes.Tag.value().parent.name << '>';
+
+                if ( baseTypes.IsTrait )
+                {
+                    assert( baseTypes.AssociatedTrait.has_value() );
+
+                    os << " : ITraitTag<" << mName << ", " << baseTypes.Tag.value().parent.name << '>';
+
+                    const auto printFullName = [&]( const Declarator& declarator ) {
+
+                        printQualifiedTypePrefix( declarator );
+                        os << declarator.identity;
+                        printTemplateArgumentList( reader, os, declarator );
+                    };
+
+                    const auto& [key, value] = baseTypes.AssociatedTrait.value();
+                    os << ", IAssociatedTrait<"; printFullName( key );
+                    os << ", "; printFullName( value );
+                    os << '>';
+                }
+                else
+                {
+                    os << " : ITag<" << mName << ", " << baseTypes.Tag.value().parent.name << '>';
+                }
             }
 
             if ( baseTypes.Over.has_value() )
@@ -1419,20 +1457,6 @@ namespace
                 }
                 os << std::get<0>( member ) << ' ' << std::get<1>( member ) << ';' << std::endl;;
             }
-
-            const auto printQualifiedTypePrefix = [&]( const Declarator& d ) {
-                if ( not d.isFundamental() )
-                {
-                    if ( const auto foundIt = infoByIndex.find( d.index() ); foundIt != infoByIndex.end() )
-                    {
-                        const auto qualifiers = nameTable.getRefereeQualifier( *this, foundIt->second.get() );
-                        for ( const auto refereeQualifier : qualifiers )
-                        {
-                            os << refereeQualifier << ".";
-                        }
-                    }
-                }
-            };
 
             struct BitfieldMember
             {

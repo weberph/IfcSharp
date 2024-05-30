@@ -42,6 +42,24 @@ namespace ifc
         static new abstract T Sort { get; }
     }
 
+    public interface IAssociatedTrait<TKey, TValue>
+        where TKey : struct
+        where TValue : struct
+    {
+        //TKey entity { get; }
+        //TValue value { get; }
+    }
+
+    public interface ITraitTag : ITag
+    {
+    }
+
+    public interface ITraitTag<TImpl, T> : ITag<TImpl, T>, ITraitTag
+        where T : unmanaged, Enum
+        where TImpl : ITag<TImpl, T>
+    {
+    }
+
     public interface IOver
     {
         Index Index { get; }
