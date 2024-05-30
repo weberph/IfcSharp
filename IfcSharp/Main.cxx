@@ -1210,12 +1210,6 @@ namespace
             std::string_view name{};
         };
 
-        struct StructIndexAndName
-        {
-            ifc::DeclIndex index{};
-            std::string_view name{};
-        };
-
         struct OverBase
         {
             EnumerationIndexAndName tagType{};
@@ -1225,10 +1219,11 @@ namespace
         {
             std::optional<OverBase> Over;
             std::optional<EnumeratorIndexAndName> Tag;
-            std::optional<std::tuple<StructIndexAndName, std::optional<EnumeratorIndexAndName>>> Sequence;
             std::vector<std::tuple<std::string_view, std::string_view>> MembersToInline; // XXX no type, only name
             bool IsTrait{};
             std::optional<std::tuple<Declarator, Declarator>> AssociatedTrait;
+            std::optional<Declarator> SequenceType;
+            std::optional<EnumeratorIndexAndName> SequenceTag;
 
             EnumeratorIndexAndName extractEnumeratorIndexAndName( const ifc::Reader& reader, const ifc::ExprIndex expr )
             {
@@ -1288,9 +1283,20 @@ namespace
                         }
                         else if ( templateName == "AssociatedTrait" )
                         {
-                            const auto keyDeclIndex = std::get<Declarator>( declarator.templateArgs.at( 0 ) );
-                            const auto valueDeclIndex = std::get<Declarator>( declarator.templateArgs.at( 1 ) );
+                            const auto& keyDeclIndex = std::get<Declarator>( declarator.templateArgs.at( 0 ) );
+                            const auto& valueDeclIndex = std::get<Declarator>( declarator.templateArgs.at( 1 ) );
                             AssociatedTrait.emplace( keyDeclIndex, valueDeclIndex );
+                        }
+                        else if ( templateName == "Sequence" )
+                        {
+                            assert( declarator.templateArgs.size() == 1 or declarator.templateArgs.size() == 2 );
+                            SequenceType.emplace( std::get<Declarator>( declarator.templateArgs.at( 0 ) ) );
+                            if ( declarator.templateArgs.size() == 2 )
+                            {
+                                const auto& enumerator = std::get<Declarator>( declarator.templateArgs.at( 1 ) );
+                                const auto enumerationDeclIndex = enumerator.containingType.value();
+                                SequenceTag.emplace( EnumeratorIndexAndName{ { enumerationDeclIndex, getIdentity( reader, enumerationDeclIndex ) }, enumerator.index(), getIdentity( reader, enumerator.index() ) } );
+                            }
                         }
 
                         if ( not templateInfo.fields().empty() )
@@ -1409,6 +1415,13 @@ namespace
                 }
             };
 
+            const auto printFullName = [&]( const Declarator& declarator ) {
+
+                printQualifiedTypePrefix( declarator );
+                os << declarator.identity;
+                printTemplateArgumentList( reader, os, declarator );
+            };
+
             os << "public ";
             if ( isReadonlyStruct )
             {
@@ -1419,6 +1432,7 @@ namespace
             structsForSizeValidation.insert( mIndex );
 
             bool insertStaticSortGetter = false;
+            bool hasInterface = false;
             if ( baseTypes.Tag.has_value() )
             {
                 insertStaticSortGetter = true;
@@ -1429,13 +1443,6 @@ namespace
 
                     os << " : ITraitTag<" << mName << ", " << baseTypes.Tag.value().parent.name << '>';
 
-                    const auto printFullName = [&]( const Declarator& declarator ) {
-
-                        printQualifiedTypePrefix( declarator );
-                        os << declarator.identity;
-                        printTemplateArgumentList( reader, os, declarator );
-                    };
-
                     const auto& [key, value] = baseTypes.AssociatedTrait.value();
                     os << ", IAssociatedTrait<"; printFullName( key );
                     os << ", "; printFullName( value );
@@ -1445,10 +1452,34 @@ namespace
                 {
                     os << " : ITag<" << mName << ", " << baseTypes.Tag.value().parent.name << '>';
                 }
+
+                hasInterface = true;
+            }
+
+            bool insertStaticSequenceSortGetter = false;
+            if ( baseTypes.SequenceType.has_value() )
+            {
+                os << ( hasInterface ? ", " : " : " ) << ( baseTypes.SequenceTag ? "ITaggedSequence<" : "ISequence<" );
+                if ( baseTypes.SequenceTag.has_value() )
+                {
+                    os << mName << ", ";
+                }
+
+                printFullName( baseTypes.SequenceType.value() );
+
+                if ( baseTypes.SequenceTag.has_value() )
+                {
+                    os << ", " << baseTypes.SequenceTag.value().parent.name;
+                }
+                os << '>';
+
+                insertStaticSequenceSortGetter = baseTypes.SequenceTag.has_value();
+                hasInterface = true;
             }
 
             if ( baseTypes.Over.has_value() )
             {
+                assert( not hasInterface );
                 os << " : IOver<" << baseTypes.Over.value().tagType.name << '>';
             }
 
@@ -1457,8 +1488,27 @@ namespace
             if ( insertStaticSortGetter )
             {
                 const auto& tag = baseTypes.Tag.value();
+                os << "    public static SortType Type => SortType." << ( tag.parent.name.substr( 0, tag.parent.name.size() - 4 ) ) << ';' << std::endl;
                 os << "    public static " << tag.parent.name << " Sort => " << tag.parent.name << '.' << tag.name << ";" << std::endl;
-                os << "    public static SortType Type => SortType." << ( tag.parent.name.substr( 0, tag.parent.name.size() - 4 ) ) << ';' << std::endl << std::endl;
+            }
+
+            if ( insertStaticSequenceSortGetter )
+            {
+                const auto& tag = baseTypes.SequenceTag.value();
+                os << "    public static SortType SequenceType => SortType." << ( tag.parent.name.substr( 0, tag.parent.name.size() - 4 ) ) << ';' << std::endl;
+                os << "    public static " << tag.parent.name << " SequenceSort => " << tag.parent.name << '.' << tag.name << ";" << std::endl;
+            }
+
+            if ( baseTypes.SequenceType.has_value() )
+            {
+                os << "    public Sequence<";
+                printFullName( baseTypes.SequenceType.value() );
+                os << "> Sequence => new(start, cardinality);";
+            }
+
+            if ( insertStaticSortGetter || insertStaticSequenceSortGetter || baseTypes.SequenceType.has_value() )
+            {
+                os << std::endl;
             }
 
             if ( writeNested )
@@ -1506,7 +1556,7 @@ namespace
                 std::string_view fieldName{}; // + "_bitfield" suffix
             } tracker{};
 
-            if ( const auto* initScope = reader.try_get( decl().initializer ); initScope and not baseTypes.Sequence.has_value() ) // TODO: sequence is currently inlined
+            if ( const auto* initScope = reader.try_get( decl().initializer ); initScope )
             {
                 for ( const auto& innerDeclaration : reader.sequence( *initScope ) )
                 {
@@ -1683,7 +1733,7 @@ namespace
             }
             else
             {
-                assert( baseTypes.Sequence.has_value() );
+                assert( false );
             }
 
             for ( const auto& [typeName, fieldName, width, offset, containigFieldName] : tracker.fields )
@@ -1937,10 +1987,6 @@ int main()
 
     osCode << "using System.Runtime.InteropServices;" << std::endl << std::endl;
     osCode << "#pragma warning disable CS0649 // Field '...' is never assigned to, and will always have its default value 0" << std::endl << std::endl;
-    osCode << "namespace ifc" << std::endl << '{' << std::endl;
-    osCode << "public readonly struct Sequence<T> { public readonly Index start; public readonly Cardinality cardinality; }" << std::endl << std::endl;
-    osCode << "public readonly struct Identity<T> { public readonly T name; public readonly symbolic.SourceLocation locus; }" << std::endl << std::endl;
-    osCode << '}' << std::endl << std::endl;
 
     std::set<ifc::DeclIndex> namesForSizeValidation;
 

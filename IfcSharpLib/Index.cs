@@ -60,6 +60,21 @@ namespace ifc
     {
     }
 
+    public interface ISequence<TElem>
+        where TElem : struct
+    {
+        Sequence<TElem> Sequence { get; }
+    }
+
+    public interface ITaggedSequence<TImpl, TElem, T> : ISequence<TElem>
+        where TElem : struct
+        where T : unmanaged, Enum
+        where TImpl : ITaggedSequence<TImpl, TElem, T>
+    {
+        static abstract SortType SequenceType { get; }
+        static abstract T SequenceSort { get; }
+    }
+
     public interface IOver
     {
         Index Index { get; }

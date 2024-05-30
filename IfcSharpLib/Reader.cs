@@ -50,20 +50,25 @@ namespace IfcSharpLib
         public ref readonly T Get<T>(TypeIndex index)
             where T : struct, ITag<T, TypeSort>
         {
-            return ref Partition<T>(_toc.types[(int)index.Sort])[(int)index.Index];
+            return ref Partition<T>(in _toc.types[(int)index.Sort])[(int)index.Index];
         }
 
         public ref readonly T Get<T>(DeclIndex index)
             where T : struct, ITag<T, DeclSort>
         {
-            return ref Partition<T>(_toc.decls[(int)index.Sort])[(int)index.Index];
+            return ref Partition<T>(in _toc.decls[(int)index.Sort])[(int)index.Index];
         }
 
         public ref readonly T Get<T>(NameIndex index)
             where T : struct, ITag<T, NameSort>
         {
             ArgumentOutOfRangeException.ThrowIfEqual((byte)index.Sort, (byte)NameSort.Identifier, nameof(index));
-            return ref Partition<T>(_toc.names[(int)index.Sort - 1])[(int)index.Index];
+            return ref Partition<T>(in _toc.names[(int)index.Sort - 1])[(int)index.Index];
+        }
+
+        public ref readonly FileAndLine Get(LineIndex index)
+        {
+            return ref Partition<FileAndLine>(in _toc.lines)[(int)index];
         }
 
         public ReadOnlySpan<T> Sequence<T>(Sequence<T> sequence)
@@ -72,13 +77,25 @@ namespace IfcSharpLib
             return Partition<T>().Slice((int)sequence.start, (int)sequence.cardinality);
         }
 
+        public ReadOnlySpan<T> Sequence<T>(ISequence<T> sequence) where T : struct, ITag => Sequence(sequence.Sequence);
+
+        public ReadOnlySpan<T> Sequence<TImpl, T, TSort>(ITaggedSequence<TImpl, T, TSort> taggedSequence)
+            where T : struct
+            where TSort : unmanaged, Enum
+            where TImpl : ITaggedSequence<TImpl, T, TSort>
+        {
+            var sequence = taggedSequence.Sequence;
+            return Partition<T>(in PartitionSummary(TImpl.SequenceType, Unsafe.BitCast<TSort, byte>(TImpl.SequenceSort)))
+                   .Slice((int)sequence.start, (int)sequence.cardinality);
+        }
+
         public LiteralSort GetLiteral(LitIndex index, out ulong integer, out double fp)
         {
             (integer, fp) = index.Sort switch
             {
                 LiteralSort.Immediate => ((ulong)index.Index, 0.0),
                 LiteralSort.Integer => (Partition<ulong>(_toc.u64s)[(int)index.Index], 0.0),
-                LiteralSort.FloatingPoint => (0UL, (Partition<FloatingPointLiteral>(_toc.fps)[(int)index.Index]).Value),
+                LiteralSort.FloatingPoint => (0UL, (Partition<LiteralReal>(_toc.fps)[(int)index.Index]).value),
                 _ => throw new ArgumentException("Invalid LiteralSort", nameof(index))
             };
 
@@ -137,6 +154,10 @@ namespace IfcSharpLib
             return GetString(identity.name);
         }
 
+        public ReadOnlySpan<Scope> Scopes() => Partition<Scope>(_toc.scopes);
+        public ReadOnlySpan<Declaration> Declarations() => Partition<Declaration>(_toc.entities);
+        public ReadOnlySpan<Declaration> Declarations(Sequence<Declaration> sequence) => Declarations().Slice((int)sequence.start, (int)sequence.cardinality);
+
         public ReadOnlySpan<T> Partition<T>()
             where T : struct, ITag
         {
@@ -151,46 +172,53 @@ namespace IfcSharpLib
             return MemoryMarshal.Cast<byte, T>(_memory.Span.Slice((int)summary.offset, size));
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private ref readonly PartitionSummaryData PartitionSummary<T>()
             where T : struct, ITag
         {
-            switch (T.Type)
+            return ref PartitionSummary(T.Type, T.Sort);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private ref readonly PartitionSummaryData PartitionSummary(SortType type, byte sort)
+        {
+            switch (type)
             {
-                case SortType.Name: return ref _toc.names[T.Sort];
-                case SortType.Decl: return ref _toc.decls[T.Sort];
-                case SortType.Type: return ref _toc.types[T.Sort];
-                case SortType.Stmt: return ref _toc.stmts[T.Sort];
-                case SortType.Expr: return ref _toc.exprs[T.Sort];
-                case SortType.Syntax: return ref _toc.elements[T.Sort];
-                case SortType.Form: return ref _toc.forms[T.Sort];
-                case SortType.Trait: return ref _toc.traits[T.Sort];
-                case SortType.MsvcTrait: return ref _toc.msvc_traits[T.Sort];
-                case SortType.Heap: return ref _toc.heaps[T.Sort];
-                case SortType.Macro: return ref _toc.macros[T.Sort];
-                case SortType.Pragma: return ref _toc.pragma_directives[T.Sort];
-                case SortType.Attr: return ref _toc.attrs[T.Sort];
-                case SortType.Dir: return ref _toc.dirs[T.Sort];
+                case SortType.Name: return ref _toc.names[sort];
+                case SortType.Decl: return ref _toc.decls[sort];
+                case SortType.Type: return ref _toc.types[sort];
+                case SortType.Stmt: return ref _toc.stmts[sort];
+                case SortType.Expr: return ref _toc.exprs[sort];
+                case SortType.Syntax: return ref _toc.elements[sort];
+                case SortType.Form: return ref _toc.forms[sort];
+                case SortType.Trait: return ref _toc.traits[sort];
+                case SortType.MsvcTrait: return ref _toc.msvc_traits[sort];
+                case SortType.Heap: return ref _toc.heaps[sort];
+                case SortType.Macro: return ref _toc.macros[sort];
+                case SortType.Pragma: return ref _toc.pragma_directives[sort];
+                case SortType.Attr: return ref _toc.attrs[sort];
+                case SortType.Dir: return ref _toc.dirs[sort];
                 case SortType.Scope: return ref _toc.scopes;
-                case SortType.Chart when ((ChartSort)T.Sort == ChartSort.Unilevel): return ref _toc.charts;
-                case SortType.Chart when ((ChartSort)T.Sort == ChartSort.Multilevel): return ref _toc.multi_charts;
+                case SortType.Chart when ((ChartSort)sort == ChartSort.Unilevel): return ref _toc.charts;
+                case SortType.Chart when ((ChartSort)sort == ChartSort.Multilevel): return ref _toc.multi_charts;
 
                 // remove? there are no types tagged with LiteralSort or StringSort
                 case SortType.String: return ref _toc.string_literals;
-                case SortType.Literal when ((LiteralSort)T.Sort == LiteralSort.Integer): return ref _toc.u64s;
-                case SortType.Literal when ((LiteralSort)T.Sort == LiteralSort.FloatingPoint): return ref _toc.fps;
+                case SortType.Literal when ((LiteralSort)sort == LiteralSort.Integer): return ref _toc.u64s;
+                case SortType.Literal when ((LiteralSort)sort == LiteralSort.FloatingPoint): return ref _toc.fps;
             }
             throw new NotImplementedException();
         }
 
         // for testing
-        public ref readonly T GetGeneric<T, U, TOver>(TOver index)
-            where T : struct, ITag<T, U>
-            where U : unmanaged, Enum
-            where TOver : IOver<U>
+        public ref readonly T GetGeneric<T, TSort, TOver>(TOver index)
+            where T : struct, ITag<T, TSort>
+            where TSort : unmanaged, Enum
+            where TOver : IOver<TSort>
         {
 #if DEBUG
             // The following check should never fail due to type constraints
-            if (TOver.Type != T.Type || Unsafe.BitCast<U, byte>(index.Sort) != Unsafe.BitCast<U, byte>(T.Sort)) // avoid BitCast?
+            if (TOver.Type != T.Type || Unsafe.BitCast<TSort, byte>(index.Sort) != Unsafe.BitCast<TSort, byte>(T.Sort)) // avoid BitCast?
             {
                 throw new SortMismatchException($"Sort mismatch: requested type/sort {T.Type}/{T.Sort} using index of type/sort {TOver.Type}/{index.Sort}");
             }
@@ -199,10 +227,16 @@ namespace IfcSharpLib
             return ref Partition<T>()[(int)index.Index];
         }
 
-        public T[] SequenceAsArray<T>(Sequence<T> sequence)
-            where T : struct, ITag
+        public T[] SequenceAsArray<T>(Sequence<T> sequence) where T : struct, ITag => [.. Sequence(sequence)];
+
+        public T[] SequenceAsArray<T>(ISequence<T> sequence) where T : struct, ITag => SequenceAsArray(sequence.Sequence);
+
+        public T[] SequenceAsArray<TImpl, T, TSort>(ITaggedSequence<TImpl, T, TSort> taggedSequence)
+            where T : struct
+            where TSort : unmanaged, Enum
+            where TImpl : ITaggedSequence<TImpl, T, TSort>
         {
-            return [.. Sequence(sequence)];
+            return [.. Sequence(taggedSequence)];
         }
 
         public T[] PartitionAsArray<T>()
@@ -210,17 +244,6 @@ namespace IfcSharpLib
         {
             return [.. Partition<T>(PartitionSummary<T>())];
         }
-    }
-
-    /// <summary>
-    /// The first 8 bytes represent a 64-bit floating point value, in IEEE 754 little endian format.
-    /// The remaining 4 bytes have indeterminate values.
-    /// </summary>
-    [StructLayout(LayoutKind.Sequential, Pack = 4)]
-    internal readonly struct FloatingPointLiteral
-    {
-        public readonly double Value;
-        public readonly uint Indeterminate;
     }
 
     public sealed class SortMismatchException(string message) : Exception(message) { }
