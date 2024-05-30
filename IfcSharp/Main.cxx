@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <bit>
 #include <cassert>
 #include <cstdlib>
 #include <deque>
@@ -609,6 +610,35 @@ namespace
         const ifc::TypeIndex baseIndex,
         std::ostream& os )
     {
+        bool emitFlagsAttribute = false;
+        if ( ifc::to_underlying( initializer.cardinality ) > 1 )
+        {
+            const auto span = reader.sequence( initializer );
+            const auto identity = getStringView( reader, span.back().identity );
+            if ( identity != "Count" )
+            {
+                bool looksLikeFlag = true;
+                uint64_t allFlags = 0;
+                for ( size_t i = 0; i < span.size() && looksLikeFlag; i++ )
+                {
+                    const auto possibleFlag = gsl::narrow_cast<uint64_t>( getLiteralValue( reader, span[i].initializer ) );
+                    looksLikeFlag = std::popcount( possibleFlag ) < 2;
+                    if ( not looksLikeFlag && i == span.size() - 1 && possibleFlag == allFlags )
+                    {
+                        looksLikeFlag = identity == "All";
+                    }
+                    allFlags |= possibleFlag;
+                }
+
+                emitFlagsAttribute = looksLikeFlag && allFlags > 3; // XXX inaccurate
+            }
+        }
+
+        if ( emitFlagsAttribute )
+        {
+            std::println( os, "[Flags]" );
+        }
+
         std::print( os, "public enum {}", typeName );
 
         if ( const auto base = fundamentalToCS( Query( reader, baseIndex ).get<ifc::symbolic::FundamentalType>() ); base != "int" )

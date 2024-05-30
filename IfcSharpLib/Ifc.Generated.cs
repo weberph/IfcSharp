@@ -1,4 +1,4 @@
-// hash: 2855cf6e1c33a6e0e564825589dd00d76afd0cdfae096a26b8e57c7394396813
+// hash: f0cce2a7c1d0abdc1798ac8efa2de17cf06a5855a240f8fca4bcda07ddc4a2ba
 
 using System.Runtime.InteropServices;
 
@@ -77,6 +77,7 @@ namespace ifc
         Count
     }
 
+    [Flags]
     public enum IfcOptions
     {
         None,
@@ -398,6 +399,7 @@ namespace ifc
         Merged
     }
 
+    [Flags]
     public enum ReachableProperties : byte
     {
         Nothing,
@@ -416,6 +418,7 @@ namespace ifc
         Count
     }
 
+    [Flags]
     public enum BasicSpecifiers : byte
     {
         Cxx,
@@ -441,6 +444,7 @@ namespace ifc
         Count
     }
 
+    [Flags]
     public enum FunctionTypeTraits : byte
     {
         None,
@@ -472,6 +476,7 @@ namespace ifc
         Count
     }
 
+    [Flags]
     public enum ScopeTraits : byte
     {
         None,
@@ -483,6 +488,7 @@ namespace ifc
         Vendor = 128
     }
 
+    [Flags]
     public enum ObjectTraits : byte
     {
         None,
@@ -499,6 +505,7 @@ namespace ifc
     {
     }
 
+    [Flags]
     public enum FunctionTraits : ushort
     {
         None,
@@ -524,6 +531,7 @@ namespace ifc
         Explicit
     }
 
+    [Flags]
     public enum VendorTraits : uint
     {
         None,
@@ -888,6 +896,7 @@ namespace ifc
         Count
     }
 
+    [Flags]
     public enum Qualifier : byte
     {
         None,
@@ -1793,6 +1802,7 @@ namespace ifc
         {
         }
 
+        [Flags]
         public enum Phases : uint
         {
             Unknown,
@@ -3814,6 +3824,7 @@ namespace ifc
 
         namespace syntax
         {
+            [Flags]
             public enum StorageClass : uint
             {
                 None,
