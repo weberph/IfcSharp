@@ -1,4 +1,4 @@
-// hash: d6daef18b393ede16a95c54bb68a4f407acc97377760f2a03982f5654f4730d1
+// hash: 2855cf6e1c33a6e0e564825589dd00d76afd0cdfae096a26b8e57c7394396813
 
 using System.Runtime.InteropServices;
 
@@ -1089,8 +1089,8 @@ namespace ifc
 
         private readonly ushort tag_bitfield;
         // ushort value (bitfield continuation)
-        public ushort tag => (ushort)((tag_bitfield >> 13) & 0b111);
-        public ushort value => (ushort)((tag_bitfield >> 0) & 0b1111111111111);
+        public ushort tag => (ushort)((tag_bitfield >> 0) & 0b111);
+        public ushort value => (ushort)((tag_bitfield >> 3) & 0b1111111111111);
     }
 
     public readonly struct Operator
@@ -1101,8 +1101,8 @@ namespace ifc
 
         private readonly ushort tag_bitfield;
         // ushort value (bitfield continuation)
-        public ushort tag => (ushort)((tag_bitfield >> 12) & 0b1111);
-        public ushort value => (ushort)((tag_bitfield >> 0) & 0b111111111111);
+        public ushort tag => (ushort)((tag_bitfield >> 0) & 0b1111);
+        public ushort value => (ushort)((tag_bitfield >> 4) & 0b111111111111);
     }
 
     [Over<FormSort>]
@@ -3587,8 +3587,8 @@ namespace ifc
             public readonly FormIndex replacement_list;
             private readonly uint arity_bitfield;
             // uint variadic (bitfield continuation)
-            public uint arity => ((arity_bitfield >> 1) & 0b1111111111111111111111111111111);
-            public uint variadic => ((arity_bitfield >> 0) & 0b1);
+            public uint arity => ((arity_bitfield >> 0) & 0b1111111111111111111111111111111);
+            public uint variadic => ((arity_bitfield >> 31) & 0b1);
         }
 
         public readonly struct PragmaWarningRegion
@@ -3634,13 +3634,13 @@ namespace ifc
             private readonly uint std_for_scope_bitfield;
             // uint unused (bitfield continuation)
             // uint strict_gs_check (bitfield continuation)
-            public uint pack_size => ((pack_size_bitfield >> 24) & 0b11111111);
-            public uint fp_control => ((pack_size_bitfield >> 16) & 0b11111111);
-            public uint exec_charset => ((pack_size_bitfield >> 8) & 0b11111111);
-            public uint vtor_disp => ((pack_size_bitfield >> 0) & 0b11111111);
-            public uint std_for_scope => ((std_for_scope_bitfield >> 31) & 0b1);
-            public uint unused => ((std_for_scope_bitfield >> 30) & 0b1);
-            public uint strict_gs_check => ((std_for_scope_bitfield >> 29) & 0b1);
+            public uint pack_size => ((pack_size_bitfield >> 0) & 0b11111111);
+            public uint fp_control => ((pack_size_bitfield >> 8) & 0b11111111);
+            public uint exec_charset => ((pack_size_bitfield >> 16) & 0b11111111);
+            public uint vtor_disp => ((pack_size_bitfield >> 24) & 0b11111111);
+            public uint std_for_scope => ((std_for_scope_bitfield >> 0) & 0b1);
+            public uint unused => ((std_for_scope_bitfield >> 1) & 0b1);
+            public uint strict_gs_check => ((std_for_scope_bitfield >> 2) & 0b1);
         }
 
         [Tag<AttrSort>(AttrSort.Basic)]

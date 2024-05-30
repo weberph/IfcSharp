@@ -1463,7 +1463,7 @@ namespace
                 std::string_view typeName{};
                 std::string_view fieldName{};
                 size_t width{};
-                size_t shift{}; // # of unused bits to the right
+                size_t offset{};
                 std::string_view bitfieldFieldName{}; // + "_bitfield" suffix
             };
 
@@ -1472,6 +1472,7 @@ namespace
                 std::vector<BitfieldMember> fields;
                 ifc::symbolic::FundamentalType type{};
                 size_t remainingBits{};
+                size_t offset{};
                 std::string_view fieldName{}; // + "_bitfield" suffix
             } tracker{};
 
@@ -1483,6 +1484,7 @@ namespace
                     {
                         tracker.type = {};
                         tracker.remainingBits = 0;
+                        tracker.offset = 0;
                         tracker.fieldName = {};
 
                         if ( isUnion )
@@ -1582,8 +1584,10 @@ namespace
                             os << "    // " << fundamentalTypeName << ' ' << fieldName << " (bitfield continuation)" << std::endl;
 
                             tracker.fields.emplace_back(
-                                fundamentalTypeName, fieldName, gsl::narrow_cast<size_t>( width ), tracker.remainingBits, tracker.fieldName
+                                fundamentalTypeName, fieldName, gsl::narrow_cast<size_t>( width ), tracker.offset, tracker.fieldName
                             );
+
+                            tracker.offset += width;
                         }
                         else
                         {
@@ -1595,8 +1599,10 @@ namespace
                             tracker.fieldName = fieldName;
 
                             tracker.fields.emplace_back(
-                                fundamentalTypeName, fieldName, gsl::narrow_cast<size_t>( width ), tracker.remainingBits, fieldName
+                                fundamentalTypeName, fieldName, gsl::narrow_cast<size_t>( width ), 0, fieldName
                             );
+
+                            tracker.offset = width;
 
                             os << "    private ";
                             if ( isReadonlyStruct )
@@ -1650,14 +1656,14 @@ namespace
                 assert( baseTypes.Sequence.has_value() );
             }
 
-            for ( const auto& [typeName, fieldName, width, shift, containigFieldName] : tracker.fields )
+            for ( const auto& [typeName, fieldName, width, offset, containigFieldName] : tracker.fields )
             {
                 os << "    public " << typeName << ' ' << CsIdentifier{ fieldName } << " => ";
                 if ( typeName != "uint" )
                 {
                     os << "(" << typeName << ")";
                 }
-                os << "((" << containigFieldName << "_bitfield >> " << shift << ") & 0b" << std::string( width, '1' ) << ");" << std::endl;
+                os << "((" << containigFieldName << "_bitfield >> " << offset << ") & 0b" << std::string( width, '1' ) << ");" << std::endl;
             }
 
             os << "}" << std::endl << std::endl;
