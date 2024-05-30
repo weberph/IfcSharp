@@ -1,4 +1,4 @@
-// hash: 66e9d3c4bdb4c181d013e6363a59fcf0390bb606170aa7da265d827917365f43
+// hash: 39e0cd292fc2832c0e6225c1d0884202421bbfea83e8048b0611c28585214995
 
 using System.Runtime.InteropServices;
 
@@ -1043,6 +1043,7 @@ namespace ifc
         public UnitSort Sort => (UnitSort)(IndexAndSort & 0b111);
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.Unit;
+        public override int GetHashCode() => (int)IndexAndSort;
     }
 
     public readonly struct Header
@@ -1114,6 +1115,7 @@ namespace ifc
         public FormSort Sort => (FormSort)(IndexAndSort & 0b1111);
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.Form;
+        public override int GetHashCode() => (int)IndexAndSort;
     }
 
     [Over<StringSort>]
@@ -1124,6 +1126,7 @@ namespace ifc
         public StringSort Sort => (StringSort)(IndexAndSort & 0b111);
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.String;
+        public override int GetHashCode() => (int)IndexAndSort;
     }
 
     [Over<NameSort>]
@@ -1134,6 +1137,7 @@ namespace ifc
         public NameSort Sort => (NameSort)(IndexAndSort & 0b111);
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.Name;
+        public override int GetHashCode() => (int)IndexAndSort;
     }
 
     [Over<ChartSort>]
@@ -1144,6 +1148,7 @@ namespace ifc
         public ChartSort Sort => (ChartSort)(IndexAndSort & 0b11);
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.Chart;
+        public override int GetHashCode() => (int)IndexAndSort;
     }
 
     [Over<DeclSort>]
@@ -1154,6 +1159,7 @@ namespace ifc
         public DeclSort Sort => (DeclSort)(IndexAndSort & 0b11111);
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.Decl;
+        public override int GetHashCode() => (int)IndexAndSort;
     }
 
     [Over<TypeSort>]
@@ -1164,6 +1170,7 @@ namespace ifc
         public TypeSort Sort => (TypeSort)(IndexAndSort & 0b11111);
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.Type;
+        public override int GetHashCode() => (int)IndexAndSort;
     }
 
     [Over<SyntaxSort>]
@@ -1174,6 +1181,7 @@ namespace ifc
         public SyntaxSort Sort => (SyntaxSort)(IndexAndSort & 0b1111111);
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.Syntax;
+        public override int GetHashCode() => (int)IndexAndSort;
     }
 
     [Over<LiteralSort>]
@@ -1184,6 +1192,7 @@ namespace ifc
         public LiteralSort Sort => (LiteralSort)(IndexAndSort & 0b11);
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.Literal;
+        public override int GetHashCode() => (int)IndexAndSort;
     }
 
     [Over<StmtSort>]
@@ -1194,6 +1203,7 @@ namespace ifc
         public StmtSort Sort => (StmtSort)(IndexAndSort & 0b11111);
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.Stmt;
+        public override int GetHashCode() => (int)IndexAndSort;
     }
 
     [Over<ExprSort>]
@@ -1204,6 +1214,7 @@ namespace ifc
         public ExprSort Sort => (ExprSort)(IndexAndSort & 0b111111);
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.Expr;
+        public override int GetHashCode() => (int)IndexAndSort;
     }
 
     [Over<MacroSort>]
@@ -1214,6 +1225,7 @@ namespace ifc
         public MacroSort Sort => (MacroSort)(IndexAndSort & 0b1);
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.Macro;
+        public override int GetHashCode() => (int)IndexAndSort;
     }
 
     [Over<PragmaSort>]
@@ -1224,6 +1236,7 @@ namespace ifc
         public PragmaSort Sort => (PragmaSort)(IndexAndSort & 0b1);
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.Pragma;
+        public override int GetHashCode() => (int)IndexAndSort;
     }
 
     [Over<AttrSort>]
@@ -1234,6 +1247,7 @@ namespace ifc
         public AttrSort Sort => (AttrSort)(IndexAndSort & 0b1111);
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.Attr;
+        public override int GetHashCode() => (int)IndexAndSort;
     }
 
     [Over<DirSort>]
@@ -1244,6 +1258,7 @@ namespace ifc
         public DirSort Sort => (DirSort)(IndexAndSort & 0b11111);
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.Dir;
+        public override int GetHashCode() => (int)IndexAndSort;
     }
 
     public readonly struct TraitOrdering
