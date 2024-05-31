@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\IfcBuilderLib\IfcBuilderLib.csproj" />
     <ProjectReference Include="..\IfcSharpLib\IfcSharpLib.csproj" />
   </ItemGroup>
 
