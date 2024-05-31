@@ -55,7 +55,7 @@ namespace IfcBuilderLib
                                .FirstOrDefault(File.Exists) ?? throw new DeveloperEnvironmentException("cl.exe not found");
         }
 
-        public async Task<(string stdout, string stderr, int exitCode)> CreateIfcAsync(string rawInputFile, string[] rawIncludeDirs, string rawOutputFile)
+        public async Task<(string stdout, string stderr, int exitCode)> CreateIfcAsync(string rawInputFile, string[] rawIncludeDirs, string rawOutputFile, string[] additionalCompilerOptions)
         {
             if (!Sanitizer.TryFilePath(rawInputFile, out var inputFile))
             {
@@ -85,7 +85,7 @@ namespace IfcBuilderLib
             string[] output = ["/ifcOutput", outputFile];
             string[] input = ["/exportHeader", inputFile];
 
-            string[] arguments = [.. includeArguments, .. defaultOptions, .. output, .. input];
+            string[] arguments = [.. includeArguments, .. defaultOptions, .. additionalCompilerOptions, .. output, .. input];
 
             var startInfo = new ProcessStartInfo(clExe, arguments)
             {

@@ -169,6 +169,11 @@ namespace CppEnumApp
                 if (Path.GetDirectoryName(path) is { } parent && Directory.Exists(parent))
                 {
                     includeDirs.Add(parent);
+
+                    if (File.Exists(path) && Path.GetDirectoryName(parent) is { } parent2 && Directory.Exists(parent2))
+                    {
+                        includeDirs.Add(parent2);
+                    }
                 }
             }
 
@@ -182,7 +187,7 @@ namespace CppEnumApp
 
             includeDirs.AddRange((Properties.Settings.Default.IncludeDirectories ?? []).Cast<string>());
 
-            var (stdout, stderr, exitCode) = await env.CreateIfcAsync(inputFile, [.. includeDirs], outputFile).ConfigureAwait(false);
+            var (stdout, stderr, exitCode) = await env.CreateIfcAsync(inputFile, [.. includeDirs], outputFile, []).ConfigureAwait(false);
             if (exitCode != 0)
             {
                 throw new IfcBuildException($"Failed to build the ifc. Exit code of cl.exe: {exitCode}. Error:\n{stdout}\n{stderr}");
