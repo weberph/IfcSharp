@@ -24,7 +24,8 @@ namespace ifc
         Trait,
         MsvcTrait,
         Heap,
-        Scope
+        Scope,
+        Count
     }
 
     public interface ITag

@@ -22,7 +22,7 @@ namespace IfcSharpLibTest
         private static readonly MethodInfo ITaggedSequenceAsArray;
         private static readonly MethodInfo InlineArrayAsArray;
 
-        private readonly HashSet<uint> _visitedTypes = [];
+        private readonly HashSet<uint>[] _visitedTypes = new HashSet<uint>[(int)SortType.Count];
 
         static ReflectionVisitor()
         {
@@ -77,9 +77,13 @@ namespace IfcSharpLibTest
 
         public void Visit(object obj, bool reset = true)
         {
-            if (reset)
+            for (int i = 0; i < _visitedTypes.Length; i++)
             {
-                _visitedTypes.Clear();
+                _visitedTypes[i] ??= [];
+                if (reset)
+                {
+                    _visitedTypes[i].Clear();
+                }
             }
 
             Visit(obj, 0);
@@ -115,6 +119,10 @@ namespace IfcSharpLibTest
 
                 skipSequenceFields = true;
             }
+            else if (SortByIndexType.TryGetValue(type, out var sortType))
+            {
+                VisitIndex(indent, level, sortType, (IOver)obj);
+            }
 
             foreach (var field in fields)
             {
@@ -131,81 +139,9 @@ namespace IfcSharpLibTest
                         Console.WriteLine($"{indent} found index {fieldType.Name} in member {field.Name} with SortType {sortType}");
                     }
 
-                    //if (sortType == SortType.Stmt)
-                    //{
-                    //    Debugger.Break();
-                    //}
-
-                    if (field.GetValue(obj) is not IOver index || index.IsNull)
+                    if (field.GetValue(obj) is IOver index && !index.IsNull)
                     {
-                        continue;
-                    }
-
-                    if (sortType is SortType.Name)
-                    {
-                        var name = reader.GetString((NameIndex)index);
-                        if (verbose)
-                        {
-                            Console.WriteLine($"{indent}  Name: " + name);
-                        }
-
-                        continue;
-                    }
-
-                    if (sortType == SortType.String)
-                    {
-                        var literal = reader.GetString((StringIndex)index);
-                        if (verbose)
-                        {
-                            Console.WriteLine($"{indent}  Literal: " + literal);
-                        }
-
-                        continue;
-                    }
-
-                    if (sortType == SortType.Literal)
-                    {
-                        var literal = reader.GetLiteral((LitIndex)index, out var integer, out var fp) switch
-                        {
-                            LiteralSort.FloatingPoint => fp.ToString(),
-                            _ => integer.ToString(),
-                        };
-
-                        if (verbose)
-                        {
-                            Console.WriteLine($"{indent}  Literal: " + literal);
-                        }
-
-                        continue;
-                    }
-
-                    var keyIndex = (uint)index.Index;
-                    var keySort = (uint)sortType << 8 | (uint)index.UntypedSort;
-                    var typeKey = keyIndex ^ keySort;
-                    if (_visitedTypes.Add(typeKey))
-                    {
-                        Console.WriteLine($"{indent}  Reference: {typeKey}");
-                        if (index.UntypedSort == 0)
-                        {
-                            if (verbose)
-                            {
-                                Console.WriteLine("Skipping VendorExtension?");
-                            }
-                        }
-                        else
-                        {
-                            var ioverType = index.GetType();
-                            var ioverTypeArg = ioverType.GetInterfaces().First().GenericTypeArguments[0];
-
-                            var targetType = TypesBySort[(sortType, index.UntypedSort)];
-
-                            var newObj = GetGeneric.MakeGenericMethod(targetType, ioverTypeArg, ioverType).Invoke(reader, [index])!;
-                            Visit(newObj, level + 1);
-                        }
-                    }
-                    else
-                    {
-                        Console.WriteLine($"{indent}  See Reference: {typeKey}");
+                        VisitIndex(indent, level, sortType, index);
                     }
                 }
                 else if (field.FieldType.IsGenericType && field.FieldType.Name.StartsWith("Sequence"))
@@ -296,7 +232,7 @@ namespace IfcSharpLibTest
                     Visit(field.GetValue(obj)!, level); // same level
                 }
                 else if (fieldType.Name is nameof(NoexceptSpecification) or nameof(ParameterizedEntity) or nameof(MappingDefinition)
-                    or nameof(MsvcFileBoundaryProperties) or nameof(MsvcFileHashData))
+                    or nameof(MsvcFileBoundaryProperties) or nameof(MsvcFileHashData) or nameof(MsvcLabelProperties))
                 {
                     Visit(field.GetValue(obj)!, level + 1);
                 }
@@ -362,6 +298,80 @@ namespace IfcSharpLibTest
             }
         }
 
+        private void VisitIndex(string indent, int level, SortType sortType, IOver index)
+        {
+            if (sortType is SortType.Name)
+            {
+                var name = reader.GetString((NameIndex)index);
+                if (verbose)
+                {
+                    Console.WriteLine($"{indent}  Name: " + name);
+                }
+
+                return;
+            }
+
+            if (sortType == SortType.String)
+            {
+                var literal = reader.GetString((StringIndex)index);
+                if (verbose)
+                {
+                    Console.WriteLine($"{indent}  Literal: " + literal);
+                }
+
+                return;
+            }
+
+            if (sortType == SortType.Literal)
+            {
+                var literal = reader.GetLiteral((LitIndex)index, out var integer, out var fp) switch
+                {
+                    LiteralSort.FloatingPoint => fp.ToString(),
+                    _ => integer.ToString(),
+                };
+
+                if (verbose)
+                {
+                    Console.WriteLine($"{indent}  Literal: " + literal);
+                }
+
+                return;
+            }
+
+            if (_visitedTypes[(int)sortType].Add((uint)index.GetHashCode()))
+            {
+                if (verbose)
+                {
+                    Console.WriteLine($"{indent}  Reference: {sortType}_{index.GetHashCode()}");
+                }
+
+                if (index.UntypedSort == 0)
+                {
+                    if (verbose)
+                    {
+                        Console.WriteLine("Skipping VendorExtension?");
+                    }
+                }
+                else
+                {
+                    var ioverType = index.GetType();
+                    var ioverTypeArg = ioverType.GetInterfaces().First().GenericTypeArguments[0];
+
+                    var targetType = TypesBySort[(sortType, index.UntypedSort)];
+
+                    var newObj = GetGeneric.MakeGenericMethod(targetType, ioverTypeArg, ioverType).Invoke(reader, [index])!;
+                    Visit(newObj, level + 1);
+                }
+            }
+            else
+            {
+                if (verbose)
+                {
+                    Console.WriteLine($"{indent}  See Reference: {sortType}_{index.GetHashCode()}");
+                }
+            }
+        }
+
         private static TElement[] GetInlineArrayAsArray<TBuffer, TElement>(in TBuffer buffer, int length)
         {
             var span = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TBuffer, TElement>(ref Unsafe.AsRef(in buffer)), length);
@@ -391,9 +401,9 @@ namespace IfcSharpLibTest
             }
         }
 
-        public static void Run(bool verbose)
+        public static void Run(string ifcPath, bool verbose)
         {
-            var reader = new Reader(@"IfcTestData\IfcHeaderUnit.ixx.ifc");
+            var reader = new Reader(ifcPath);
 
             TestVisitAllFriends(reader);
             TestVisitAllSpecializations(reader);
