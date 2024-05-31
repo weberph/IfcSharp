@@ -13,7 +13,7 @@ namespace IfcSharpLibTest
 
             //ReflectionTest.Run(@"IfcTestData\IfcHeaderUnit.ixx.ifc", args.Contains("-v"));
 
-            //BuildBoost();
+            BuildBoost();
 
             var ifcPaths = Directory.EnumerateFiles("IfcTestData", "*.ifc");
 
@@ -43,21 +43,32 @@ namespace IfcSharpLibTest
             devEnv.ActivateDeveloperEnvironmentAsync(@"c:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat").Wait();
 
             var boostDir = @"d:\workspace\.source\boost_1_85_0\boost\";
-            var files = Directory.EnumerateFiles(boostDir, "*.hpp");
-            var tasks = new List<(string, Task)>();
-            foreach (var file in files)
+            var files = Directory.EnumerateFiles(boostDir, "*.hpp").ToArray();
+
+            var consoleLock = new object();
+            var successCount = 0;
+            Parallel.ForEach(files, (f, t) =>
             {
-                var name = Path.GetFileName(file);
+                var name = Path.GetFileName(f);
                 var output = Path.Combine(Directory.GetCurrentDirectory(), "IfcTestData", name + ".ifc");
-                tasks.Add((name, devEnv.CreateIfcAsync(file, includeDirs, output, additionalOptions)));
-            }
+                File.Delete(output);
 
-            Task.WhenAll(tasks.Select(t => t.Item2).ToArray());
+                var (stdout, stderr, exitCode) = devEnv.CreateIfcAsync(f, includeDirs, output, additionalOptions).Result;
+                lock (consoleLock)
+                {
+                    if (exitCode != 0)
+                    {
+                        Console.WriteLine($"{name} failed: " + stdout + "\n" + stderr);
+                        Console.WriteLine();
+                    }
+                    else
+                    {
+                        ++successCount;
+                    }
+                }
+            });
 
-            foreach (var (file, task) in tasks)
-            {
-                Console.WriteLine($"{file}: {(task.IsCompletedSuccessfully ? "success" : "fail")}");
-            }
+            Console.WriteLine($"Built {successCount} / {files.Length} successfully. {files.Length - successCount} failed.");
         }
     }
 }

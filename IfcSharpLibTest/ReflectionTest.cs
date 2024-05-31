@@ -23,6 +23,9 @@ namespace IfcSharpLibTest
         private static readonly MethodInfo InlineArrayAsArray;
 
         private readonly HashSet<uint>[] _visitedTypes = new HashSet<uint>[(int)SortType.Count];
+        private readonly Queue<object> _delayedTypes = [];
+
+        private const int RecursionLimit = 50;
 
         static ReflectionVisitor()
         {
@@ -86,11 +89,33 @@ namespace IfcSharpLibTest
                 }
             }
 
+            _delayedTypes.Clear();
+
             Visit(obj, 0);
+
+            while (_delayedTypes.TryDequeue(out var delayed))
+            {
+                if (verbose)
+                {
+                    Console.WriteLine("Continuation of recursion");
+                }
+                Visit(delayed, 0);
+            }
         }
 
         private void Visit(object obj, int level)
         {
+            if (level > RecursionLimit)
+            {
+                if (verbose)
+                {
+                    Console.WriteLine($"Recursion limit reached");
+                }
+
+                _delayedTypes.Enqueue(obj);
+                return;
+            }
+
             var type = obj.GetType();
             var fields = type.GetFields();
 
