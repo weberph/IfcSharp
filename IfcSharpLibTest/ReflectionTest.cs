@@ -380,7 +380,7 @@ namespace IfcSharpLibTest
                 else
                 {
                     var ioverType = index.GetType();
-                    var ioverTypeArg = ioverType.GetInterfaces().First().GenericTypeArguments[0];
+                    var ioverTypeArg = ioverType.GetInterfaces().First().GenericTypeArguments[1];
 
                     var targetType = TypesBySort[(sortType, index.UntypedSort)];
 
@@ -429,7 +429,11 @@ namespace IfcSharpLibTest
         public static void Run(string ifcPath, bool verbose)
         {
             var reader = new Reader(ifcPath);
+            Run(reader, verbose);
+        }
 
+        public static void Run(Reader reader, bool verbose)
+        {
             TestVisitAllFriends(reader);
             TestVisitAllSpecializations(reader);
 

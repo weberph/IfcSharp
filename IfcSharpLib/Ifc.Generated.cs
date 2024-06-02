@@ -1,4 +1,4 @@
-// hash: ed905d602b318b70228cb079b06afbd4621c21dad90c8d0c09604c8ba208aa2f
+// hash: 67f614a300050750be09624e7caab309cbaa7b01c7887cafa6728bf11f5e6568
 
 using System.Runtime.InteropServices;
 
@@ -1036,7 +1036,7 @@ namespace ifc
         private uint _element;
     }
     [Over<UnitSort>]
-    public readonly record struct UnitIndex : IOver<UnitSort>
+    public readonly record struct UnitIndex : IOver<UnitIndex, UnitSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 3);
@@ -1115,7 +1115,7 @@ namespace ifc
     }
 
     [Over<FormSort>]
-    public readonly record struct FormIndex : IOver<FormSort>
+    public readonly record struct FormIndex : IOver<FormIndex, FormSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 4);
@@ -1133,7 +1133,7 @@ namespace ifc
     }
 
     [Over<StringSort>]
-    public readonly record struct StringIndex : IOver<StringSort>
+    public readonly record struct StringIndex : IOver<StringIndex, StringSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 3);
@@ -1151,7 +1151,7 @@ namespace ifc
     }
 
     [Over<NameSort>]
-    public readonly record struct NameIndex : IOver<NameSort>
+    public readonly record struct NameIndex : IOver<NameIndex, NameSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 3);
@@ -1169,7 +1169,7 @@ namespace ifc
     }
 
     [Over<ChartSort>]
-    public readonly record struct ChartIndex : IOver<ChartSort>
+    public readonly record struct ChartIndex : IOver<ChartIndex, ChartSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 2);
@@ -1187,7 +1187,7 @@ namespace ifc
     }
 
     [Over<DeclSort>]
-    public readonly record struct DeclIndex : IOver<DeclSort>
+    public readonly record struct DeclIndex : IOver<DeclIndex, DeclSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 5);
@@ -1205,7 +1205,7 @@ namespace ifc
     }
 
     [Over<TypeSort>]
-    public readonly record struct TypeIndex : IOver<TypeSort>
+    public readonly record struct TypeIndex : IOver<TypeIndex, TypeSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 5);
@@ -1223,7 +1223,7 @@ namespace ifc
     }
 
     [Over<SyntaxSort>]
-    public readonly record struct SyntaxIndex : IOver<SyntaxSort>
+    public readonly record struct SyntaxIndex : IOver<SyntaxIndex, SyntaxSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 7);
@@ -1241,7 +1241,7 @@ namespace ifc
     }
 
     [Over<LiteralSort>]
-    public readonly record struct LitIndex : IOver<LiteralSort>
+    public readonly record struct LitIndex : IOver<LitIndex, LiteralSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 2);
@@ -1259,7 +1259,7 @@ namespace ifc
     }
 
     [Over<StmtSort>]
-    public readonly record struct StmtIndex : IOver<StmtSort>
+    public readonly record struct StmtIndex : IOver<StmtIndex, StmtSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 5);
@@ -1277,7 +1277,7 @@ namespace ifc
     }
 
     [Over<ExprSort>]
-    public readonly record struct ExprIndex : IOver<ExprSort>
+    public readonly record struct ExprIndex : IOver<ExprIndex, ExprSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 6);
@@ -1295,7 +1295,7 @@ namespace ifc
     }
 
     [Over<MacroSort>]
-    public readonly record struct MacroIndex : IOver<MacroSort>
+    public readonly record struct MacroIndex : IOver<MacroIndex, MacroSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 1);
@@ -1313,7 +1313,7 @@ namespace ifc
     }
 
     [Over<PragmaSort>]
-    public readonly record struct PragmaIndex : IOver<PragmaSort>
+    public readonly record struct PragmaIndex : IOver<PragmaIndex, PragmaSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 1);
@@ -1331,7 +1331,7 @@ namespace ifc
     }
 
     [Over<AttrSort>]
-    public readonly record struct AttrIndex : IOver<AttrSort>
+    public readonly record struct AttrIndex : IOver<AttrIndex, AttrSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 4);
@@ -1349,7 +1349,7 @@ namespace ifc
     }
 
     [Over<DirSort>]
-    public readonly record struct DirIndex : IOver<DirSort>
+    public readonly record struct DirIndex : IOver<DirIndex, DirSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 5);

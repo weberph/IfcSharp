@@ -1480,7 +1480,7 @@ namespace
             if ( baseTypes.Over.has_value() )
             {
                 assert( not hasInterface );
-                os << " : IOver<" << baseTypes.Over.value().tagType.name << '>';
+                os << " : IOver<" << mName << ", " << baseTypes.Over.value().tagType.name << '>';
             }
 
             os << std::endl << "{" << std::endl;

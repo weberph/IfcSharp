@@ -37,7 +37,7 @@ namespace ifc
 
     public interface ITag<TImpl, T> : ITag
         where T : unmanaged, Enum
-        where TImpl : ITag<TImpl, T>
+        where TImpl : struct, ITag<TImpl, T>
     {
         static byte ITag.Sort => Unsafe.BitCast<T, byte>(TImpl.Sort);
         static new abstract T Sort { get; }
@@ -57,7 +57,7 @@ namespace ifc
 
     public interface ITraitTag<TImpl, T> : ITag<TImpl, T>, ITraitTag
         where T : unmanaged, Enum
-        where TImpl : ITag<TImpl, T>
+        where TImpl : struct, ITag<TImpl, T>
     {
     }
 
@@ -85,11 +85,20 @@ namespace ifc
         static abstract SortType Type { get; }
     }
 
-    public interface IOver<T> : IOver where T : unmanaged, Enum
+    public interface IOver<TImpl> : IOver
+        where TImpl : struct, IOver<TImpl>
+    {
+    }
+
+    public interface IOver<TImpl, T> : IOver<TImpl>
+        where T : unmanaged, Enum
+        where TImpl : struct, IOver<TImpl, T>
     {
         T Sort { get; }
 
         byte IOver.UntypedSort => Unsafe.BitCast<T, byte>(Sort);
+
+        static abstract TImpl Create(T sort, Index index);
     }
 
     [AttributeUsage(AttributeTargets.Struct)]
