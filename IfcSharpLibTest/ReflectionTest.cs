@@ -11,7 +11,9 @@ using ifc.source;
 
 namespace IfcSharpLibTest
 {
-    internal class ReflectionVisitor(Reader reader, bool verbose)
+    internal sealed class InvalidSortTypeException(string message) : Exception(message) { }
+
+    internal sealed class ReflectionVisitor(Reader reader, bool verbose)
     {
         private static readonly FrozenDictionary<(SortType, byte), Type> TypesBySort;
         private static readonly FrozenDictionary<Type, SortType> SortByIndexType;
@@ -244,7 +246,7 @@ namespace IfcSharpLibTest
                         WordSort.Operator => word.src_operator.ToString(),
                         WordSort.Keyword => word.src_keyword.ToString(),
                         WordSort.Identifier => word.src_identifier.ToString(),
-                        _ => throw new Exception("Invalid WordSort")
+                        _ => throw new InvalidSortTypeException("Invalid WordSort")
                     };
 
                     if (verbose)
@@ -273,7 +275,7 @@ namespace IfcSharpLibTest
                         OperatorSort.Triadic => Enum.GetName((TriadicOperator)op.value),
                         OperatorSort.Storage => Enum.GetName((StorageOperator)op.value),
                         OperatorSort.Variadic => Enum.GetName((VariadicOperator)op.value),
-                        _ => throw new Exception("Invalid OperatorSort")
+                        _ => throw new InvalidSortTypeException("Invalid OperatorSort")
                     };
 
                     if (verbose)
@@ -289,7 +291,7 @@ namespace IfcSharpLibTest
                     {
                         WordSort.Punctuator => Enum.GetName((Punctuator)op.value),
                         WordSort.Operator => Enum.GetName((ifc.source.Operator)op.value),
-                        _ => throw new Exception("Invalid PPOperator WordSort") // see concept PPOperatorCategory
+                        _ => throw new InvalidSortTypeException("Invalid PPOperator WordSort") // see concept PPOperatorCategory
                     };
 
                     if (verbose)
@@ -404,7 +406,7 @@ namespace IfcSharpLibTest
         }
     }
 
-    internal class ReflectionTest
+    internal sealed class ReflectionTest
     {
         static void TestVisitAllFriends(Reader reader)
         {

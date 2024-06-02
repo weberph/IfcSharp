@@ -1,9 +1,11 @@
-﻿namespace ifc
+﻿#pragma warning disable CA1051 // Do not declare visible instance fields
+
+namespace ifc
 {
-    public readonly struct Sequence<T>(Index start_, Cardinality cardinality_)
+    public readonly struct Sequence<T>(Index start, Cardinality cardinality)
     {
-        public readonly Index start = start_;
-        public readonly Cardinality cardinality = cardinality_;
+        public readonly Index start = start;
+        public readonly Cardinality cardinality = cardinality;
     }
 
     public readonly struct Identity<T>

@@ -36,7 +36,7 @@ namespace IfcSharpLib
             TypesortTableReverse = Reverse(TypesortTable);
             StmtsortTableReverse = Reverse(StmtsortTable);
             ExprsortTableReverse = Reverse(ExprsortTable);
-            ChartsortTableReverse = Reverse(ChartsortTable);
+            // ChartsortTableReverse = Reverse(ChartsortTable); // unused: ChartSort.Unilevel and ChartSort.Multilevel are different partitions
             NamesortTableReverse = Reverse(NamesortTable);
             SyntaxsortTableReverse = Reverse(SyntaxSortTable);
             MacrosortTableReverse = Reverse(MacroSortTable);
@@ -108,7 +108,7 @@ namespace IfcSharpLib
         private static readonly FrozenDictionary<string, TypeSort> TypesortTableReverse;
         private static readonly FrozenDictionary<string, StmtSort> StmtsortTableReverse;
         private static readonly FrozenDictionary<string, ExprSort> ExprsortTableReverse;
-        private static readonly FrozenDictionary<string, ChartSort> ChartsortTableReverse;
+        // private static readonly FrozenDictionary<string, ChartSort> ChartsortTableReverse; // unused: ChartSort.Unilevel and ChartSort.Multilevel are different partitions
         private static readonly FrozenDictionary<string, NameSort> NamesortTableReverse;
         private static readonly FrozenDictionary<string, SyntaxSort> SyntaxsortTableReverse;
         private static readonly FrozenDictionary<string, MacroSort> MacrosortTableReverse;
@@ -281,12 +281,13 @@ namespace IfcSharpLib
             { ExprSort.AssignInitializer, "expr.assign-initializer"},
         }.ToFrozenDictionary();
 
-        private static readonly FrozenDictionary<ChartSort, string> ChartsortTable = new Dictionary<ChartSort, string>
-        {
-            { ChartSort.None, "chart.none"},
-            { ChartSort.Unilevel, "chart.unilevel"},
-            { ChartSort.Multilevel, "chart.multilevel"},
-        }.ToFrozenDictionary();
+        // unused: ChartSort.Unilevel and ChartSort.Multilevel are different partitions (-> direct assign is used)
+        //private static readonly FrozenDictionary<ChartSort, string> ChartsortTable = new Dictionary<ChartSort, string>
+        //{
+        //    { ChartSort.None, "chart.none"},
+        //    { ChartSort.Unilevel, "chart.unilevel"},
+        //    { ChartSort.Multilevel, "chart.multilevel"},
+        //}.ToFrozenDictionary();
 
         private static readonly FrozenDictionary<NameSort, string> NamesortTable = new Dictionary<NameSort, string>
         {

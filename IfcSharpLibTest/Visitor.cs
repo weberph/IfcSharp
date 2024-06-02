@@ -22,7 +22,7 @@ namespace IfcSharpLibTest
         }
     }
 
-    internal partial class TestVisitor(Reader reader)
+    internal sealed partial class TestVisitor(Reader reader)
     {
         private readonly Reader _reader = reader;
 

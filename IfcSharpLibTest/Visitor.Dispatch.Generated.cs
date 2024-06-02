@@ -1,7 +1,4 @@
 using ifc;
-using ifc.symbolic;
-using IfcSharpLib;
-using System.Runtime.CompilerServices;
 
 namespace IfcSharpLibTest
 {

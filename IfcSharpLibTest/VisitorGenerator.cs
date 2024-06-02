@@ -1,21 +1,16 @@
 ﻿using ifc;
 using ifc.symbolic;
 using IfcSharpLib;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Reflection.PortableExecutable;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace IfcSharpLibTest
 {
-    internal class VisitorGenerator
+    internal sealed class VisitorGenerator
     {
         private readonly Type[] _indexTypes;
         private readonly Dictionary<SortType, Type> _indexTypeBySortType;
-        private readonly Dictionary<(SortType, byte), Type> _targetTypeDict;
+        private readonly Dictionary<(SortType, byte), Type> _targetTypeDict = [];
 
         public VisitorGenerator()
         {
@@ -23,7 +18,6 @@ namespace IfcSharpLibTest
 
             var targetTypes = allTypes.Where(t => t.IsAssignableTo(typeof(ITag))).ToArray();
 
-            _targetTypeDict = new Dictionary<(SortType, byte), Type>();
             foreach (var targetType in targetTypes.Where(t => !t.IsInterface))
             {
                 if (targetType.Name is nameof(IntegerLiteral) or nameof(FloatingPointLiteral))
@@ -43,8 +37,9 @@ namespace IfcSharpLibTest
                 it => it);
         }
 
-        public void GenerateVisitMethods()
+        public void GenerateVisitMethods(string outputFile)
         {
+            // Example:
             //  private void VisitParameterDecl(DeclIndex index)
             //  {
             //      ref readonly var parameterDecl = ref _reader.Get<ParameterDecl>(index);
@@ -79,7 +74,6 @@ namespace IfcSharpLibTest
             foreach (var group in bySortType)
             {
                 var sortType = group.Key;
-                //var indexType = indexTypeBySortType[sortType];
                 if (!_indexTypeBySortType.TryGetValue(sortType, out var indexType))
                 {
                     Console.WriteLine($"TODO: skipping SortType.{sortType}");
@@ -89,7 +83,7 @@ namespace IfcSharpLibTest
                 foreach (var (key, type) in group.OrderBy(kvp => kvp.Key.Item2))
                 {
                     var sortEnumType = GetSortEnumType(type);
-                    var localVariableName = char.ToLowerInvariant(type.Name[0]) + type.Name.Substring(1);
+                    var localVariableName = char.ToLowerInvariant(type.Name[0]) + type.Name[1..];
 
                     // TODO: get type size to determine whether "in" should be used
                     sb.Append(' ', 8).AppendLine($"partial void Visit(in {type.Name} {localVariableName});").AppendLine();
@@ -107,6 +101,8 @@ namespace IfcSharpLibTest
                     bool first = true;
                     foreach (var field in fields.Reverse()) // push children in reverse so that the first child is popped back first
                     {
+                        // TODO: support other types: InlineArrayAttribute, Sequence<T>, I(Tagged)Sequence<T>
+                        //       Template, NoexceptSpecification, ParameterizedEntity, MappingDefinition, MsvcFileBoundaryProperties, MsvcFileHashData, MsvcLabelProperties, ...
                         if (_indexTypes.Contains(field.FieldType))
                         {
                             if (first) sb.AppendLine();
@@ -132,19 +128,16 @@ namespace IfcSharpLibTest
                 }
                 """);
 
-            File.WriteAllText(@"d:\.projects\.unsorted\2024\IfcSharp\IfcSharpLibTest\Visitor.Visit.Generated.cs", sb.ToString());
+            File.WriteAllText(outputFile, sb.ToString());
         }
 
-        public void GenerateDispatchMethod()
+        public void GenerateDispatchMethod(string outputFile)
         {
             var sb = new StringBuilder();
 
             sb.AppendLine(
                 """
                 using ifc;
-                using ifc.symbolic;
-                using IfcSharpLib;
-                using System.Runtime.CompilerServices;
 
                 namespace IfcSharpLibTest
                 {
@@ -161,7 +154,6 @@ namespace IfcSharpLibTest
             foreach (var group in bySortType)
             {
                 var sortType = group.Key;
-                //var indexType = indexTypeBySortType[sortType];
                 if (!_indexTypeBySortType.TryGetValue(sortType, out var indexType))
                 {
                     Console.WriteLine($"TODO: skipping SortType.{sortType}");
@@ -201,7 +193,7 @@ namespace IfcSharpLibTest
                 }
                 """);
 
-            File.WriteAllText(@"d:\.projects\.unsorted\2024\IfcSharp\IfcSharpLibTest\Visitor.Dispatch.Generated.cs", sb.ToString());
+            File.WriteAllText(outputFile, sb.ToString());
 
         }
         private static Type GetSortEnumType(Type type)

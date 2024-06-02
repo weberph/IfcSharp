@@ -41,42 +41,41 @@ namespace IfcSharpLib
     {
         public static ReadOnlySpan<PartitionSummaryData> GetPartitionSummaries(PartitionType partitionType, ref readonly TableOfContents toc)
         {
-            switch (partitionType)
+            return partitionType switch
             {
-                case PartitionType.CommandLine: return new(in toc.command_line);
-                case PartitionType.ExportedModules: return new(in toc.exported_modules);
-                case PartitionType.ImportedModules: return new(in toc.imported_modules);
-                case PartitionType.U64s: return new(in toc.u64s);
-                case PartitionType.Fps: return new(in toc.fps);
-                case PartitionType.StringLiterals: return new(in toc.string_literals);
-                case PartitionType.States: return new(in toc.states);
-                case PartitionType.Lines: return new(in toc.lines);
-                case PartitionType.Words: return new(in toc.words);
-                case PartitionType.Sentences: return new(in toc.sentences);
-                case PartitionType.Scopes: return new(in toc.scopes);
-                case PartitionType.Entities: return new(in toc.entities);
-                case PartitionType.SpecForms: return new(in toc.spec_forms);
-                case PartitionType.Names: return toc.names;
-                case PartitionType.Decls: return toc.decls;
-                case PartitionType.Types: return toc.types;
-                case PartitionType.Stmts: return toc.stmts;
-                case PartitionType.Exprs: return toc.exprs;
-                case PartitionType.Elements: return toc.elements;
-                case PartitionType.Forms: return toc.forms;
-                case PartitionType.Traits: return toc.traits;
-                case PartitionType.MsvcTraits: return toc.msvc_traits;
-                case PartitionType.Charts: return new(in toc.charts);
-                case PartitionType.MultiCharts: return new(in toc.multi_charts);
-                case PartitionType.Heaps: return toc.heaps;
-                case PartitionType.SuppressedWarnings: return new(in toc.suppressed_warnings);
-                case PartitionType.Macros: return toc.macros;
-                case PartitionType.PragmaDirectives: return toc.pragma_directives;
-                case PartitionType.Attrs: return toc.attrs;
-                case PartitionType.Dirs: return toc.dirs;
-                case PartitionType.ImplementationPragmas: return new(in toc.implementation_pragmas);
-            }
-
-            throw new InvalidPartitionTypeException("Invalid PartitionType");
+                PartitionType.CommandLine => new(in toc.command_line),
+                PartitionType.ExportedModules => new(in toc.exported_modules),
+                PartitionType.ImportedModules => new(in toc.imported_modules),
+                PartitionType.U64s => new(in toc.u64s),
+                PartitionType.Fps => new(in toc.fps),
+                PartitionType.StringLiterals => new(in toc.string_literals),
+                PartitionType.States => new(in toc.states),
+                PartitionType.Lines => new(in toc.lines),
+                PartitionType.Words => new(in toc.words),
+                PartitionType.Sentences => new(in toc.sentences),
+                PartitionType.Scopes => new(in toc.scopes),
+                PartitionType.Entities => new(in toc.entities),
+                PartitionType.SpecForms => new(in toc.spec_forms),
+                PartitionType.Names => toc.names,
+                PartitionType.Decls => toc.decls,
+                PartitionType.Types => toc.types,
+                PartitionType.Stmts => toc.stmts,
+                PartitionType.Exprs => toc.exprs,
+                PartitionType.Elements => toc.elements,
+                PartitionType.Forms => toc.forms,
+                PartitionType.Traits => toc.traits,
+                PartitionType.MsvcTraits => toc.msvc_traits,
+                PartitionType.Charts => new(in toc.charts),
+                PartitionType.MultiCharts => new(in toc.multi_charts),
+                PartitionType.Heaps => toc.heaps,
+                PartitionType.SuppressedWarnings => new(in toc.suppressed_warnings),
+                PartitionType.Macros => toc.macros,
+                PartitionType.PragmaDirectives => toc.pragma_directives,
+                PartitionType.Attrs => toc.attrs,
+                PartitionType.Dirs => toc.dirs,
+                PartitionType.ImplementationPragmas => new(in toc.implementation_pragmas),
+                _ => throw new InvalidPartitionTypeException("Invalid PartitionType"),
+            };
         }
 
         public static bool TryGetPartitionType(SortType sortType, out PartitionType partitionType)

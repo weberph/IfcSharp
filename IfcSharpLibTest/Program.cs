@@ -8,24 +8,30 @@ namespace IfcSharpLibTest
 {
     internal sealed class Program
     {
-        static void Main(string[] args)
+        static void Main()
         {
             IfcSizeValidation.Test();
 
-            //BuildBoost();
+            // GenerateTestVisitorCode();
+
+            // BuildBoost();
 
             // TestVisitor(new Reader(@"IfcTestData\IfcHeaderUnit.ixx.ifc"));
 
-            ExecuteForEachTestFile(r => ReflectionTest.Run(r, false));
+            // ExecuteForEachTestFile(r => ReflectionTest.Run(r, false));
 
-            // ExecuteForEachTestFile(TestVisitor);
+            ExecuteForEachTestFile(TestVisitor);
         }
 
-        private void GenerateTestVisitorCode()
+        private static void GenerateTestVisitorCode()
         {
+            static string GetSourceFileDirectory([CallerFilePath] string? path = null)
+                => Path.GetDirectoryName(path) ?? throw new NotSupportedException("Failed to get source location");
+
+            var outputDirectory = GetSourceFileDirectory();
             var generator = new VisitorGenerator();
-            generator.GenerateVisitMethods();
-            generator.GenerateDispatchMethod();
+            generator.GenerateVisitMethods(Path.Combine(outputDirectory, "Visitor.Visit.Generated.cs"));
+            generator.GenerateDispatchMethod(Path.Combine(outputDirectory, "Visitor.Dispatch.Generated.cs"));
         }
 
         private static void ExecuteForEachTestFile(Action<Reader> action)

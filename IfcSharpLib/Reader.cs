@@ -9,6 +9,7 @@ using System.Text;
 namespace IfcSharpLib
 {
     public sealed class InvalidIfcFileSignatureException() : Exception("Invalid ifc signature") { }
+    public sealed class SortMismatchException(string message) : Exception(message) { }
 
     public class Reader
     {
@@ -221,7 +222,6 @@ namespace IfcSharpLib
             return str;
         }
 
-
         public string GetString(NameIndex index)
         {
             if (index.Sort == NameSort.Guide)
@@ -370,6 +370,4 @@ namespace IfcSharpLib
             return [.. Partition<T>(PartitionSummary<T>())];
         }
     }
-
-    public sealed class SortMismatchException(string message) : Exception(message) { }
 }
