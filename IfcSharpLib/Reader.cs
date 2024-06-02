@@ -62,6 +62,66 @@ namespace IfcSharpLib
             return ref Partition<T>(in _toc.decls[(int)index.Sort])[(int)index.Index];
         }
 
+        public ref readonly T Get<T>(SyntaxIndex index)
+            where T : struct, ITag<T, SyntaxSort>
+        {
+            return ref Partition<T>(in _toc.elements[(int)index.Sort])[(int)index.Index];
+        }
+
+        public ref readonly T Get<T>(StmtIndex index)
+            where T : struct, ITag<T, StmtSort>
+        {
+            return ref Partition<T>(in _toc.stmts[(int)index.Sort])[(int)index.Index];
+        }
+
+        public ref readonly T Get<T>(ExprIndex index)
+            where T : struct, ITag<T, ExprSort>
+        {
+            return ref Partition<T>(in _toc.exprs[(int)index.Sort])[(int)index.Index];
+        }
+
+        public ref readonly T Get<T>(PragmaIndex index)
+            where T : struct, ITag<T, PragmaSort>
+        {
+            return ref Partition<T>(in _toc.pragma_directives[(int)index.Sort])[(int)index.Index];
+        }
+
+        public ref readonly T Get<T>(MacroIndex index)
+            where T : struct, ITag<T, MacroSort>
+        {
+            return ref Partition<T>(in _toc.macros[(int)index.Sort])[(int)index.Index];
+        }
+
+        public ref readonly T Get<T>(AttrIndex index)
+            where T : struct, ITag<T, AttrSort>
+        {
+            return ref Partition<T>(in _toc.attrs[(int)index.Sort])[(int)index.Index];
+        }
+
+        public ref readonly T Get<T>(DirIndex index)
+            where T : struct, ITag<T, DirSort>
+        {
+            return ref Partition<T>(in _toc.dirs[(int)index.Sort])[(int)index.Index];
+        }
+
+        public ref readonly T Get<T>(FormIndex index)
+            where T : struct, ITag<T, FormSort>
+        {
+            return ref Partition<T>(in _toc.forms[(int)index.Sort])[(int)index.Index];
+        }
+
+        public ref readonly T Get<T>(ChartIndex index)
+            where T : struct, ITag<T, ChartSort>
+        {
+            switch (index.Sort)
+            {
+                case ChartSort.Unilevel: return ref Partition<T>(in _toc.charts)[(int)index.Index];
+                case ChartSort.Multilevel: return ref Partition<T>(in _toc.multi_charts)[(int)index.Index];
+            }
+
+            throw new ArgumentOutOfRangeException(nameof(index));
+        }
+
         public ref readonly T Get<T>(NameIndex index)
             where T : struct, ITag<T, NameSort>
         {
@@ -72,6 +132,29 @@ namespace IfcSharpLib
         public ref readonly FileAndLine Get(LineIndex index)
         {
             return ref Partition<FileAndLine>(in _toc.lines)[(int)index];
+        }
+
+        public TIndex IndexOf<TIndex, TSort, T>(in T type)
+            where T : struct, ITag<T, TSort>
+            where TSort : unmanaged, Enum
+            where TIndex : struct, IOver<TIndex, TSort>
+        {
+            byte sort = Unsafe.BitCast<TSort, byte>(T.Sort);
+            ref readonly var summary = ref PartitionSummary(T.Type, sort);
+
+            Debug.Assert(Marshal.SizeOf<T>() == (int)summary.entry_size);
+
+            var size = (int)summary.cardinality * (int)summary.entry_size;
+            var span = MemoryMarshal.Cast<byte, T>(_memory.Span.Slice((int)summary.offset, size));
+
+            var offset = Unsafe.ByteOffset(in span[0], in type);
+            if (offset < 0 || offset > size)
+            {
+                throw new ArgumentOutOfRangeException(nameof(type));
+            }
+
+            Debug.Assert(offset % (int)summary.entry_size == 0);
+            return TIndex.Create(T.Sort, (ifc.Index)(offset / (int)summary.entry_size));
         }
 
         public ReadOnlySpan<T> Sequence<T>(Sequence<T> sequence)
@@ -114,13 +197,15 @@ namespace IfcSharpLib
 
             var literal = Partition<StringLiteral>(_toc.string_literals)[(int)index.Index];
             var span = _stringMemory.Span.Slice((int)literal.start, (int)literal.size);
-            return index.Sort switch
+            var str = index.Sort switch
             {
                 StringSort.Ordinary or StringSort.UTF8 => Encoding.UTF8.GetString(span[..^1]),
                 StringSort.UTF16 or StringSort.Wide => Encoding.Unicode.GetString(span[..^2]),
                 StringSort.UTF32 => Encoding.UTF32.GetString(span[..^4]),
                 _ => throw new ArgumentException("Invalid StringSort", nameof(index))
             };
+            _stringIndexCache.Add(index, str);
+            return str;
         }
 
         public string GetString(TextOffset index)
@@ -131,13 +216,11 @@ namespace IfcSharpLib
             }
 
             var span = _stringMemory.Span[(int)index..];
-            return Encoding.UTF8.GetString(span[..span.IndexOf((byte)0)]);
+            var str = Encoding.UTF8.GetString(span[..span.IndexOf((byte)0)]);
+            _textOffsetCache.Add(index, str);
+            return str;
         }
 
-        public string GetString(Identity<TextOffset> identity)
-        {
-            return GetString(identity.name);
-        }
 
         public string GetString(NameIndex index)
         {
@@ -164,7 +247,13 @@ namespace IfcSharpLib
                 _ => throw new ArgumentException("Invalid NameSort", nameof(index))
             };
 
-            return GetString(GetTextOffset(index));
+            var str = GetString(GetTextOffset(index));
+            _nameIndexCache.Add(index, str);
+            return str;
+        }
+        public string GetString(Identity<TextOffset> identity)
+        {
+            return GetString(identity.name);
         }
 
         public string GetString(Identity<NameIndex> identity)
@@ -200,6 +289,18 @@ namespace IfcSharpLib
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private ref readonly PartitionSummaryData PartitionSummary(SortType type, byte sort)
         {
+            // TODO
+            // command_line
+            // exported_modules
+            // imported_modules
+            // states
+            // words
+            // sentences
+            // entities
+            // spec_forms
+            // suppressed_warnings
+            // implementation_pragmas
+
             switch (type)
             {
                 case SortType.Name: return ref _toc.names[sort];
@@ -216,23 +317,29 @@ namespace IfcSharpLib
                 case SortType.Pragma: return ref _toc.pragma_directives[sort];
                 case SortType.Attr: return ref _toc.attrs[sort];
                 case SortType.Dir: return ref _toc.dirs[sort];
-                case SortType.Scope: return ref _toc.scopes;
                 case SortType.Chart when ((ChartSort)sort == ChartSort.Unilevel): return ref _toc.charts;
                 case SortType.Chart when ((ChartSort)sort == ChartSort.Multilevel): return ref _toc.multi_charts;
 
-                // remove? there are no types tagged with LiteralSort or StringSort
+                // remove? there are no types tagged with that index
+                case SortType.Scope: return ref _toc.scopes;
                 case SortType.String: return ref _toc.string_literals;
                 case SortType.Literal when ((LiteralSort)sort == LiteralSort.Integer): return ref _toc.u64s;
                 case SortType.Literal when ((LiteralSort)sort == LiteralSort.FloatingPoint): return ref _toc.fps;
+                case SortType.Unit: throw new NotImplementedException(); // only used in Header
             }
             throw new NotImplementedException();
+        }
+
+        public ReadOnlySpan<PartitionSummaryData> PartitionSummaries(PartitionType partitionType)
+        {
+            return PartitionTypes.GetPartitionSummaries(partitionType, in _toc);
         }
 
         // for testing
         public ref readonly T GetGeneric<T, TSort, TOver>(TOver index)
             where T : struct, ITag<T, TSort>
             where TSort : unmanaged, Enum
-            where TOver : IOver<TSort>
+            where TOver : struct, IOver<TOver, TSort>
         {
 #if DEBUG
             // The following check should never fail due to type constraints
