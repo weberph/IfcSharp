@@ -1,4 +1,4 @@
-// hash: 39e0cd292fc2832c0e6225c1d0884202421bbfea83e8048b0611c28585214995
+// hash: ed905d602b318b70228cb079b06afbd4621c21dad90c8d0c09604c8ba208aa2f
 
 using System.Runtime.InteropServices;
 
@@ -1019,13 +1019,13 @@ namespace ifc
         Count
     }
 
-    public readonly struct FormatVersion
+    public readonly record struct FormatVersion
     {
         public readonly Version major;
         public readonly Version minor;
     }
 
-    public readonly struct SHA256Hash
+    public readonly record struct SHA256Hash
     {
         public readonly uint_Array8 value;
     }
@@ -1036,7 +1036,7 @@ namespace ifc
         private uint _element;
     }
     [Over<UnitSort>]
-    public readonly struct UnitIndex : IOver<UnitSort>
+    public readonly record struct UnitIndex : IOver<UnitSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 3);
@@ -1044,9 +1044,16 @@ namespace ifc
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.Unit;
         public override int GetHashCode() => (int)IndexAndSort;
+
+        public UnitIndex(UnitSort sort, Index index)
+        {
+            IndexAndSort = (uint)sort | ((uint)index << 3);
+        }
+
+        public static UnitIndex Create(UnitSort sort, Index index) => new(sort, index);
     }
 
-    public readonly struct Header
+    public readonly record struct Header
     {
         public readonly SHA256Hash content_hash;
         public readonly FormatVersion version;
@@ -1064,7 +1071,7 @@ namespace ifc
         public readonly bool internal_partition;
     }
 
-    public readonly struct PartitionSummaryData
+    public readonly record struct PartitionSummaryData
     {
         public readonly TextOffset name;
         public readonly ByteOffset offset;
@@ -1072,18 +1079,18 @@ namespace ifc
         public readonly EntitySize entry_size;
     }
 
-    public readonly struct IntegrityCheckFailed
+    public readonly record struct IntegrityCheckFailed
     {
         public readonly SHA256Hash expected;
         public readonly SHA256Hash actual;
     }
 
-    public readonly struct UnsupportedFormatVersion
+    public readonly record struct UnsupportedFormatVersion
     {
         public readonly FormatVersion version;
     }
 
-    public readonly struct PPOperator
+    public readonly record struct PPOperator
     {
         public enum Index : ushort
         {
@@ -1095,7 +1102,7 @@ namespace ifc
         public ushort value => (ushort)((tag_bitfield >> 3) & 0b1111111111111);
     }
 
-    public readonly struct Operator
+    public readonly record struct Operator
     {
         public enum Index : ushort
         {
@@ -1108,7 +1115,7 @@ namespace ifc
     }
 
     [Over<FormSort>]
-    public readonly struct FormIndex : IOver<FormSort>
+    public readonly record struct FormIndex : IOver<FormSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 4);
@@ -1116,10 +1123,17 @@ namespace ifc
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.Form;
         public override int GetHashCode() => (int)IndexAndSort;
+
+        public FormIndex(FormSort sort, Index index)
+        {
+            IndexAndSort = (uint)sort | ((uint)index << 4);
+        }
+
+        public static FormIndex Create(FormSort sort, Index index) => new(sort, index);
     }
 
     [Over<StringSort>]
-    public readonly struct StringIndex : IOver<StringSort>
+    public readonly record struct StringIndex : IOver<StringSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 3);
@@ -1127,10 +1141,17 @@ namespace ifc
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.String;
         public override int GetHashCode() => (int)IndexAndSort;
+
+        public StringIndex(StringSort sort, Index index)
+        {
+            IndexAndSort = (uint)sort | ((uint)index << 3);
+        }
+
+        public static StringIndex Create(StringSort sort, Index index) => new(sort, index);
     }
 
     [Over<NameSort>]
-    public readonly struct NameIndex : IOver<NameSort>
+    public readonly record struct NameIndex : IOver<NameSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 3);
@@ -1138,10 +1159,17 @@ namespace ifc
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.Name;
         public override int GetHashCode() => (int)IndexAndSort;
+
+        public NameIndex(NameSort sort, Index index)
+        {
+            IndexAndSort = (uint)sort | ((uint)index << 3);
+        }
+
+        public static NameIndex Create(NameSort sort, Index index) => new(sort, index);
     }
 
     [Over<ChartSort>]
-    public readonly struct ChartIndex : IOver<ChartSort>
+    public readonly record struct ChartIndex : IOver<ChartSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 2);
@@ -1149,10 +1177,17 @@ namespace ifc
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.Chart;
         public override int GetHashCode() => (int)IndexAndSort;
+
+        public ChartIndex(ChartSort sort, Index index)
+        {
+            IndexAndSort = (uint)sort | ((uint)index << 2);
+        }
+
+        public static ChartIndex Create(ChartSort sort, Index index) => new(sort, index);
     }
 
     [Over<DeclSort>]
-    public readonly struct DeclIndex : IOver<DeclSort>
+    public readonly record struct DeclIndex : IOver<DeclSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 5);
@@ -1160,10 +1195,17 @@ namespace ifc
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.Decl;
         public override int GetHashCode() => (int)IndexAndSort;
+
+        public DeclIndex(DeclSort sort, Index index)
+        {
+            IndexAndSort = (uint)sort | ((uint)index << 5);
+        }
+
+        public static DeclIndex Create(DeclSort sort, Index index) => new(sort, index);
     }
 
     [Over<TypeSort>]
-    public readonly struct TypeIndex : IOver<TypeSort>
+    public readonly record struct TypeIndex : IOver<TypeSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 5);
@@ -1171,10 +1213,17 @@ namespace ifc
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.Type;
         public override int GetHashCode() => (int)IndexAndSort;
+
+        public TypeIndex(TypeSort sort, Index index)
+        {
+            IndexAndSort = (uint)sort | ((uint)index << 5);
+        }
+
+        public static TypeIndex Create(TypeSort sort, Index index) => new(sort, index);
     }
 
     [Over<SyntaxSort>]
-    public readonly struct SyntaxIndex : IOver<SyntaxSort>
+    public readonly record struct SyntaxIndex : IOver<SyntaxSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 7);
@@ -1182,10 +1231,17 @@ namespace ifc
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.Syntax;
         public override int GetHashCode() => (int)IndexAndSort;
+
+        public SyntaxIndex(SyntaxSort sort, Index index)
+        {
+            IndexAndSort = (uint)sort | ((uint)index << 7);
+        }
+
+        public static SyntaxIndex Create(SyntaxSort sort, Index index) => new(sort, index);
     }
 
     [Over<LiteralSort>]
-    public readonly struct LitIndex : IOver<LiteralSort>
+    public readonly record struct LitIndex : IOver<LiteralSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 2);
@@ -1193,10 +1249,17 @@ namespace ifc
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.Literal;
         public override int GetHashCode() => (int)IndexAndSort;
+
+        public LitIndex(LiteralSort sort, Index index)
+        {
+            IndexAndSort = (uint)sort | ((uint)index << 2);
+        }
+
+        public static LitIndex Create(LiteralSort sort, Index index) => new(sort, index);
     }
 
     [Over<StmtSort>]
-    public readonly struct StmtIndex : IOver<StmtSort>
+    public readonly record struct StmtIndex : IOver<StmtSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 5);
@@ -1204,10 +1267,17 @@ namespace ifc
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.Stmt;
         public override int GetHashCode() => (int)IndexAndSort;
+
+        public StmtIndex(StmtSort sort, Index index)
+        {
+            IndexAndSort = (uint)sort | ((uint)index << 5);
+        }
+
+        public static StmtIndex Create(StmtSort sort, Index index) => new(sort, index);
     }
 
     [Over<ExprSort>]
-    public readonly struct ExprIndex : IOver<ExprSort>
+    public readonly record struct ExprIndex : IOver<ExprSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 6);
@@ -1215,10 +1285,17 @@ namespace ifc
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.Expr;
         public override int GetHashCode() => (int)IndexAndSort;
+
+        public ExprIndex(ExprSort sort, Index index)
+        {
+            IndexAndSort = (uint)sort | ((uint)index << 6);
+        }
+
+        public static ExprIndex Create(ExprSort sort, Index index) => new(sort, index);
     }
 
     [Over<MacroSort>]
-    public readonly struct MacroIndex : IOver<MacroSort>
+    public readonly record struct MacroIndex : IOver<MacroSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 1);
@@ -1226,10 +1303,17 @@ namespace ifc
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.Macro;
         public override int GetHashCode() => (int)IndexAndSort;
+
+        public MacroIndex(MacroSort sort, Index index)
+        {
+            IndexAndSort = (uint)sort | ((uint)index << 1);
+        }
+
+        public static MacroIndex Create(MacroSort sort, Index index) => new(sort, index);
     }
 
     [Over<PragmaSort>]
-    public readonly struct PragmaIndex : IOver<PragmaSort>
+    public readonly record struct PragmaIndex : IOver<PragmaSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 1);
@@ -1237,10 +1321,17 @@ namespace ifc
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.Pragma;
         public override int GetHashCode() => (int)IndexAndSort;
+
+        public PragmaIndex(PragmaSort sort, Index index)
+        {
+            IndexAndSort = (uint)sort | ((uint)index << 1);
+        }
+
+        public static PragmaIndex Create(PragmaSort sort, Index index) => new(sort, index);
     }
 
     [Over<AttrSort>]
-    public readonly struct AttrIndex : IOver<AttrSort>
+    public readonly record struct AttrIndex : IOver<AttrSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 4);
@@ -1248,10 +1339,17 @@ namespace ifc
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.Attr;
         public override int GetHashCode() => (int)IndexAndSort;
+
+        public AttrIndex(AttrSort sort, Index index)
+        {
+            IndexAndSort = (uint)sort | ((uint)index << 4);
+        }
+
+        public static AttrIndex Create(AttrSort sort, Index index) => new(sort, index);
     }
 
     [Over<DirSort>]
-    public readonly struct DirIndex : IOver<DirSort>
+    public readonly record struct DirIndex : IOver<DirSort>
     {
         private readonly uint IndexAndSort;
         public Index Index => (Index)(IndexAndSort >> 5);
@@ -1259,13 +1357,20 @@ namespace ifc
         public bool IsNull => IndexAndSort == 0;
         public static SortType Type => SortType.Dir;
         public override int GetHashCode() => (int)IndexAndSort;
+
+        public DirIndex(DirSort sort, Index index)
+        {
+            IndexAndSort = (uint)sort | ((uint)index << 5);
+        }
+
+        public static DirIndex Create(DirSort sort, Index index) => new(sort, index);
     }
 
-    public readonly struct TraitOrdering
+    public readonly record struct TraitOrdering
     {
     }
 
-    public struct TableOfContents
+    public record struct TableOfContents
     {
         public PartitionSummaryData command_line;
         public PartitionSummaryData exported_modules;
@@ -1829,13 +1934,13 @@ namespace ifc
             Execution = 8192
         }
 
-        public readonly struct Declaration
+        public readonly record struct Declaration
         {
             public readonly DeclIndex index;
         }
 
         [Tag<NameSort>(NameSort.Conversion)]
-        public readonly struct ConversionFunctionId : ITag<ConversionFunctionId, NameSort>
+        public readonly record struct ConversionFunctionId : ITag<ConversionFunctionId, NameSort>
         {
             public static SortType Type => SortType.Name;
             public static NameSort Sort => NameSort.Conversion;
@@ -1845,7 +1950,7 @@ namespace ifc
         }
 
         [Tag<NameSort>(NameSort.Operator)]
-        public readonly struct OperatorFunctionId : ITag<OperatorFunctionId, NameSort>
+        public readonly record struct OperatorFunctionId : ITag<OperatorFunctionId, NameSort>
         {
             public static SortType Type => SortType.Name;
             public static NameSort Sort => NameSort.Operator;
@@ -1855,7 +1960,7 @@ namespace ifc
         }
 
         [Tag<NameSort>(NameSort.Literal)]
-        public readonly struct LiteralOperatorId : ITag<LiteralOperatorId, NameSort>
+        public readonly record struct LiteralOperatorId : ITag<LiteralOperatorId, NameSort>
         {
             public static SortType Type => SortType.Name;
             public static NameSort Sort => NameSort.Literal;
@@ -1864,7 +1969,7 @@ namespace ifc
         }
 
         [Tag<NameSort>(NameSort.Template)]
-        public readonly struct TemplateName : ITag<TemplateName, NameSort>
+        public readonly record struct TemplateName : ITag<TemplateName, NameSort>
         {
             public static SortType Type => SortType.Name;
             public static NameSort Sort => NameSort.Template;
@@ -1873,7 +1978,7 @@ namespace ifc
         }
 
         [Tag<NameSort>(NameSort.Specialization)]
-        public readonly struct SpecializationName : ITag<SpecializationName, NameSort>
+        public readonly record struct SpecializationName : ITag<SpecializationName, NameSort>
         {
             public static SortType Type => SortType.Name;
             public static NameSort Sort => NameSort.Specialization;
@@ -1883,7 +1988,7 @@ namespace ifc
         }
 
         [Tag<NameSort>(NameSort.SourceFile)]
-        public readonly struct SourceFileName : ITag<SourceFileName, NameSort>
+        public readonly record struct SourceFileName : ITag<SourceFileName, NameSort>
         {
             public static SortType Type => SortType.Name;
             public static NameSort Sort => NameSort.SourceFile;
@@ -1893,7 +1998,7 @@ namespace ifc
         }
 
         [Tag<NameSort>(NameSort.Guide)]
-        public readonly struct GuideName : ITag<GuideName, NameSort>
+        public readonly record struct GuideName : ITag<GuideName, NameSort>
         {
             public static SortType Type => SortType.Name;
             public static NameSort Sort => NameSort.Guide;
@@ -1901,22 +2006,22 @@ namespace ifc
             public readonly DeclIndex primary_template;
         }
 
-        public readonly struct ModuleReference
+        public readonly record struct ModuleReference
         {
             public readonly TextOffset owner;
             public readonly TextOffset partition;
         }
 
-        public readonly struct SourceLocation
+        public readonly record struct SourceLocation
         {
             public readonly LineIndex line;
             public readonly ColumnNumber column;
         }
 
-        public readonly struct Word
+        public readonly record struct Word
         {
             [StructLayout(LayoutKind.Explicit)]
-            public readonly struct UnnamedUnion1
+            public readonly record struct UnnamedUnion1
             {
                 [FieldOffset(0)]
                 public readonly TextOffset text;
@@ -1931,7 +2036,7 @@ namespace ifc
             }
 
             [StructLayout(LayoutKind.Explicit)]
-            public readonly struct UnnamedUnion2
+            public readonly record struct UnnamedUnion2
             {
                 [FieldOffset(0)]
                 public readonly WordCategory category;
@@ -1967,21 +2072,21 @@ namespace ifc
             public readonly WordSort algebra_sort;
         }
 
-        public readonly struct WordSequence
+        public readonly record struct WordSequence
         {
             public readonly Index start;
             public readonly Cardinality cardinality;
             public readonly SourceLocation locus;
         }
 
-        public readonly struct NoexceptSpecification
+        public readonly record struct NoexceptSpecification
         {
             public readonly SentenceIndex words;
             public readonly NoexceptSort sort;
         }
 
         [Tag<TypeSort>(TypeSort.Fundamental)]
-        public readonly struct FundamentalType : ITag<FundamentalType, TypeSort>
+        public readonly record struct FundamentalType : ITag<FundamentalType, TypeSort>
         {
             public static SortType Type => SortType.Type;
             public static TypeSort Sort => TypeSort.Fundamental;
@@ -1993,7 +2098,7 @@ namespace ifc
         }
 
         [Tag<TypeSort>(TypeSort.Designated)]
-        public readonly struct DesignatedType : ITag<DesignatedType, TypeSort>
+        public readonly record struct DesignatedType : ITag<DesignatedType, TypeSort>
         {
             public static SortType Type => SortType.Type;
             public static TypeSort Sort => TypeSort.Designated;
@@ -2002,7 +2107,7 @@ namespace ifc
         }
 
         [Tag<TypeSort>(TypeSort.Tor)]
-        public readonly struct TorType : ITag<TorType, TypeSort>
+        public readonly record struct TorType : ITag<TorType, TypeSort>
         {
             public static SortType Type => SortType.Type;
             public static TypeSort Sort => TypeSort.Tor;
@@ -2013,7 +2118,7 @@ namespace ifc
         }
 
         [Tag<TypeSort>(TypeSort.Syntactic)]
-        public readonly struct SyntacticType : ITag<SyntacticType, TypeSort>
+        public readonly record struct SyntacticType : ITag<SyntacticType, TypeSort>
         {
             public static SortType Type => SortType.Type;
             public static TypeSort Sort => TypeSort.Syntactic;
@@ -2022,7 +2127,7 @@ namespace ifc
         }
 
         [Tag<TypeSort>(TypeSort.Expansion)]
-        public readonly struct ExpansionType : ITag<ExpansionType, TypeSort>
+        public readonly record struct ExpansionType : ITag<ExpansionType, TypeSort>
         {
             public static SortType Type => SortType.Type;
             public static TypeSort Sort => TypeSort.Expansion;
@@ -2032,7 +2137,7 @@ namespace ifc
         }
 
         [Tag<TypeSort>(TypeSort.Pointer)]
-        public readonly struct PointerType : ITag<PointerType, TypeSort>
+        public readonly record struct PointerType : ITag<PointerType, TypeSort>
         {
             public static SortType Type => SortType.Type;
             public static TypeSort Sort => TypeSort.Pointer;
@@ -2041,7 +2146,7 @@ namespace ifc
         }
 
         [Tag<TypeSort>(TypeSort.LvalueReference)]
-        public readonly struct LvalueReferenceType : ITag<LvalueReferenceType, TypeSort>
+        public readonly record struct LvalueReferenceType : ITag<LvalueReferenceType, TypeSort>
         {
             public static SortType Type => SortType.Type;
             public static TypeSort Sort => TypeSort.LvalueReference;
@@ -2050,7 +2155,7 @@ namespace ifc
         }
 
         [Tag<TypeSort>(TypeSort.RvalueReference)]
-        public readonly struct RvalueReferenceType : ITag<RvalueReferenceType, TypeSort>
+        public readonly record struct RvalueReferenceType : ITag<RvalueReferenceType, TypeSort>
         {
             public static SortType Type => SortType.Type;
             public static TypeSort Sort => TypeSort.RvalueReference;
@@ -2059,7 +2164,7 @@ namespace ifc
         }
 
         [Tag<TypeSort>(TypeSort.Unaligned)]
-        public readonly struct UnalignedType : ITag<UnalignedType, TypeSort>
+        public readonly record struct UnalignedType : ITag<UnalignedType, TypeSort>
         {
             public static SortType Type => SortType.Type;
             public static TypeSort Sort => TypeSort.Unaligned;
@@ -2068,7 +2173,7 @@ namespace ifc
         }
 
         [Tag<TypeSort>(TypeSort.Decltype)]
-        public readonly struct DecltypeType : ITag<DecltypeType, TypeSort>
+        public readonly record struct DecltypeType : ITag<DecltypeType, TypeSort>
         {
             public static SortType Type => SortType.Type;
             public static TypeSort Sort => TypeSort.Decltype;
@@ -2077,7 +2182,7 @@ namespace ifc
         }
 
         [Tag<TypeSort>(TypeSort.Placeholder)]
-        public readonly struct PlaceholderType : ITag<PlaceholderType, TypeSort>
+        public readonly record struct PlaceholderType : ITag<PlaceholderType, TypeSort>
         {
             public static SortType Type => SortType.Type;
             public static TypeSort Sort => TypeSort.Placeholder;
@@ -2088,7 +2193,7 @@ namespace ifc
         }
 
         [Tag<TypeSort>(TypeSort.PointerToMember)]
-        public readonly struct PointerToMemberType : ITag<PointerToMemberType, TypeSort>
+        public readonly record struct PointerToMemberType : ITag<PointerToMemberType, TypeSort>
         {
             public static SortType Type => SortType.Type;
             public static TypeSort Sort => TypeSort.PointerToMember;
@@ -2098,7 +2203,7 @@ namespace ifc
         }
 
         [Tag<TypeSort>(TypeSort.Tuple)]
-        public readonly struct TupleType : ITag<TupleType, TypeSort>, ITaggedSequence<TupleType, TypeIndex, HeapSort>
+        public readonly record struct TupleType : ITag<TupleType, TypeSort>, ITaggedSequence<TupleType, TypeIndex, HeapSort>
         {
             public static SortType Type => SortType.Type;
             public static TypeSort Sort => TypeSort.Tuple;
@@ -2110,7 +2215,7 @@ namespace ifc
         }
 
         [Tag<TypeSort>(TypeSort.Forall)]
-        public readonly struct ForallType : ITag<ForallType, TypeSort>
+        public readonly record struct ForallType : ITag<ForallType, TypeSort>
         {
             public static SortType Type => SortType.Type;
             public static TypeSort Sort => TypeSort.Forall;
@@ -2120,7 +2225,7 @@ namespace ifc
         }
 
         [Tag<TypeSort>(TypeSort.Function)]
-        public readonly struct FunctionType : ITag<FunctionType, TypeSort>
+        public readonly record struct FunctionType : ITag<FunctionType, TypeSort>
         {
             public static SortType Type => SortType.Type;
             public static TypeSort Sort => TypeSort.Function;
@@ -2133,7 +2238,7 @@ namespace ifc
         }
 
         [Tag<TypeSort>(TypeSort.Method)]
-        public readonly struct MethodType : ITag<MethodType, TypeSort>
+        public readonly record struct MethodType : ITag<MethodType, TypeSort>
         {
             public static SortType Type => SortType.Type;
             public static TypeSort Sort => TypeSort.Method;
@@ -2147,7 +2252,7 @@ namespace ifc
         }
 
         [Tag<TypeSort>(TypeSort.Array)]
-        public readonly struct ArrayType : ITag<ArrayType, TypeSort>
+        public readonly record struct ArrayType : ITag<ArrayType, TypeSort>
         {
             public static SortType Type => SortType.Type;
             public static TypeSort Sort => TypeSort.Array;
@@ -2157,7 +2262,7 @@ namespace ifc
         }
 
         [Tag<TypeSort>(TypeSort.Qualified)]
-        public readonly struct QualifiedType : ITag<QualifiedType, TypeSort>
+        public readonly record struct QualifiedType : ITag<QualifiedType, TypeSort>
         {
             public static SortType Type => SortType.Type;
             public static TypeSort Sort => TypeSort.Qualified;
@@ -2167,7 +2272,7 @@ namespace ifc
         }
 
         [Tag<TypeSort>(TypeSort.Typename)]
-        public readonly struct TypenameType : ITag<TypenameType, TypeSort>
+        public readonly record struct TypenameType : ITag<TypenameType, TypeSort>
         {
             public static SortType Type => SortType.Type;
             public static TypeSort Sort => TypeSort.Typename;
@@ -2176,7 +2281,7 @@ namespace ifc
         }
 
         [Tag<TypeSort>(TypeSort.Base)]
-        public readonly struct BaseType : ITag<BaseType, TypeSort>
+        public readonly record struct BaseType : ITag<BaseType, TypeSort>
         {
             public static SortType Type => SortType.Type;
             public static TypeSort Sort => TypeSort.Base;
@@ -2187,7 +2292,7 @@ namespace ifc
         }
 
         [Tag<TypeSort>(TypeSort.SyntaxTree)]
-        public readonly struct SyntaxTreeType : ITag<SyntaxTreeType, TypeSort>
+        public readonly record struct SyntaxTreeType : ITag<SyntaxTreeType, TypeSort>
         {
             public static SortType Type => SortType.Type;
             public static TypeSort Sort => TypeSort.SyntaxTree;
@@ -2195,13 +2300,13 @@ namespace ifc
             public readonly SyntaxIndex syntax;
         }
 
-        public readonly struct FileAndLine
+        public readonly record struct FileAndLine
         {
             public readonly NameIndex file;
             public readonly LineNumber line;
         }
 
-        public readonly struct ParameterizedEntity
+        public readonly record struct ParameterizedEntity
         {
             public readonly DeclIndex decl;
             public readonly SentenceIndex head;
@@ -2209,13 +2314,13 @@ namespace ifc
             public readonly SentenceIndex attributes;
         }
 
-        public readonly struct SpecializationForm
+        public readonly record struct SpecializationForm
         {
             public readonly DeclIndex template_decl;
             public readonly ExprIndex arguments;
         }
 
-        public readonly struct MappingDefinition
+        public readonly record struct MappingDefinition
         {
             public readonly ChartIndex parameters;
             public readonly ExprIndex initializers;
@@ -2223,7 +2328,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.Function)]
-        public readonly struct FunctionDecl : ITag<FunctionDecl, DeclSort>
+        public readonly record struct FunctionDecl : ITag<FunctionDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.Function;
@@ -2239,7 +2344,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.Intrinsic)]
-        public readonly struct IntrinsicDecl : ITag<IntrinsicDecl, DeclSort>
+        public readonly record struct IntrinsicDecl : ITag<IntrinsicDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.Intrinsic;
@@ -2253,7 +2358,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.Enumerator)]
-        public readonly struct EnumeratorDecl : ITag<EnumeratorDecl, DeclSort>
+        public readonly record struct EnumeratorDecl : ITag<EnumeratorDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.Enumerator;
@@ -2266,7 +2371,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.Parameter)]
-        public readonly struct ParameterDecl : ITag<ParameterDecl, DeclSort>
+        public readonly record struct ParameterDecl : ITag<ParameterDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.Parameter;
@@ -2282,7 +2387,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.Variable)]
-        public readonly struct VariableDecl : ITag<VariableDecl, DeclSort>
+        public readonly record struct VariableDecl : ITag<VariableDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.Variable;
@@ -2299,7 +2404,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.Field)]
-        public readonly struct FieldDecl : ITag<FieldDecl, DeclSort>
+        public readonly record struct FieldDecl : ITag<FieldDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.Field;
@@ -2316,7 +2421,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.Bitfield)]
-        public readonly struct BitfieldDecl : ITag<BitfieldDecl, DeclSort>
+        public readonly record struct BitfieldDecl : ITag<BitfieldDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.Bitfield;
@@ -2333,7 +2438,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.Scope)]
-        public readonly struct ScopeDecl : ITag<ScopeDecl, DeclSort>
+        public readonly record struct ScopeDecl : ITag<ScopeDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.Scope;
@@ -2352,7 +2457,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.Enumeration)]
-        public readonly struct EnumerationDecl : ITag<EnumerationDecl, DeclSort>
+        public readonly record struct EnumerationDecl : ITag<EnumerationDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.Enumeration;
@@ -2369,7 +2474,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.Alias)]
-        public readonly struct AliasDecl : ITag<AliasDecl, DeclSort>
+        public readonly record struct AliasDecl : ITag<AliasDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.Alias;
@@ -2383,7 +2488,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.Temploid)]
-        public readonly struct TemploidDecl : ITag<TemploidDecl, DeclSort>
+        public readonly record struct TemploidDecl : ITag<TemploidDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.Temploid;
@@ -2393,7 +2498,7 @@ namespace ifc
             public readonly ReachableProperties properties;
         }
 
-        public readonly struct Template
+        public readonly record struct Template
         {
             public readonly Identity<NameIndex> identity;
             public readonly DeclIndex home_scope;
@@ -2402,7 +2507,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.Template)]
-        public readonly struct TemplateDecl : ITag<TemplateDecl, DeclSort>
+        public readonly record struct TemplateDecl : ITag<TemplateDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.Template;
@@ -2415,7 +2520,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.PartialSpecialization)]
-        public readonly struct PartialSpecializationDecl : ITag<PartialSpecializationDecl, DeclSort>
+        public readonly record struct PartialSpecializationDecl : ITag<PartialSpecializationDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.PartialSpecialization;
@@ -2428,7 +2533,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.Specialization)]
-        public readonly struct SpecializationDecl : ITag<SpecializationDecl, DeclSort>
+        public readonly record struct SpecializationDecl : ITag<SpecializationDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.Specialization;
@@ -2442,7 +2547,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.DefaultArgument)]
-        public readonly struct DefaultArgumentDecl : ITag<DefaultArgumentDecl, DeclSort>
+        public readonly record struct DefaultArgumentDecl : ITag<DefaultArgumentDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.DefaultArgument;
@@ -2457,7 +2562,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.Concept)]
-        public readonly struct ConceptDecl : ITag<ConceptDecl, DeclSort>
+        public readonly record struct ConceptDecl : ITag<ConceptDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.Concept;
@@ -2474,7 +2579,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.Method)]
-        public readonly struct NonStaticMemberFunctionDecl : ITag<NonStaticMemberFunctionDecl, DeclSort>
+        public readonly record struct NonStaticMemberFunctionDecl : ITag<NonStaticMemberFunctionDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.Method;
@@ -2490,7 +2595,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.Constructor)]
-        public readonly struct ConstructorDecl : ITag<ConstructorDecl, DeclSort>
+        public readonly record struct ConstructorDecl : ITag<ConstructorDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.Constructor;
@@ -2506,7 +2611,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.InheritedConstructor)]
-        public readonly struct InheritedConstructorDecl : ITag<InheritedConstructorDecl, DeclSort>
+        public readonly record struct InheritedConstructorDecl : ITag<InheritedConstructorDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.InheritedConstructor;
@@ -2522,7 +2627,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.Destructor)]
-        public readonly struct DestructorDecl : ITag<DestructorDecl, DeclSort>
+        public readonly record struct DestructorDecl : ITag<DestructorDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.Destructor;
@@ -2538,7 +2643,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.DeductionGuide)]
-        public readonly struct DeductionGuideDecl : ITag<DeductionGuideDecl, DeclSort>
+        public readonly record struct DeductionGuideDecl : ITag<DeductionGuideDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.DeductionGuide;
@@ -2552,7 +2657,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.Barren)]
-        public readonly struct BarrenDecl : ITag<BarrenDecl, DeclSort>
+        public readonly record struct BarrenDecl : ITag<BarrenDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.Barren;
@@ -2563,7 +2668,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.Reference)]
-        public readonly struct ReferenceDecl : ITag<ReferenceDecl, DeclSort>
+        public readonly record struct ReferenceDecl : ITag<ReferenceDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.Reference;
@@ -2573,7 +2678,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.Property)]
-        public readonly struct PropertyDecl : ITag<PropertyDecl, DeclSort>
+        public readonly record struct PropertyDecl : ITag<PropertyDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.Property;
@@ -2584,7 +2689,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.OutputSegment)]
-        public readonly struct SegmentDecl : ITag<SegmentDecl, DeclSort>
+        public readonly record struct SegmentDecl : ITag<SegmentDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.OutputSegment;
@@ -2596,7 +2701,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.Using)]
-        public readonly struct UsingDecl : ITag<UsingDecl, DeclSort>
+        public readonly record struct UsingDecl : ITag<UsingDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.Using;
@@ -2613,7 +2718,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.Friend)]
-        public readonly struct FriendDecl : ITag<FriendDecl, DeclSort>
+        public readonly record struct FriendDecl : ITag<FriendDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.Friend;
@@ -2622,7 +2727,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.Expansion)]
-        public readonly struct ExpansionDecl : ITag<ExpansionDecl, DeclSort>
+        public readonly record struct ExpansionDecl : ITag<ExpansionDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.Expansion;
@@ -2632,7 +2737,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.SyntaxTree)]
-        public readonly struct SyntacticDecl : ITag<SyntacticDecl, DeclSort>
+        public readonly record struct SyntacticDecl : ITag<SyntacticDecl, DeclSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.SyntaxTree;
@@ -2641,7 +2746,7 @@ namespace ifc
         }
 
         [Tag<DeclSort>(DeclSort.Tuple)]
-        public readonly struct TupleDecl : ITag<TupleDecl, DeclSort>, ITaggedSequence<TupleDecl, DeclIndex, HeapSort>
+        public readonly record struct TupleDecl : ITag<TupleDecl, DeclSort>, ITaggedSequence<TupleDecl, DeclIndex, HeapSort>
         {
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.Tuple;
@@ -2652,7 +2757,7 @@ namespace ifc
             public readonly Cardinality cardinality;
         }
 
-        public readonly struct Scope : ISequence<Declaration>
+        public readonly record struct Scope : ISequence<Declaration>
         {
             public Sequence<Declaration> Sequence => new(start, cardinality);
             public readonly Index start;
@@ -2660,7 +2765,7 @@ namespace ifc
         }
 
         [Tag<ChartSort>(ChartSort.Unilevel)]
-        public readonly struct UnilevelChart : ITag<UnilevelChart, ChartSort>, ISequence<ParameterDecl>
+        public readonly record struct UnilevelChart : ITag<UnilevelChart, ChartSort>, ISequence<ParameterDecl>
         {
             public static SortType Type => SortType.Chart;
             public static ChartSort Sort => ChartSort.Unilevel;
@@ -2671,7 +2776,7 @@ namespace ifc
         }
 
         [Tag<ChartSort>(ChartSort.Multilevel)]
-        public readonly struct MultiChart : ITag<MultiChart, ChartSort>, ITaggedSequence<MultiChart, ChartIndex, HeapSort>
+        public readonly record struct MultiChart : ITag<MultiChart, ChartSort>, ITaggedSequence<MultiChart, ChartIndex, HeapSort>
         {
             public static SortType Type => SortType.Chart;
             public static ChartSort Sort => ChartSort.Multilevel;
@@ -2683,7 +2788,7 @@ namespace ifc
         }
 
         [Tag<StmtSort>(StmtSort.Block)]
-        public readonly struct BlockStmt : ITag<BlockStmt, StmtSort>, ITaggedSequence<BlockStmt, StmtIndex, HeapSort>
+        public readonly record struct BlockStmt : ITag<BlockStmt, StmtSort>, ITaggedSequence<BlockStmt, StmtIndex, HeapSort>
         {
             public static SortType Type => SortType.Stmt;
             public static StmtSort Sort => StmtSort.Block;
@@ -2696,7 +2801,7 @@ namespace ifc
         }
 
         [Tag<StmtSort>(StmtSort.Try)]
-        public readonly struct TryStmt : ITag<TryStmt, StmtSort>, ITaggedSequence<TryStmt, StmtIndex, HeapSort>
+        public readonly record struct TryStmt : ITag<TryStmt, StmtSort>, ITaggedSequence<TryStmt, StmtIndex, HeapSort>
         {
             public static SortType Type => SortType.Stmt;
             public static StmtSort Sort => StmtSort.Try;
@@ -2710,7 +2815,7 @@ namespace ifc
         }
 
         [Tag<StmtSort>(StmtSort.Expression)]
-        public readonly struct ExpressionStmt : ITag<ExpressionStmt, StmtSort>
+        public readonly record struct ExpressionStmt : ITag<ExpressionStmt, StmtSort>
         {
             public static SortType Type => SortType.Stmt;
             public static StmtSort Sort => StmtSort.Expression;
@@ -2720,7 +2825,7 @@ namespace ifc
         }
 
         [Tag<StmtSort>(StmtSort.If)]
-        public readonly struct IfStmt : ITag<IfStmt, StmtSort>
+        public readonly record struct IfStmt : ITag<IfStmt, StmtSort>
         {
             public static SortType Type => SortType.Stmt;
             public static StmtSort Sort => StmtSort.If;
@@ -2733,7 +2838,7 @@ namespace ifc
         }
 
         [Tag<StmtSort>(StmtSort.While)]
-        public readonly struct WhileStmt : ITag<WhileStmt, StmtSort>
+        public readonly record struct WhileStmt : ITag<WhileStmt, StmtSort>
         {
             public static SortType Type => SortType.Stmt;
             public static StmtSort Sort => StmtSort.While;
@@ -2744,7 +2849,7 @@ namespace ifc
         }
 
         [Tag<StmtSort>(StmtSort.DoWhile)]
-        public readonly struct DoWhileStmt : ITag<DoWhileStmt, StmtSort>
+        public readonly record struct DoWhileStmt : ITag<DoWhileStmt, StmtSort>
         {
             public static SortType Type => SortType.Stmt;
             public static StmtSort Sort => StmtSort.DoWhile;
@@ -2755,7 +2860,7 @@ namespace ifc
         }
 
         [Tag<StmtSort>(StmtSort.For)]
-        public readonly struct ForStmt : ITag<ForStmt, StmtSort>
+        public readonly record struct ForStmt : ITag<ForStmt, StmtSort>
         {
             public static SortType Type => SortType.Stmt;
             public static StmtSort Sort => StmtSort.For;
@@ -2768,7 +2873,7 @@ namespace ifc
         }
 
         [Tag<StmtSort>(StmtSort.Break)]
-        public readonly struct BreakStmt : ITag<BreakStmt, StmtSort>
+        public readonly record struct BreakStmt : ITag<BreakStmt, StmtSort>
         {
             public static SortType Type => SortType.Stmt;
             public static StmtSort Sort => StmtSort.Break;
@@ -2777,7 +2882,7 @@ namespace ifc
         }
 
         [Tag<StmtSort>(StmtSort.Continue)]
-        public readonly struct ContinueStmt : ITag<ContinueStmt, StmtSort>
+        public readonly record struct ContinueStmt : ITag<ContinueStmt, StmtSort>
         {
             public static SortType Type => SortType.Stmt;
             public static StmtSort Sort => StmtSort.Continue;
@@ -2786,7 +2891,7 @@ namespace ifc
         }
 
         [Tag<StmtSort>(StmtSort.Goto)]
-        public readonly struct GotoStmt : ITag<GotoStmt, StmtSort>
+        public readonly record struct GotoStmt : ITag<GotoStmt, StmtSort>
         {
             public static SortType Type => SortType.Stmt;
             public static StmtSort Sort => StmtSort.Goto;
@@ -2796,7 +2901,7 @@ namespace ifc
         }
 
         [Tag<StmtSort>(StmtSort.Switch)]
-        public readonly struct SwitchStmt : ITag<SwitchStmt, StmtSort>
+        public readonly record struct SwitchStmt : ITag<SwitchStmt, StmtSort>
         {
             public static SortType Type => SortType.Stmt;
             public static StmtSort Sort => StmtSort.Switch;
@@ -2808,7 +2913,7 @@ namespace ifc
         }
 
         [Tag<StmtSort>(StmtSort.Labeled)]
-        public readonly struct LabeledStmt : ITag<LabeledStmt, StmtSort>
+        public readonly record struct LabeledStmt : ITag<LabeledStmt, StmtSort>
         {
             public static SortType Type => SortType.Stmt;
             public static StmtSort Sort => StmtSort.Labeled;
@@ -2820,7 +2925,7 @@ namespace ifc
         }
 
         [Tag<StmtSort>(StmtSort.Decl)]
-        public readonly struct DeclStmt : ITag<DeclStmt, StmtSort>
+        public readonly record struct DeclStmt : ITag<DeclStmt, StmtSort>
         {
             public static SortType Type => SortType.Stmt;
             public static StmtSort Sort => StmtSort.Decl;
@@ -2830,7 +2935,7 @@ namespace ifc
         }
 
         [Tag<StmtSort>(StmtSort.Return)]
-        public readonly struct ReturnStmt : ITag<ReturnStmt, StmtSort>
+        public readonly record struct ReturnStmt : ITag<ReturnStmt, StmtSort>
         {
             public static SortType Type => SortType.Stmt;
             public static StmtSort Sort => StmtSort.Return;
@@ -2842,7 +2947,7 @@ namespace ifc
         }
 
         [Tag<StmtSort>(StmtSort.Handler)]
-        public readonly struct HandlerStmt : ITag<HandlerStmt, StmtSort>
+        public readonly record struct HandlerStmt : ITag<HandlerStmt, StmtSort>
         {
             public static SortType Type => SortType.Stmt;
             public static StmtSort Sort => StmtSort.Handler;
@@ -2853,7 +2958,7 @@ namespace ifc
         }
 
         [Tag<StmtSort>(StmtSort.Expansion)]
-        public readonly struct ExpansionStmt : ITag<ExpansionStmt, StmtSort>
+        public readonly record struct ExpansionStmt : ITag<ExpansionStmt, StmtSort>
         {
             public static SortType Type => SortType.Stmt;
             public static StmtSort Sort => StmtSort.Expansion;
@@ -2863,7 +2968,7 @@ namespace ifc
         }
 
         [Tag<StmtSort>(StmtSort.Tuple)]
-        public readonly struct TupleStmt : ITag<TupleStmt, StmtSort>, ITaggedSequence<TupleStmt, StmtIndex, HeapSort>
+        public readonly record struct TupleStmt : ITag<TupleStmt, StmtSort>, ITaggedSequence<TupleStmt, StmtIndex, HeapSort>
         {
             public static SortType Type => SortType.Stmt;
             public static StmtSort Sort => StmtSort.Tuple;
@@ -2876,7 +2981,7 @@ namespace ifc
             public readonly Cardinality cardinality;
         }
 
-        public readonly struct StringLiteral
+        public readonly record struct StringLiteral
         {
             public readonly TextOffset start;
             public readonly Cardinality size;
@@ -2884,7 +2989,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.Type)]
-        public readonly struct TypeExpr : ITag<TypeExpr, ExprSort>
+        public readonly record struct TypeExpr : ITag<TypeExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.Type;
@@ -2895,7 +3000,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.String)]
-        public readonly struct StringExpr : ITag<StringExpr, ExprSort>
+        public readonly record struct StringExpr : ITag<StringExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.String;
@@ -2906,7 +3011,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.FunctionString)]
-        public readonly struct FunctionStringExpr : ITag<FunctionStringExpr, ExprSort>
+        public readonly record struct FunctionStringExpr : ITag<FunctionStringExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.FunctionString;
@@ -2917,7 +3022,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.CompoundString)]
-        public readonly struct CompoundStringExpr : ITag<CompoundStringExpr, ExprSort>
+        public readonly record struct CompoundStringExpr : ITag<CompoundStringExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.CompoundString;
@@ -2929,7 +3034,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.StringSequence)]
-        public readonly struct StringSequenceExpr : ITag<StringSequenceExpr, ExprSort>
+        public readonly record struct StringSequenceExpr : ITag<StringSequenceExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.StringSequence;
@@ -2940,7 +3045,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.UnresolvedId)]
-        public readonly struct UnresolvedIdExpr : ITag<UnresolvedIdExpr, ExprSort>
+        public readonly record struct UnresolvedIdExpr : ITag<UnresolvedIdExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.UnresolvedId;
@@ -2951,7 +3056,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.TemplateId)]
-        public readonly struct TemplateIdExpr : ITag<TemplateIdExpr, ExprSort>
+        public readonly record struct TemplateIdExpr : ITag<TemplateIdExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.TemplateId;
@@ -2963,7 +3068,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.TemplateReference)]
-        public readonly struct TemplateReferenceExpr : ITag<TemplateReferenceExpr, ExprSort>
+        public readonly record struct TemplateReferenceExpr : ITag<TemplateReferenceExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.TemplateReference;
@@ -2977,7 +3082,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.NamedDecl)]
-        public readonly struct NamedDeclExpr : ITag<NamedDeclExpr, ExprSort>
+        public readonly record struct NamedDeclExpr : ITag<NamedDeclExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.NamedDecl;
@@ -2988,7 +3093,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.Literal)]
-        public readonly struct LiteralExpr : ITag<LiteralExpr, ExprSort>
+        public readonly record struct LiteralExpr : ITag<LiteralExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.Literal;
@@ -2999,7 +3104,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.Empty)]
-        public readonly struct EmptyExpr : ITag<EmptyExpr, ExprSort>
+        public readonly record struct EmptyExpr : ITag<EmptyExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.Empty;
@@ -3009,7 +3114,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.Path)]
-        public readonly struct PathExpr : ITag<PathExpr, ExprSort>
+        public readonly record struct PathExpr : ITag<PathExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.Path;
@@ -3021,7 +3126,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.Read)]
-        public readonly struct ReadExpr : ITag<ReadExpr, ExprSort>
+        public readonly record struct ReadExpr : ITag<ReadExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.Read;
@@ -3043,7 +3148,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.Monad)]
-        public readonly struct MonadicExpr : ITag<MonadicExpr, ExprSort>
+        public readonly record struct MonadicExpr : ITag<MonadicExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.Monad;
@@ -3061,7 +3166,7 @@ namespace ifc
             private ExprIndex _element;
         }
         [Tag<ExprSort>(ExprSort.Dyad)]
-        public readonly struct DyadicExpr : ITag<DyadicExpr, ExprSort>
+        public readonly record struct DyadicExpr : ITag<DyadicExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.Dyad;
@@ -3079,7 +3184,7 @@ namespace ifc
             private ExprIndex _element;
         }
         [Tag<ExprSort>(ExprSort.Triad)]
-        public readonly struct TriadicExpr : ITag<TriadicExpr, ExprSort>
+        public readonly record struct TriadicExpr : ITag<TriadicExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.Triad;
@@ -3097,7 +3202,7 @@ namespace ifc
             private ExprIndex _element;
         }
         [Tag<ExprSort>(ExprSort.HierarchyConversion)]
-        public readonly struct HierarchyConversionExpr : ITag<HierarchyConversionExpr, ExprSort>
+        public readonly record struct HierarchyConversionExpr : ITag<HierarchyConversionExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.HierarchyConversion;
@@ -3112,7 +3217,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.DestructorCall)]
-        public readonly struct DestructorCallExpr : ITag<DestructorCallExpr, ExprSort>
+        public readonly record struct DestructorCallExpr : ITag<DestructorCallExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.DestructorCall;
@@ -3132,7 +3237,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.Tuple)]
-        public readonly struct TupleExpr : ITag<TupleExpr, ExprSort>, ITaggedSequence<TupleExpr, ExprIndex, HeapSort>
+        public readonly record struct TupleExpr : ITag<TupleExpr, ExprSort>, ITaggedSequence<TupleExpr, ExprIndex, HeapSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.Tuple;
@@ -3146,7 +3251,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.Placeholder)]
-        public readonly struct PlaceholderExpr : ITag<PlaceholderExpr, ExprSort>
+        public readonly record struct PlaceholderExpr : ITag<PlaceholderExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.Placeholder;
@@ -3156,7 +3261,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.Expansion)]
-        public readonly struct ExpansionExpr : ITag<ExpansionExpr, ExprSort>
+        public readonly record struct ExpansionExpr : ITag<ExpansionExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.Expansion;
@@ -3167,7 +3272,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.Tokens)]
-        public readonly struct TokenExpr : ITag<TokenExpr, ExprSort>
+        public readonly record struct TokenExpr : ITag<TokenExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.Tokens;
@@ -3178,7 +3283,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.Call)]
-        public readonly struct CallExpr : ITag<CallExpr, ExprSort>
+        public readonly record struct CallExpr : ITag<CallExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.Call;
@@ -3190,7 +3295,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.Temporary)]
-        public readonly struct TemporaryExpr : ITag<TemporaryExpr, ExprSort>
+        public readonly record struct TemporaryExpr : ITag<TemporaryExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.Temporary;
@@ -3201,7 +3306,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.DynamicDispatch)]
-        public readonly struct DynamicDispatchExpr : ITag<DynamicDispatchExpr, ExprSort>
+        public readonly record struct DynamicDispatchExpr : ITag<DynamicDispatchExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.DynamicDispatch;
@@ -3212,7 +3317,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.VirtualFunctionConversion)]
-        public readonly struct VirtualFunctionConversionExpr : ITag<VirtualFunctionConversionExpr, ExprSort>
+        public readonly record struct VirtualFunctionConversionExpr : ITag<VirtualFunctionConversionExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.VirtualFunctionConversion;
@@ -3223,7 +3328,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.Requires)]
-        public readonly struct RequiresExpr : ITag<RequiresExpr, ExprSort>
+        public readonly record struct RequiresExpr : ITag<RequiresExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.Requires;
@@ -3235,7 +3340,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.UnaryFold)]
-        public readonly struct UnaryFoldExpr : ITag<UnaryFoldExpr, ExprSort>
+        public readonly record struct UnaryFoldExpr : ITag<UnaryFoldExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.UnaryFold;
@@ -3248,7 +3353,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.BinaryFold)]
-        public readonly struct BinaryFoldExpr : ITag<BinaryFoldExpr, ExprSort>
+        public readonly record struct BinaryFoldExpr : ITag<BinaryFoldExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.BinaryFold;
@@ -3262,7 +3367,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.Statement)]
-        public readonly struct StatementExpr : ITag<StatementExpr, ExprSort>
+        public readonly record struct StatementExpr : ITag<StatementExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.Statement;
@@ -3273,7 +3378,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.TypeTraitIntrinsic)]
-        public readonly struct TypeTraitIntrinsicExpr : ITag<TypeTraitIntrinsicExpr, ExprSort>
+        public readonly record struct TypeTraitIntrinsicExpr : ITag<TypeTraitIntrinsicExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.TypeTraitIntrinsic;
@@ -3285,7 +3390,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.MemberInitializer)]
-        public readonly struct MemberInitializerExpr : ITag<MemberInitializerExpr, ExprSort>
+        public readonly record struct MemberInitializerExpr : ITag<MemberInitializerExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.MemberInitializer;
@@ -3298,7 +3403,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.MemberAccess)]
-        public readonly struct MemberAccessExpr : ITag<MemberAccessExpr, ExprSort>
+        public readonly record struct MemberAccessExpr : ITag<MemberAccessExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.MemberAccess;
@@ -3311,7 +3416,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.InheritancePath)]
-        public readonly struct InheritancePathExpr : ITag<InheritancePathExpr, ExprSort>
+        public readonly record struct InheritancePathExpr : ITag<InheritancePathExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.InheritancePath;
@@ -3322,7 +3427,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.InitializerList)]
-        public readonly struct InitializerListExpr : ITag<InitializerListExpr, ExprSort>
+        public readonly record struct InitializerListExpr : ITag<InitializerListExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.InitializerList;
@@ -3333,7 +3438,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.Initializer)]
-        public readonly struct InitializerExpr : ITag<InitializerExpr, ExprSort>
+        public readonly record struct InitializerExpr : ITag<InitializerExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.Initializer;
@@ -3352,7 +3457,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.Cast)]
-        public readonly struct CastExpr : ITag<CastExpr, ExprSort>
+        public readonly record struct CastExpr : ITag<CastExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.Cast;
@@ -3365,7 +3470,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.Condition)]
-        public readonly struct ConditionExpr : ITag<ConditionExpr, ExprSort>
+        public readonly record struct ConditionExpr : ITag<ConditionExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.Condition;
@@ -3376,7 +3481,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.SimpleIdentifier)]
-        public readonly struct SimpleIdentifierExpr : ITag<SimpleIdentifierExpr, ExprSort>
+        public readonly record struct SimpleIdentifierExpr : ITag<SimpleIdentifierExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.SimpleIdentifier;
@@ -3387,7 +3492,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.Pointer)]
-        public readonly struct PointerExpr : ITag<PointerExpr, ExprSort>
+        public readonly record struct PointerExpr : ITag<PointerExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.Pointer;
@@ -3396,7 +3501,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.UnqualifiedId)]
-        public readonly struct UnqualifiedIdExpr : ITag<UnqualifiedIdExpr, ExprSort>
+        public readonly record struct UnqualifiedIdExpr : ITag<UnqualifiedIdExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.UnqualifiedId;
@@ -3409,7 +3514,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.QualifiedName)]
-        public readonly struct QualifiedNameExpr : ITag<QualifiedNameExpr, ExprSort>
+        public readonly record struct QualifiedNameExpr : ITag<QualifiedNameExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.QualifiedName;
@@ -3421,7 +3526,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.DesignatedInitializer)]
-        public readonly struct DesignatedInitializerExpr : ITag<DesignatedInitializerExpr, ExprSort>
+        public readonly record struct DesignatedInitializerExpr : ITag<DesignatedInitializerExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.DesignatedInitializer;
@@ -3433,7 +3538,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.ExpressionList)]
-        public readonly struct ExpressionListExpr : ITag<ExpressionListExpr, ExprSort>
+        public readonly record struct ExpressionListExpr : ITag<ExpressionListExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.ExpressionList;
@@ -3452,7 +3557,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.AssignInitializer)]
-        public readonly struct AssignInitializerExpr : ITag<AssignInitializerExpr, ExprSort>
+        public readonly record struct AssignInitializerExpr : ITag<AssignInitializerExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.AssignInitializer;
@@ -3462,7 +3567,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.SizeofType)]
-        public readonly struct SizeofTypeExpr : ITag<SizeofTypeExpr, ExprSort>
+        public readonly record struct SizeofTypeExpr : ITag<SizeofTypeExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.SizeofType;
@@ -3473,7 +3578,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.Alignof)]
-        public readonly struct AlignofExpr : ITag<AlignofExpr, ExprSort>
+        public readonly record struct AlignofExpr : ITag<AlignofExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.Alignof;
@@ -3484,7 +3589,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.Label)]
-        public readonly struct LabelExpr : ITag<LabelExpr, ExprSort>
+        public readonly record struct LabelExpr : ITag<LabelExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.Label;
@@ -3495,7 +3600,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.Nullptr)]
-        public readonly struct NullptrExpr : ITag<NullptrExpr, ExprSort>
+        public readonly record struct NullptrExpr : ITag<NullptrExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.Nullptr;
@@ -3505,7 +3610,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.This)]
-        public readonly struct ThisExpr : ITag<ThisExpr, ExprSort>
+        public readonly record struct ThisExpr : ITag<ThisExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.This;
@@ -3515,7 +3620,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.PackedTemplateArguments)]
-        public readonly struct PackedTemplateArgumentsExpr : ITag<PackedTemplateArgumentsExpr, ExprSort>
+        public readonly record struct PackedTemplateArgumentsExpr : ITag<PackedTemplateArgumentsExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.PackedTemplateArguments;
@@ -3526,7 +3631,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.Lambda)]
-        public readonly struct LambdaExpr : ITag<LambdaExpr, ExprSort>
+        public readonly record struct LambdaExpr : ITag<LambdaExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.Lambda;
@@ -3539,7 +3644,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.Typeid)]
-        public readonly struct TypeidExpr : ITag<TypeidExpr, ExprSort>
+        public readonly record struct TypeidExpr : ITag<TypeidExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.Typeid;
@@ -3550,7 +3655,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.SyntaxTree)]
-        public readonly struct SyntaxTreeExpr : ITag<SyntaxTreeExpr, ExprSort>
+        public readonly record struct SyntaxTreeExpr : ITag<SyntaxTreeExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.SyntaxTree;
@@ -3559,7 +3664,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.ProductTypeValue)]
-        public readonly struct ProductTypeValueExpr : ITag<ProductTypeValueExpr, ExprSort>
+        public readonly record struct ProductTypeValueExpr : ITag<ProductTypeValueExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.ProductTypeValue;
@@ -3572,7 +3677,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.SumTypeValue)]
-        public readonly struct SumTypeValueExpr : ITag<SumTypeValueExpr, ExprSort>
+        public readonly record struct SumTypeValueExpr : ITag<SumTypeValueExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.SumTypeValue;
@@ -3585,7 +3690,7 @@ namespace ifc
         }
 
         [Tag<ExprSort>(ExprSort.ArrayValue)]
-        public readonly struct ArrayValueExpr : ITag<ArrayValueExpr, ExprSort>
+        public readonly record struct ArrayValueExpr : ITag<ArrayValueExpr, ExprSort>
         {
             public static SortType Type => SortType.Expr;
             public static ExprSort Sort => ExprSort.ArrayValue;
@@ -3597,7 +3702,7 @@ namespace ifc
         }
 
         [Tag<MacroSort>(MacroSort.ObjectLike)]
-        public readonly struct ObjectLikeMacro : ITag<ObjectLikeMacro, MacroSort>
+        public readonly record struct ObjectLikeMacro : ITag<ObjectLikeMacro, MacroSort>
         {
             public static SortType Type => SortType.Macro;
             public static MacroSort Sort => MacroSort.ObjectLike;
@@ -3608,7 +3713,7 @@ namespace ifc
         }
 
         [Tag<MacroSort>(MacroSort.FunctionLike)]
-        public readonly struct FunctionLikeMacro : ITag<FunctionLikeMacro, MacroSort>
+        public readonly record struct FunctionLikeMacro : ITag<FunctionLikeMacro, MacroSort>
         {
             public static SortType Type => SortType.Macro;
             public static MacroSort Sort => MacroSort.FunctionLike;
@@ -3623,7 +3728,7 @@ namespace ifc
             public uint variadic => ((arity_bitfield >> 31) & 0b1);
         }
 
-        public readonly struct PragmaWarningRegion
+        public readonly record struct PragmaWarningRegion
         {
             public readonly SourceLocation start_locus;
             public readonly SourceLocation end_locus;
@@ -3631,7 +3736,7 @@ namespace ifc
         }
 
         [Tag<LiteralSort>(LiteralSort.Integer)]
-        public readonly struct IntegerLiteral : ITag<IntegerLiteral, LiteralSort>
+        public readonly record struct IntegerLiteral : ITag<IntegerLiteral, LiteralSort>
         {
             public static SortType Type => SortType.Literal;
             public static LiteralSort Sort => LiteralSort.Integer;
@@ -3639,21 +3744,21 @@ namespace ifc
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 4)]
-        public readonly struct LiteralReal
+        public readonly record struct LiteralReal
         {
             public readonly double value;
             public readonly ushort size;
         }
 
         [Tag<LiteralSort>(LiteralSort.FloatingPoint)]
-        public readonly struct FloatingPointLiteral : ITag<FloatingPointLiteral, LiteralSort>
+        public readonly record struct FloatingPointLiteral : ITag<FloatingPointLiteral, LiteralSort>
         {
             public static SortType Type => SortType.Literal;
             public static LiteralSort Sort => LiteralSort.FloatingPoint;
 
         }
 
-        public readonly struct PragmaPushState
+        public readonly record struct PragmaPushState
         {
             public readonly DeclIndex text_segment;
             public readonly DeclIndex const_segment;
@@ -3676,7 +3781,7 @@ namespace ifc
         }
 
         [Tag<AttrSort>(AttrSort.Basic)]
-        public readonly struct BasicAttr : ITag<BasicAttr, AttrSort>
+        public readonly record struct BasicAttr : ITag<BasicAttr, AttrSort>
         {
             public static SortType Type => SortType.Attr;
             public static AttrSort Sort => AttrSort.Basic;
@@ -3685,7 +3790,7 @@ namespace ifc
         }
 
         [Tag<AttrSort>(AttrSort.Scoped)]
-        public readonly struct ScopedAttr : ITag<ScopedAttr, AttrSort>
+        public readonly record struct ScopedAttr : ITag<ScopedAttr, AttrSort>
         {
             public static SortType Type => SortType.Attr;
             public static AttrSort Sort => AttrSort.Scoped;
@@ -3695,7 +3800,7 @@ namespace ifc
         }
 
         [Tag<AttrSort>(AttrSort.Labeled)]
-        public readonly struct LabeledAttr : ITag<LabeledAttr, AttrSort>
+        public readonly record struct LabeledAttr : ITag<LabeledAttr, AttrSort>
         {
             public static SortType Type => SortType.Attr;
             public static AttrSort Sort => AttrSort.Labeled;
@@ -3705,7 +3810,7 @@ namespace ifc
         }
 
         [Tag<AttrSort>(AttrSort.Called)]
-        public readonly struct CalledAttr : ITag<CalledAttr, AttrSort>
+        public readonly record struct CalledAttr : ITag<CalledAttr, AttrSort>
         {
             public static SortType Type => SortType.Attr;
             public static AttrSort Sort => AttrSort.Called;
@@ -3715,7 +3820,7 @@ namespace ifc
         }
 
         [Tag<AttrSort>(AttrSort.Expanded)]
-        public readonly struct ExpandedAttr : ITag<ExpandedAttr, AttrSort>
+        public readonly record struct ExpandedAttr : ITag<ExpandedAttr, AttrSort>
         {
             public static SortType Type => SortType.Attr;
             public static AttrSort Sort => AttrSort.Expanded;
@@ -3724,7 +3829,7 @@ namespace ifc
         }
 
         [Tag<AttrSort>(AttrSort.Factored)]
-        public readonly struct FactoredAttr : ITag<FactoredAttr, AttrSort>
+        public readonly record struct FactoredAttr : ITag<FactoredAttr, AttrSort>
         {
             public static SortType Type => SortType.Attr;
             public static AttrSort Sort => AttrSort.Factored;
@@ -3734,7 +3839,7 @@ namespace ifc
         }
 
         [Tag<AttrSort>(AttrSort.Elaborated)]
-        public readonly struct ElaboratedAttr : ITag<ElaboratedAttr, AttrSort>
+        public readonly record struct ElaboratedAttr : ITag<ElaboratedAttr, AttrSort>
         {
             public static SortType Type => SortType.Attr;
             public static AttrSort Sort => AttrSort.Elaborated;
@@ -3743,7 +3848,7 @@ namespace ifc
         }
 
         [Tag<AttrSort>(AttrSort.Tuple)]
-        public readonly struct TupleAttr : ITag<TupleAttr, AttrSort>, ITaggedSequence<TupleAttr, AttrIndex, HeapSort>
+        public readonly record struct TupleAttr : ITag<TupleAttr, AttrSort>, ITaggedSequence<TupleAttr, AttrIndex, HeapSort>
         {
             public static SortType Type => SortType.Attr;
             public static AttrSort Sort => AttrSort.Tuple;
@@ -3755,7 +3860,7 @@ namespace ifc
         }
 
         [Tag<DirSort>(DirSort.Empty)]
-        public readonly struct EmptyDir : ITag<EmptyDir, DirSort>
+        public readonly record struct EmptyDir : ITag<EmptyDir, DirSort>
         {
             public static SortType Type => SortType.Dir;
             public static DirSort Sort => DirSort.Empty;
@@ -3764,7 +3869,7 @@ namespace ifc
         }
 
         [Tag<DirSort>(DirSort.Attribute)]
-        public readonly struct AttributeDir : ITag<AttributeDir, DirSort>
+        public readonly record struct AttributeDir : ITag<AttributeDir, DirSort>
         {
             public static SortType Type => SortType.Dir;
             public static DirSort Sort => DirSort.Attribute;
@@ -3774,7 +3879,7 @@ namespace ifc
         }
 
         [Tag<DirSort>(DirSort.Pragma)]
-        public readonly struct PragmaDir : ITag<PragmaDir, DirSort>
+        public readonly record struct PragmaDir : ITag<PragmaDir, DirSort>
         {
             public static SortType Type => SortType.Dir;
             public static DirSort Sort => DirSort.Pragma;
@@ -3784,7 +3889,7 @@ namespace ifc
         }
 
         [Tag<DirSort>(DirSort.Using)]
-        public readonly struct UsingDir : ITag<UsingDir, DirSort>
+        public readonly record struct UsingDir : ITag<UsingDir, DirSort>
         {
             public static SortType Type => SortType.Dir;
             public static DirSort Sort => DirSort.Using;
@@ -3795,7 +3900,7 @@ namespace ifc
         }
 
         [Tag<DirSort>(DirSort.DeclUse)]
-        public readonly struct UsingDeclarationDir : ITag<UsingDeclarationDir, DirSort>
+        public readonly record struct UsingDeclarationDir : ITag<UsingDeclarationDir, DirSort>
         {
             public static SortType Type => SortType.Dir;
             public static DirSort Sort => DirSort.DeclUse;
@@ -3806,7 +3911,7 @@ namespace ifc
         }
 
         [Tag<DirSort>(DirSort.Expr)]
-        public readonly struct ExprDir : ITag<ExprDir, DirSort>
+        public readonly record struct ExprDir : ITag<ExprDir, DirSort>
         {
             public static SortType Type => SortType.Dir;
             public static DirSort Sort => DirSort.Expr;
@@ -3817,7 +3922,7 @@ namespace ifc
         }
 
         [Tag<DirSort>(DirSort.StructuredBinding)]
-        public readonly struct StructuredBindingDir : ITag<StructuredBindingDir, DirSort>
+        public readonly record struct StructuredBindingDir : ITag<StructuredBindingDir, DirSort>
         {
             public static SortType Type => SortType.Dir;
             public static DirSort Sort => DirSort.StructuredBinding;
@@ -3828,7 +3933,7 @@ namespace ifc
         }
 
         [Tag<DirSort>(DirSort.SpecifiersSpread)]
-        public readonly struct SpecifiersSpreadDir : ITag<SpecifiersSpreadDir, DirSort>
+        public readonly record struct SpecifiersSpreadDir : ITag<SpecifiersSpreadDir, DirSort>
         {
             public static SortType Type => SortType.Dir;
             public static DirSort Sort => DirSort.SpecifiersSpread;
@@ -3837,7 +3942,7 @@ namespace ifc
         }
 
         [Tag<DirSort>(DirSort.Tuple)]
-        public readonly struct TupleDir : ITag<TupleDir, DirSort>, ITaggedSequence<TupleDir, DirIndex, HeapSort>
+        public readonly record struct TupleDir : ITag<TupleDir, DirSort>, ITaggedSequence<TupleDir, DirIndex, HeapSort>
         {
             public static SortType Type => SortType.Dir;
             public static DirSort Sort => DirSort.Tuple;
@@ -3881,7 +3986,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.DecltypeSpecifier)]
-            public readonly struct DecltypeSpecifier : ITag<DecltypeSpecifier, SyntaxSort>
+            public readonly record struct DecltypeSpecifier : ITag<DecltypeSpecifier, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.DecltypeSpecifier;
@@ -3893,7 +3998,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.PlaceholderTypeSpecifier)]
-            public readonly struct PlaceholderTypeSpecifier : ITag<PlaceholderTypeSpecifier, SyntaxSort>
+            public readonly record struct PlaceholderTypeSpecifier : ITag<PlaceholderTypeSpecifier, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.PlaceholderTypeSpecifier;
@@ -3904,7 +4009,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.SimpleTypeSpecifier)]
-            public readonly struct SimpleTypeSpecifier : ITag<SimpleTypeSpecifier, SyntaxSort>
+            public readonly record struct SimpleTypeSpecifier : ITag<SimpleTypeSpecifier, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.SimpleTypeSpecifier;
@@ -3915,7 +4020,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.TypeSpecifierSeq)]
-            public readonly struct TypeSpecifierSeq : ITag<TypeSpecifierSeq, SyntaxSort>
+            public readonly record struct TypeSpecifierSeq : ITag<TypeSpecifierSeq, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.TypeSpecifierSeq;
@@ -3928,7 +4033,7 @@ namespace ifc
                 public readonly bool is_unhashed;
             }
 
-            public readonly struct Keyword
+            public readonly record struct Keyword
             {
                 public enum Kind : byte
                 {
@@ -3953,7 +4058,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.DeclSpecifierSeq)]
-            public readonly struct DeclSpecifierSeq : ITag<DeclSpecifierSeq, SyntaxSort>
+            public readonly record struct DeclSpecifierSeq : ITag<DeclSpecifierSeq, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.DeclSpecifierSeq;
@@ -3968,7 +4073,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.EnumSpecifier)]
-            public readonly struct EnumSpecifier : ITag<EnumSpecifier, SyntaxSort>
+            public readonly record struct EnumSpecifier : ITag<EnumSpecifier, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.EnumSpecifier;
@@ -3984,7 +4089,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.EnumeratorDefinition)]
-            public readonly struct EnumeratorDefinition : ITag<EnumeratorDefinition, SyntaxSort>
+            public readonly record struct EnumeratorDefinition : ITag<EnumeratorDefinition, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.EnumeratorDefinition;
@@ -3997,7 +4102,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.ClassSpecifier)]
-            public readonly struct ClassSpecifier : ITag<ClassSpecifier, SyntaxSort>
+            public readonly record struct ClassSpecifier : ITag<ClassSpecifier, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.ClassSpecifier;
@@ -4011,7 +4116,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.BaseSpecifierList)]
-            public readonly struct BaseSpecifierList : ITag<BaseSpecifierList, SyntaxSort>
+            public readonly record struct BaseSpecifierList : ITag<BaseSpecifierList, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.BaseSpecifierList;
@@ -4021,7 +4126,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.BaseSpecifier)]
-            public readonly struct BaseSpecifier : ITag<BaseSpecifier, SyntaxSort>
+            public readonly record struct BaseSpecifier : ITag<BaseSpecifier, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.BaseSpecifier;
@@ -4035,7 +4140,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.MemberSpecification)]
-            public readonly struct MemberSpecification : ITag<MemberSpecification, SyntaxSort>
+            public readonly record struct MemberSpecification : ITag<MemberSpecification, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.MemberSpecification;
@@ -4044,7 +4149,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.AccessSpecifier)]
-            public readonly struct AccessSpecifier : ITag<AccessSpecifier, SyntaxSort>
+            public readonly record struct AccessSpecifier : ITag<AccessSpecifier, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.AccessSpecifier;
@@ -4054,7 +4159,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.MemberDeclaration)]
-            public readonly struct MemberDeclaration : ITag<MemberDeclaration, SyntaxSort>
+            public readonly record struct MemberDeclaration : ITag<MemberDeclaration, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.MemberDeclaration;
@@ -4065,7 +4170,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.MemberDeclarator)]
-            public readonly struct MemberDeclarator : ITag<MemberDeclarator, SyntaxSort>
+            public readonly record struct MemberDeclarator : ITag<MemberDeclarator, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.MemberDeclarator;
@@ -4080,7 +4185,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.TypeId)]
-            public readonly struct TypeId : ITag<TypeId, SyntaxSort>
+            public readonly record struct TypeId : ITag<TypeId, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.TypeId;
@@ -4091,7 +4196,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.TrailingReturnType)]
-            public readonly struct TrailingReturnType : ITag<TrailingReturnType, SyntaxSort>
+            public readonly record struct TrailingReturnType : ITag<TrailingReturnType, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.TrailingReturnType;
@@ -4101,7 +4206,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.PointerDeclarator)]
-            public readonly struct PointerDeclarator : ITag<PointerDeclarator, SyntaxSort>
+            public readonly record struct PointerDeclarator : ITag<PointerDeclarator, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.PointerDeclarator;
@@ -4126,7 +4231,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.ArrayDeclarator)]
-            public readonly struct ArrayDeclarator : ITag<ArrayDeclarator, SyntaxSort>
+            public readonly record struct ArrayDeclarator : ITag<ArrayDeclarator, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.ArrayDeclarator;
@@ -4137,7 +4242,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.FunctionDeclarator)]
-            public readonly struct FunctionDeclarator : ITag<FunctionDeclarator, SyntaxSort>
+            public readonly record struct FunctionDeclarator : ITag<FunctionDeclarator, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.FunctionDeclarator;
@@ -4152,7 +4257,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.ArrayOrFunctionDeclarator)]
-            public readonly struct ArrayOrFunctionDeclarator : ITag<ArrayOrFunctionDeclarator, SyntaxSort>
+            public readonly record struct ArrayOrFunctionDeclarator : ITag<ArrayOrFunctionDeclarator, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.ArrayOrFunctionDeclarator;
@@ -4162,7 +4267,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.ParameterDeclarator)]
-            public readonly struct ParameterDeclarator : ITag<ParameterDeclarator, SyntaxSort>
+            public readonly record struct ParameterDeclarator : ITag<ParameterDeclarator, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.ParameterDeclarator;
@@ -4175,7 +4280,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.VirtualSpecifierSeq)]
-            public readonly struct VirtualSpecifierSeq : ITag<VirtualSpecifierSeq, SyntaxSort>
+            public readonly record struct VirtualSpecifierSeq : ITag<VirtualSpecifierSeq, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.VirtualSpecifierSeq;
@@ -4188,7 +4293,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.NoexceptSpecification)]
-            public readonly struct NoexceptSpecification : ITag<NoexceptSpecification, SyntaxSort>
+            public readonly record struct NoexceptSpecification : ITag<NoexceptSpecification, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.NoexceptSpecification;
@@ -4200,7 +4305,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.ExplicitSpecifier)]
-            public readonly struct ExplicitSpecifier : ITag<ExplicitSpecifier, SyntaxSort>
+            public readonly record struct ExplicitSpecifier : ITag<ExplicitSpecifier, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.ExplicitSpecifier;
@@ -4212,7 +4317,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.Declarator)]
-            public readonly struct Declarator : ITag<Declarator, SyntaxSort>
+            public readonly record struct Declarator : ITag<Declarator, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.Declarator;
@@ -4232,7 +4337,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.InitDeclarator)]
-            public readonly struct InitDeclarator : ITag<InitDeclarator, SyntaxSort>
+            public readonly record struct InitDeclarator : ITag<InitDeclarator, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.InitDeclarator;
@@ -4244,7 +4349,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.NewDeclarator)]
-            public readonly struct NewDeclarator : ITag<NewDeclarator, SyntaxSort>
+            public readonly record struct NewDeclarator : ITag<NewDeclarator, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.NewDeclarator;
@@ -4253,7 +4358,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.SimpleDeclaration)]
-            public readonly struct SimpleDeclaration : ITag<SimpleDeclaration, SyntaxSort>
+            public readonly record struct SimpleDeclaration : ITag<SimpleDeclaration, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.SimpleDeclaration;
@@ -4265,7 +4370,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.ExceptionDeclaration)]
-            public readonly struct ExceptionDeclaration : ITag<ExceptionDeclaration, SyntaxSort>
+            public readonly record struct ExceptionDeclaration : ITag<ExceptionDeclaration, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.ExceptionDeclaration;
@@ -4277,7 +4382,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.ConditionDeclaration)]
-            public readonly struct ConditionDeclaration : ITag<ConditionDeclaration, SyntaxSort>
+            public readonly record struct ConditionDeclaration : ITag<ConditionDeclaration, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.ConditionDeclaration;
@@ -4288,7 +4393,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.StaticAssertDeclaration)]
-            public readonly struct StaticAssertDeclaration : ITag<StaticAssertDeclaration, SyntaxSort>
+            public readonly record struct StaticAssertDeclaration : ITag<StaticAssertDeclaration, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.StaticAssertDeclaration;
@@ -4303,7 +4408,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.AliasDeclaration)]
-            public readonly struct AliasDeclaration : ITag<AliasDeclaration, SyntaxSort>
+            public readonly record struct AliasDeclaration : ITag<AliasDeclaration, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.AliasDeclaration;
@@ -4316,7 +4421,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.ConceptDefinition)]
-            public readonly struct ConceptDefinition : ITag<ConceptDefinition, SyntaxSort>
+            public readonly record struct ConceptDefinition : ITag<ConceptDefinition, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.ConceptDefinition;
@@ -4331,7 +4436,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.StructuredBindingDeclaration)]
-            public readonly struct StructuredBindingDeclaration : ITag<StructuredBindingDeclaration, SyntaxSort>
+            public readonly record struct StructuredBindingDeclaration : ITag<StructuredBindingDeclaration, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.StructuredBindingDeclaration;
@@ -4352,7 +4457,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.StructuredBindingIdentifier)]
-            public readonly struct StructuredBindingIdentifier : ITag<StructuredBindingIdentifier, SyntaxSort>
+            public readonly record struct StructuredBindingIdentifier : ITag<StructuredBindingIdentifier, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.StructuredBindingIdentifier;
@@ -4362,7 +4467,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.AsmStatement)]
-            public readonly struct AsmStatement : ITag<AsmStatement, SyntaxSort>
+            public readonly record struct AsmStatement : ITag<AsmStatement, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.AsmStatement;
@@ -4372,7 +4477,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.ReturnStatement)]
-            public readonly struct ReturnStatement : ITag<ReturnStatement, SyntaxSort>
+            public readonly record struct ReturnStatement : ITag<ReturnStatement, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.ReturnStatement;
@@ -4391,7 +4496,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.CompoundStatement)]
-            public readonly struct CompoundStatement : ITag<CompoundStatement, SyntaxSort>
+            public readonly record struct CompoundStatement : ITag<CompoundStatement, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.CompoundStatement;
@@ -4403,7 +4508,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.IfStatement)]
-            public readonly struct IfStatement : ITag<IfStatement, SyntaxSort>
+            public readonly record struct IfStatement : ITag<IfStatement, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.IfStatement;
@@ -4419,7 +4524,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.WhileStatement)]
-            public readonly struct WhileStatement : ITag<WhileStatement, SyntaxSort>
+            public readonly record struct WhileStatement : ITag<WhileStatement, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.WhileStatement;
@@ -4431,7 +4536,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.DoWhileStatement)]
-            public readonly struct DoWhileStatement : ITag<DoWhileStatement, SyntaxSort>
+            public readonly record struct DoWhileStatement : ITag<DoWhileStatement, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.DoWhileStatement;
@@ -4445,7 +4550,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.ForStatement)]
-            public readonly struct ForStatement : ITag<ForStatement, SyntaxSort>
+            public readonly record struct ForStatement : ITag<ForStatement, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.ForStatement;
@@ -4462,7 +4567,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.InitStatement)]
-            public readonly struct InitStatement : ITag<InitStatement, SyntaxSort>
+            public readonly record struct InitStatement : ITag<InitStatement, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.InitStatement;
@@ -4472,7 +4577,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.RangeBasedForStatement)]
-            public readonly struct RangeBasedForStatement : ITag<RangeBasedForStatement, SyntaxSort>
+            public readonly record struct RangeBasedForStatement : ITag<RangeBasedForStatement, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.RangeBasedForStatement;
@@ -4489,7 +4594,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.ForRangeDeclaration)]
-            public readonly struct ForRangeDeclaration : ITag<ForRangeDeclaration, SyntaxSort>
+            public readonly record struct ForRangeDeclaration : ITag<ForRangeDeclaration, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.ForRangeDeclaration;
@@ -4499,7 +4604,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.LabeledStatement)]
-            public readonly struct LabeledStatement : ITag<LabeledStatement, SyntaxSort>
+            public readonly record struct LabeledStatement : ITag<LabeledStatement, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.LabeledStatement;
@@ -4521,7 +4626,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.BreakStatement)]
-            public readonly struct BreakStatement : ITag<BreakStatement, SyntaxSort>
+            public readonly record struct BreakStatement : ITag<BreakStatement, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.BreakStatement;
@@ -4531,7 +4636,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.ContinueStatement)]
-            public readonly struct ContinueStatement : ITag<ContinueStatement, SyntaxSort>
+            public readonly record struct ContinueStatement : ITag<ContinueStatement, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.ContinueStatement;
@@ -4541,7 +4646,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.SwitchStatement)]
-            public readonly struct SwitchStatement : ITag<SwitchStatement, SyntaxSort>
+            public readonly record struct SwitchStatement : ITag<SwitchStatement, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.SwitchStatement;
@@ -4554,7 +4659,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.GotoStatement)]
-            public readonly struct GotoStatement : ITag<GotoStatement, SyntaxSort>
+            public readonly record struct GotoStatement : ITag<GotoStatement, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.GotoStatement;
@@ -4567,7 +4672,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.DeclarationStatement)]
-            public readonly struct DeclarationStatement : ITag<DeclarationStatement, SyntaxSort>
+            public readonly record struct DeclarationStatement : ITag<DeclarationStatement, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.DeclarationStatement;
@@ -4577,7 +4682,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.ExpressionStatement)]
-            public readonly struct ExpressionStatement : ITag<ExpressionStatement, SyntaxSort>
+            public readonly record struct ExpressionStatement : ITag<ExpressionStatement, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.ExpressionStatement;
@@ -4588,7 +4693,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.TryBlock)]
-            public readonly struct TryBlock : ITag<TryBlock, SyntaxSort>
+            public readonly record struct TryBlock : ITag<TryBlock, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.TryBlock;
@@ -4600,7 +4705,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.Handler)]
-            public readonly struct Handler : ITag<Handler, SyntaxSort>
+            public readonly record struct Handler : ITag<Handler, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.Handler;
@@ -4614,7 +4719,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.HandlerSeq)]
-            public readonly struct HandlerSeq : ITag<HandlerSeq, SyntaxSort>
+            public readonly record struct HandlerSeq : ITag<HandlerSeq, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.HandlerSeq;
@@ -4623,7 +4728,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.FunctionTryBlock)]
-            public readonly struct FunctionTryBlock : ITag<FunctionTryBlock, SyntaxSort>
+            public readonly record struct FunctionTryBlock : ITag<FunctionTryBlock, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.FunctionTryBlock;
@@ -4634,7 +4739,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.TypeIdListElement)]
-            public readonly struct TypeIdListElement : ITag<TypeIdListElement, SyntaxSort>
+            public readonly record struct TypeIdListElement : ITag<TypeIdListElement, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.TypeIdListElement;
@@ -4644,7 +4749,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.DynamicExceptionSpec)]
-            public readonly struct DynamicExceptionSpec : ITag<DynamicExceptionSpec, SyntaxSort>
+            public readonly record struct DynamicExceptionSpec : ITag<DynamicExceptionSpec, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.DynamicExceptionSpec;
@@ -4657,7 +4762,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.StatementSeq)]
-            public readonly struct StatementSeq : ITag<StatementSeq, SyntaxSort>
+            public readonly record struct StatementSeq : ITag<StatementSeq, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.StatementSeq;
@@ -4666,7 +4771,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.MemberFunctionDeclaration)]
-            public readonly struct MemberFunctionDeclaration : ITag<MemberFunctionDeclaration, SyntaxSort>
+            public readonly record struct MemberFunctionDeclaration : ITag<MemberFunctionDeclaration, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.MemberFunctionDeclaration;
@@ -4675,7 +4780,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.FunctionDefinition)]
-            public readonly struct FunctionDefinition : ITag<FunctionDefinition, SyntaxSort>
+            public readonly record struct FunctionDefinition : ITag<FunctionDefinition, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.FunctionDefinition;
@@ -4687,7 +4792,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.FunctionBody)]
-            public readonly struct FunctionBody : ITag<FunctionBody, SyntaxSort>
+            public readonly record struct FunctionBody : ITag<FunctionBody, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.FunctionBody;
@@ -4701,7 +4806,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.Expression)]
-            public readonly struct Expression : ITag<Expression, SyntaxSort>
+            public readonly record struct Expression : ITag<Expression, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.Expression;
@@ -4710,7 +4815,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.TemplateParameterList)]
-            public readonly struct TemplateParameterList : ITag<TemplateParameterList, SyntaxSort>
+            public readonly record struct TemplateParameterList : ITag<TemplateParameterList, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.TemplateParameterList;
@@ -4722,7 +4827,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.TemplateDeclaration)]
-            public readonly struct TemplateDeclaration : ITag<TemplateDeclaration, SyntaxSort>
+            public readonly record struct TemplateDeclaration : ITag<TemplateDeclaration, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.TemplateDeclaration;
@@ -4733,7 +4838,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.RequiresClause)]
-            public readonly struct RequiresClause : ITag<RequiresClause, SyntaxSort>
+            public readonly record struct RequiresClause : ITag<RequiresClause, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.RequiresClause;
@@ -4743,7 +4848,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.SimpleRequirement)]
-            public readonly struct SimpleRequirement : ITag<SimpleRequirement, SyntaxSort>
+            public readonly record struct SimpleRequirement : ITag<SimpleRequirement, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.SimpleRequirement;
@@ -4753,7 +4858,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.TypeRequirement)]
-            public readonly struct TypeRequirement : ITag<TypeRequirement, SyntaxSort>
+            public readonly record struct TypeRequirement : ITag<TypeRequirement, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.TypeRequirement;
@@ -4763,7 +4868,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.CompoundRequirement)]
-            public readonly struct CompoundRequirement : ITag<CompoundRequirement, SyntaxSort>
+            public readonly record struct CompoundRequirement : ITag<CompoundRequirement, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.CompoundRequirement;
@@ -4776,7 +4881,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.NestedRequirement)]
-            public readonly struct NestedRequirement : ITag<NestedRequirement, SyntaxSort>
+            public readonly record struct NestedRequirement : ITag<NestedRequirement, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.NestedRequirement;
@@ -4786,7 +4891,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.RequirementBody)]
-            public readonly struct RequirementBody : ITag<RequirementBody, SyntaxSort>
+            public readonly record struct RequirementBody : ITag<RequirementBody, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.RequirementBody;
@@ -4797,7 +4902,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.TypeTemplateParameter)]
-            public readonly struct TypeTemplateParameter : ITag<TypeTemplateParameter, SyntaxSort>
+            public readonly record struct TypeTemplateParameter : ITag<TypeTemplateParameter, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.TypeTemplateParameter;
@@ -4810,7 +4915,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.TemplateTemplateParameter)]
-            public readonly struct TemplateTemplateParameter : ITag<TemplateTemplateParameter, SyntaxSort>
+            public readonly record struct TemplateTemplateParameter : ITag<TemplateTemplateParameter, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.TemplateTemplateParameter;
@@ -4825,7 +4930,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.TypeTemplateArgument)]
-            public readonly struct TypeTemplateArgument : ITag<TypeTemplateArgument, SyntaxSort>
+            public readonly record struct TypeTemplateArgument : ITag<TypeTemplateArgument, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.TypeTemplateArgument;
@@ -4836,7 +4941,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.NonTypeTemplateArgument)]
-            public readonly struct NonTypeTemplateArgument : ITag<NonTypeTemplateArgument, SyntaxSort>
+            public readonly record struct NonTypeTemplateArgument : ITag<NonTypeTemplateArgument, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.NonTypeTemplateArgument;
@@ -4847,7 +4952,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.TemplateArgumentList)]
-            public readonly struct TemplateArgumentList : ITag<TemplateArgumentList, SyntaxSort>
+            public readonly record struct TemplateArgumentList : ITag<TemplateArgumentList, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.TemplateArgumentList;
@@ -4858,7 +4963,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.TemplateId)]
-            public readonly struct TemplateId : ITag<TemplateId, SyntaxSort>
+            public readonly record struct TemplateId : ITag<TemplateId, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.TemplateId;
@@ -4871,7 +4976,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.MemInitializer)]
-            public readonly struct MemInitializer : ITag<MemInitializer, SyntaxSort>
+            public readonly record struct MemInitializer : ITag<MemInitializer, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.MemInitializer;
@@ -4883,7 +4988,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.CtorInitializer)]
-            public readonly struct CtorInitializer : ITag<CtorInitializer, SyntaxSort>
+            public readonly record struct CtorInitializer : ITag<CtorInitializer, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.CtorInitializer;
@@ -4893,7 +4998,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.CaptureDefault)]
-            public readonly struct CaptureDefault : ITag<CaptureDefault, SyntaxSort>
+            public readonly record struct CaptureDefault : ITag<CaptureDefault, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.CaptureDefault;
@@ -4905,7 +5010,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.SimpleCapture)]
-            public readonly struct SimpleCapture : ITag<SimpleCapture, SyntaxSort>
+            public readonly record struct SimpleCapture : ITag<SimpleCapture, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.SimpleCapture;
@@ -4917,7 +5022,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.InitCapture)]
-            public readonly struct InitCapture : ITag<InitCapture, SyntaxSort>
+            public readonly record struct InitCapture : ITag<InitCapture, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.InitCapture;
@@ -4930,7 +5035,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.ThisCapture)]
-            public readonly struct ThisCapture : ITag<ThisCapture, SyntaxSort>
+            public readonly record struct ThisCapture : ITag<ThisCapture, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.ThisCapture;
@@ -4941,7 +5046,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.LambdaIntroducer)]
-            public readonly struct LambdaIntroducer : ITag<LambdaIntroducer, SyntaxSort>
+            public readonly record struct LambdaIntroducer : ITag<LambdaIntroducer, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.LambdaIntroducer;
@@ -4952,7 +5057,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.LambdaDeclarator)]
-            public readonly struct LambdaDeclarator : ITag<LambdaDeclarator, SyntaxSort>
+            public readonly record struct LambdaDeclarator : ITag<LambdaDeclarator, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.LambdaDeclarator;
@@ -4967,7 +5072,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.UsingDeclaration)]
-            public readonly struct UsingDeclaration : ITag<UsingDeclaration, SyntaxSort>
+            public readonly record struct UsingDeclaration : ITag<UsingDeclaration, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.UsingDeclaration;
@@ -4978,7 +5083,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.UsingEnumDeclaration)]
-            public readonly struct UsingEnumDeclaration : ITag<UsingEnumDeclaration, SyntaxSort>
+            public readonly record struct UsingEnumDeclaration : ITag<UsingEnumDeclaration, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.UsingEnumDeclaration;
@@ -4990,7 +5095,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.UsingDeclarator)]
-            public readonly struct UsingDeclarator : ITag<UsingDeclarator, SyntaxSort>
+            public readonly record struct UsingDeclarator : ITag<UsingDeclarator, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.UsingDeclarator;
@@ -5002,7 +5107,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.UsingDirective)]
-            public readonly struct UsingDirective : ITag<UsingDirective, SyntaxSort>
+            public readonly record struct UsingDirective : ITag<UsingDirective, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.UsingDirective;
@@ -5014,7 +5119,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.NamespaceAliasDefinition)]
-            public readonly struct NamespaceAliasDefinition : ITag<NamespaceAliasDefinition, SyntaxSort>
+            public readonly record struct NamespaceAliasDefinition : ITag<NamespaceAliasDefinition, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.NamespaceAliasDefinition;
@@ -5027,7 +5132,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.ArrayIndex)]
-            public readonly struct ArrayIndex : ITag<ArrayIndex, SyntaxSort>
+            public readonly record struct ArrayIndex : ITag<ArrayIndex, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.ArrayIndex;
@@ -5039,7 +5144,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.TypeTraitIntrinsic)]
-            public readonly struct TypeTraitIntrinsic : ITag<TypeTraitIntrinsic, SyntaxSort>
+            public readonly record struct TypeTraitIntrinsic : ITag<TypeTraitIntrinsic, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.TypeTraitIntrinsic;
@@ -5050,7 +5155,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.SEHTry)]
-            public readonly struct SEHTry : ITag<SEHTry, SyntaxSort>
+            public readonly record struct SEHTry : ITag<SEHTry, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.SEHTry;
@@ -5061,7 +5166,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.SEHExcept)]
-            public readonly struct SEHExcept : ITag<SEHExcept, SyntaxSort>
+            public readonly record struct SEHExcept : ITag<SEHExcept, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.SEHExcept;
@@ -5074,7 +5179,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.SEHFinally)]
-            public readonly struct SEHFinally : ITag<SEHFinally, SyntaxSort>
+            public readonly record struct SEHFinally : ITag<SEHFinally, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.SEHFinally;
@@ -5084,7 +5189,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.SEHLeave)]
-            public readonly struct SEHLeave : ITag<SEHLeave, SyntaxSort>
+            public readonly record struct SEHLeave : ITag<SEHLeave, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.SEHLeave;
@@ -5094,7 +5199,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.Super)]
-            public readonly struct Super : ITag<Super, SyntaxSort>
+            public readonly record struct Super : ITag<Super, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.Super;
@@ -5103,7 +5208,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.UnaryFoldExpression)]
-            public readonly struct UnaryFoldExpression : ITag<UnaryFoldExpression, SyntaxSort>
+            public readonly record struct UnaryFoldExpression : ITag<UnaryFoldExpression, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.UnaryFoldExpression;
@@ -5118,7 +5223,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.BinaryFoldExpression)]
-            public readonly struct BinaryFoldExpression : ITag<BinaryFoldExpression, SyntaxSort>
+            public readonly record struct BinaryFoldExpression : ITag<BinaryFoldExpression, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.BinaryFoldExpression;
@@ -5135,7 +5240,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.EmptyStatement)]
-            public readonly struct EmptyStatement : ITag<EmptyStatement, SyntaxSort>
+            public readonly record struct EmptyStatement : ITag<EmptyStatement, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.EmptyStatement;
@@ -5144,7 +5249,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.AttributedStatement)]
-            public readonly struct AttributedStatement : ITag<AttributedStatement, SyntaxSort>
+            public readonly record struct AttributedStatement : ITag<AttributedStatement, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.AttributedStatement;
@@ -5155,7 +5260,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.AttributedDeclaration)]
-            public readonly struct AttributedDeclaration : ITag<AttributedDeclaration, SyntaxSort>
+            public readonly record struct AttributedDeclaration : ITag<AttributedDeclaration, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.AttributedDeclaration;
@@ -5166,7 +5271,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.AttributeSpecifierSeq)]
-            public readonly struct AttributeSpecifierSeq : ITag<AttributeSpecifierSeq, SyntaxSort>
+            public readonly record struct AttributeSpecifierSeq : ITag<AttributeSpecifierSeq, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.AttributeSpecifierSeq;
@@ -5175,7 +5280,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.AttributeSpecifier)]
-            public readonly struct AttributeSpecifier : ITag<AttributeSpecifier, SyntaxSort>
+            public readonly record struct AttributeSpecifier : ITag<AttributeSpecifier, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.AttributeSpecifier;
@@ -5189,7 +5294,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.AttributeUsingPrefix)]
-            public readonly struct AttributeUsingPrefix : ITag<AttributeUsingPrefix, SyntaxSort>
+            public readonly record struct AttributeUsingPrefix : ITag<AttributeUsingPrefix, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.AttributeUsingPrefix;
@@ -5200,7 +5305,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.Attribute)]
-            public readonly struct Attribute : ITag<Attribute, SyntaxSort>
+            public readonly record struct Attribute : ITag<Attribute, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.Attribute;
@@ -5214,7 +5319,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.AttributeArgumentClause)]
-            public readonly struct AttributeArgumentClause : ITag<AttributeArgumentClause, SyntaxSort>
+            public readonly record struct AttributeArgumentClause : ITag<AttributeArgumentClause, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.AttributeArgumentClause;
@@ -5225,7 +5330,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.Alignas)]
-            public readonly struct AlignasSpecifier : ITag<AlignasSpecifier, SyntaxSort>
+            public readonly record struct AlignasSpecifier : ITag<AlignasSpecifier, SyntaxSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.Alignas;
@@ -5237,7 +5342,7 @@ namespace ifc
             }
 
             [Tag<SyntaxSort>(SyntaxSort.Tuple)]
-            public readonly struct Tuple : ITag<Tuple, SyntaxSort>, ITaggedSequence<Tuple, SyntaxIndex, HeapSort>
+            public readonly record struct Tuple : ITag<Tuple, SyntaxSort>, ITaggedSequence<Tuple, SyntaxIndex, HeapSort>
             {
                 public static SortType Type => SortType.Syntax;
                 public static SyntaxSort Sort => SyntaxSort.Tuple;
@@ -5267,10 +5372,10 @@ namespace ifc
                     Count
                 }
 
-                public readonly struct TypeOrExprOperand
+                public readonly record struct TypeOrExprOperand
                 {
                     [StructLayout(LayoutKind.Explicit)]
-                    public readonly struct UnnamedUnion1
+                    public readonly record struct UnnamedUnion1
                     {
                         [FieldOffset(0)]
                         public readonly TypeIndex as_type;
@@ -5283,33 +5388,33 @@ namespace ifc
                     public ExprIndex as_expr => unnamedUnion1.as_expr;
                 }
 
-                public readonly struct Declspec
+                public readonly record struct Declspec
                 {
                     public readonly SourceLocation left_paren;
                     public readonly SourceLocation right_paren;
                     public readonly SentenceIndex tokens;
                 }
 
-                public readonly struct BuiltinAddressOf
+                public readonly record struct BuiltinAddressOf
                 {
                     public readonly ExprIndex expr;
                 }
 
-                public readonly struct UUIDOf
+                public readonly record struct UUIDOf
                 {
                     public readonly SourceLocation left_paren;
                     public readonly SourceLocation right_paren;
                     public readonly TypeOrExprOperand operand;
                 }
 
-                public readonly struct Intrinsic
+                public readonly record struct Intrinsic
                 {
                     public readonly SourceLocation left_paren;
                     public readonly SourceLocation right_paren;
                     public readonly ExprIndex argument;
                 }
 
-                public readonly struct IfExists
+                public readonly record struct IfExists
                 {
                     public enum Kind : byte
                     {
@@ -5333,13 +5438,13 @@ namespace ifc
                 }
 
                 [Tag<SyntaxSort>(SyntaxSort.VendorExtension)]
-                public readonly struct VendorSyntax : ITag<VendorSyntax, SyntaxSort>
+                public readonly record struct VendorSyntax : ITag<VendorSyntax, SyntaxSort>
                 {
                     public static SortType Type => SortType.Syntax;
                     public static SyntaxSort Sort => SyntaxSort.VendorExtension;
 
                     [StructLayout(LayoutKind.Explicit)]
-                    public readonly struct UnnamedUnion1
+                    public readonly record struct UnnamedUnion1
                     {
                         [FieldOffset(0)]
                         public readonly Declspec ms_declspec;
@@ -5381,7 +5486,7 @@ namespace ifc
             }
 
             [Tag<PragmaSort>(PragmaSort.VendorExtension)]
-            public readonly struct PragmaComment : ITag<PragmaComment, PragmaSort>
+            public readonly record struct PragmaComment : ITag<PragmaComment, PragmaSort>
             {
                 public static SortType Type => SortType.Pragma;
                 public static PragmaSort Sort => PragmaSort.VendorExtension;
@@ -5395,7 +5500,7 @@ namespace ifc
         namespace preprocessing
         {
             [Tag<FormSort>(FormSort.Identifier)]
-            public readonly struct IdentifierForm : ITag<IdentifierForm, FormSort>
+            public readonly record struct IdentifierForm : ITag<IdentifierForm, FormSort>
             {
                 public static SortType Type => SortType.Form;
                 public static FormSort Sort => FormSort.Identifier;
@@ -5405,7 +5510,7 @@ namespace ifc
             }
 
             [Tag<FormSort>(FormSort.Number)]
-            public readonly struct NumberForm : ITag<NumberForm, FormSort>
+            public readonly record struct NumberForm : ITag<NumberForm, FormSort>
             {
                 public static SortType Type => SortType.Form;
                 public static FormSort Sort => FormSort.Number;
@@ -5415,7 +5520,7 @@ namespace ifc
             }
 
             [Tag<FormSort>(FormSort.Character)]
-            public readonly struct CharacterForm : ITag<CharacterForm, FormSort>
+            public readonly record struct CharacterForm : ITag<CharacterForm, FormSort>
             {
                 public static SortType Type => SortType.Form;
                 public static FormSort Sort => FormSort.Character;
@@ -5425,7 +5530,7 @@ namespace ifc
             }
 
             [Tag<FormSort>(FormSort.String)]
-            public readonly struct StringForm : ITag<StringForm, FormSort>
+            public readonly record struct StringForm : ITag<StringForm, FormSort>
             {
                 public static SortType Type => SortType.Form;
                 public static FormSort Sort => FormSort.String;
@@ -5435,7 +5540,7 @@ namespace ifc
             }
 
             [Tag<FormSort>(FormSort.Operator)]
-            public readonly struct OperatorForm : ITag<OperatorForm, FormSort>
+            public readonly record struct OperatorForm : ITag<OperatorForm, FormSort>
             {
                 public static SortType Type => SortType.Form;
                 public static FormSort Sort => FormSort.Operator;
@@ -5446,7 +5551,7 @@ namespace ifc
             }
 
             [Tag<FormSort>(FormSort.Keyword)]
-            public readonly struct KeywordForm : ITag<KeywordForm, FormSort>
+            public readonly record struct KeywordForm : ITag<KeywordForm, FormSort>
             {
                 public static SortType Type => SortType.Form;
                 public static FormSort Sort => FormSort.Keyword;
@@ -5456,7 +5561,7 @@ namespace ifc
             }
 
             [Tag<FormSort>(FormSort.Whitespace)]
-            public readonly struct WhitespaceForm : ITag<WhitespaceForm, FormSort>
+            public readonly record struct WhitespaceForm : ITag<WhitespaceForm, FormSort>
             {
                 public static SortType Type => SortType.Form;
                 public static FormSort Sort => FormSort.Whitespace;
@@ -5465,7 +5570,7 @@ namespace ifc
             }
 
             [Tag<FormSort>(FormSort.Parameter)]
-            public readonly struct ParameterForm : ITag<ParameterForm, FormSort>
+            public readonly record struct ParameterForm : ITag<ParameterForm, FormSort>
             {
                 public static SortType Type => SortType.Form;
                 public static FormSort Sort => FormSort.Parameter;
@@ -5475,7 +5580,7 @@ namespace ifc
             }
 
             [Tag<FormSort>(FormSort.Stringize)]
-            public readonly struct StringizeForm : ITag<StringizeForm, FormSort>
+            public readonly record struct StringizeForm : ITag<StringizeForm, FormSort>
             {
                 public static SortType Type => SortType.Form;
                 public static FormSort Sort => FormSort.Stringize;
@@ -5485,7 +5590,7 @@ namespace ifc
             }
 
             [Tag<FormSort>(FormSort.Catenate)]
-            public readonly struct CatenateForm : ITag<CatenateForm, FormSort>
+            public readonly record struct CatenateForm : ITag<CatenateForm, FormSort>
             {
                 public static SortType Type => SortType.Form;
                 public static FormSort Sort => FormSort.Catenate;
@@ -5496,7 +5601,7 @@ namespace ifc
             }
 
             [Tag<FormSort>(FormSort.Pragma)]
-            public readonly struct PragmaForm : ITag<PragmaForm, FormSort>
+            public readonly record struct PragmaForm : ITag<PragmaForm, FormSort>
             {
                 public static SortType Type => SortType.Form;
                 public static FormSort Sort => FormSort.Pragma;
@@ -5506,7 +5611,7 @@ namespace ifc
             }
 
             [Tag<FormSort>(FormSort.Header)]
-            public readonly struct HeaderForm : ITag<HeaderForm, FormSort>
+            public readonly record struct HeaderForm : ITag<HeaderForm, FormSort>
             {
                 public static SortType Type => SortType.Form;
                 public static FormSort Sort => FormSort.Header;
@@ -5516,7 +5621,7 @@ namespace ifc
             }
 
             [Tag<FormSort>(FormSort.Parenthesized)]
-            public readonly struct ParenthesizedForm : ITag<ParenthesizedForm, FormSort>
+            public readonly record struct ParenthesizedForm : ITag<ParenthesizedForm, FormSort>
             {
                 public static SortType Type => SortType.Form;
                 public static FormSort Sort => FormSort.Parenthesized;
@@ -5526,7 +5631,7 @@ namespace ifc
             }
 
             [Tag<FormSort>(FormSort.Junk)]
-            public readonly struct JunkForm : ITag<JunkForm, FormSort>
+            public readonly record struct JunkForm : ITag<JunkForm, FormSort>
             {
                 public static SortType Type => SortType.Form;
                 public static FormSort Sort => FormSort.Junk;
@@ -5536,7 +5641,7 @@ namespace ifc
             }
 
             [Tag<FormSort>(FormSort.Tuple)]
-            public readonly struct TupleForm : ITag<TupleForm, FormSort>, ITaggedSequence<TupleForm, FormIndex, HeapSort>
+            public readonly record struct TupleForm : ITag<TupleForm, FormSort>, ITaggedSequence<TupleForm, FormIndex, HeapSort>
             {
                 public static SortType Type => SortType.Form;
                 public static FormSort Sort => FormSort.Tuple;
@@ -5572,7 +5677,7 @@ namespace ifc
             }
 
             [Tag<TraitSort>(TraitSort.MappingExpr)]
-            public readonly struct MappingExpr : ITraitTag<MappingExpr, TraitSort>, IAssociatedTrait<DeclIndex, MappingDefinition>
+            public readonly record struct MappingExpr : ITraitTag<MappingExpr, TraitSort>, IAssociatedTrait<DeclIndex, MappingDefinition>
             {
                 public static SortType Type => SortType.Trait;
                 public static TraitSort Sort => TraitSort.MappingExpr;
@@ -5582,7 +5687,7 @@ namespace ifc
             }
 
             [Tag<TraitSort>(TraitSort.AliasTemplate)]
-            public readonly struct AliasTemplate : ITraitTag<AliasTemplate, TraitSort>, IAssociatedTrait<DeclIndex, SyntaxIndex>
+            public readonly record struct AliasTemplate : ITraitTag<AliasTemplate, TraitSort>, IAssociatedTrait<DeclIndex, SyntaxIndex>
             {
                 public static SortType Type => SortType.Trait;
                 public static TraitSort Sort => TraitSort.AliasTemplate;
@@ -5592,7 +5697,7 @@ namespace ifc
             }
 
             [Tag<TraitSort>(TraitSort.Friends)]
-            public readonly struct Friends : ITraitTag<Friends, TraitSort>, IAssociatedTrait<DeclIndex, Sequence<Declaration>>
+            public readonly record struct Friends : ITraitTag<Friends, TraitSort>, IAssociatedTrait<DeclIndex, Sequence<Declaration>>
             {
                 public static SortType Type => SortType.Trait;
                 public static TraitSort Sort => TraitSort.Friends;
@@ -5602,7 +5707,7 @@ namespace ifc
             }
 
             [Tag<TraitSort>(TraitSort.Specializations)]
-            public readonly struct Specializations : ITraitTag<Specializations, TraitSort>, IAssociatedTrait<DeclIndex, Sequence<Declaration>>
+            public readonly record struct Specializations : ITraitTag<Specializations, TraitSort>, IAssociatedTrait<DeclIndex, Sequence<Declaration>>
             {
                 public static SortType Type => SortType.Trait;
                 public static TraitSort Sort => TraitSort.Specializations;
@@ -5612,7 +5717,7 @@ namespace ifc
             }
 
             [Tag<TraitSort>(TraitSort.Requires)]
-            public readonly struct Requires : ITraitTag<Requires, TraitSort>, IAssociatedTrait<DeclIndex, SyntaxIndex>
+            public readonly record struct Requires : ITraitTag<Requires, TraitSort>, IAssociatedTrait<DeclIndex, SyntaxIndex>
             {
                 public static SortType Type => SortType.Trait;
                 public static TraitSort Sort => TraitSort.Requires;
@@ -5622,7 +5727,7 @@ namespace ifc
             }
 
             [Tag<TraitSort>(TraitSort.Attributes)]
-            public readonly struct Attributes : ITraitTag<Attributes, TraitSort>, IAssociatedTrait<SyntaxIndex, SyntaxIndex>
+            public readonly record struct Attributes : ITraitTag<Attributes, TraitSort>, IAssociatedTrait<SyntaxIndex, SyntaxIndex>
             {
                 public static SortType Type => SortType.Trait;
                 public static TraitSort Sort => TraitSort.Attributes;
@@ -5632,7 +5737,7 @@ namespace ifc
             }
 
             [Tag<TraitSort>(TraitSort.Deprecated)]
-            public readonly struct Deprecated : ITraitTag<Deprecated, TraitSort>, IAssociatedTrait<DeclIndex, TextOffset>
+            public readonly record struct Deprecated : ITraitTag<Deprecated, TraitSort>, IAssociatedTrait<DeclIndex, TextOffset>
             {
                 public static SortType Type => SortType.Trait;
                 public static TraitSort Sort => TraitSort.Deprecated;
@@ -5642,7 +5747,7 @@ namespace ifc
             }
 
             [Tag<TraitSort>(TraitSort.DeductionGuides)]
-            public readonly struct DeductionGuides : ITraitTag<DeductionGuides, TraitSort>, IAssociatedTrait<DeclIndex, DeclIndex>
+            public readonly record struct DeductionGuides : ITraitTag<DeductionGuides, TraitSort>, IAssociatedTrait<DeclIndex, DeclIndex>
             {
                 public static SortType Type => SortType.Trait;
                 public static TraitSort Sort => TraitSort.DeductionGuides;
@@ -5651,25 +5756,25 @@ namespace ifc
                 public readonly DeclIndex trait;
             }
 
-            public readonly struct LocusSpan
+            public readonly record struct LocusSpan
             {
                 public readonly SourceLocation begin;
                 public readonly SourceLocation end;
             }
 
-            public readonly struct MsvcLabelProperties
+            public readonly record struct MsvcLabelProperties
             {
                 public readonly MsvcLabelKey key;
                 public readonly MsvcLabelType type;
             }
 
-            public readonly struct MsvcFileBoundaryProperties
+            public readonly record struct MsvcFileBoundaryProperties
             {
                 public readonly LineNumber first;
                 public readonly LineNumber last;
             }
 
-            public readonly struct MsvcFileHashData
+            public readonly record struct MsvcFileHashData
             {
                 public readonly byte_Array32 bytes;
                 public readonly MsvcFileHashSort sort;
@@ -5687,7 +5792,7 @@ namespace ifc
                 private byte _element;
             }
             [Tag<MsvcTraitSort>(MsvcTraitSort.Uuid)]
-            public readonly struct MsvcUuid : ITraitTag<MsvcUuid, MsvcTraitSort>, IAssociatedTrait<DeclIndex, StringIndex>
+            public readonly record struct MsvcUuid : ITraitTag<MsvcUuid, MsvcTraitSort>, IAssociatedTrait<DeclIndex, StringIndex>
             {
                 public static SortType Type => SortType.MsvcTrait;
                 public static MsvcTraitSort Sort => MsvcTraitSort.Uuid;
@@ -5697,7 +5802,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.Segment)]
-            public readonly struct MsvcSegment : ITraitTag<MsvcSegment, MsvcTraitSort>, IAssociatedTrait<DeclIndex, DeclIndex>
+            public readonly record struct MsvcSegment : ITraitTag<MsvcSegment, MsvcTraitSort>, IAssociatedTrait<DeclIndex, DeclIndex>
             {
                 public static SortType Type => SortType.MsvcTrait;
                 public static MsvcTraitSort Sort => MsvcTraitSort.Segment;
@@ -5707,7 +5812,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.SpecializationEncoding)]
-            public readonly struct MsvcSpecializationEncoding : ITraitTag<MsvcSpecializationEncoding, MsvcTraitSort>, IAssociatedTrait<DeclIndex, TextOffset>
+            public readonly record struct MsvcSpecializationEncoding : ITraitTag<MsvcSpecializationEncoding, MsvcTraitSort>, IAssociatedTrait<DeclIndex, TextOffset>
             {
                 public static SortType Type => SortType.MsvcTrait;
                 public static MsvcTraitSort Sort => MsvcTraitSort.SpecializationEncoding;
@@ -5717,7 +5822,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.SalAnnotation)]
-            public readonly struct MsvcSalAnnotation : ITraitTag<MsvcSalAnnotation, MsvcTraitSort>, IAssociatedTrait<DeclIndex, TextOffset>
+            public readonly record struct MsvcSalAnnotation : ITraitTag<MsvcSalAnnotation, MsvcTraitSort>, IAssociatedTrait<DeclIndex, TextOffset>
             {
                 public static SortType Type => SortType.MsvcTrait;
                 public static MsvcTraitSort Sort => MsvcTraitSort.SalAnnotation;
@@ -5727,7 +5832,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.FunctionParameters)]
-            public readonly struct MsvcFunctionParameters : ITraitTag<MsvcFunctionParameters, MsvcTraitSort>, IAssociatedTrait<DeclIndex, ChartIndex>
+            public readonly record struct MsvcFunctionParameters : ITraitTag<MsvcFunctionParameters, MsvcTraitSort>, IAssociatedTrait<DeclIndex, ChartIndex>
             {
                 public static SortType Type => SortType.MsvcTrait;
                 public static MsvcTraitSort Sort => MsvcTraitSort.FunctionParameters;
@@ -5737,7 +5842,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.InitializerLocus)]
-            public readonly struct MsvcInitializerLocus : ITraitTag<MsvcInitializerLocus, MsvcTraitSort>, IAssociatedTrait<DeclIndex, SourceLocation>
+            public readonly record struct MsvcInitializerLocus : ITraitTag<MsvcInitializerLocus, MsvcTraitSort>, IAssociatedTrait<DeclIndex, SourceLocation>
             {
                 public static SortType Type => SortType.MsvcTrait;
                 public static MsvcTraitSort Sort => MsvcTraitSort.InitializerLocus;
@@ -5747,7 +5852,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.CodegenExpression)]
-            public readonly struct MsvcCodegenExpression : ITraitTag<MsvcCodegenExpression, MsvcTraitSort>, IAssociatedTrait<ExprIndex, ExprIndex>
+            public readonly record struct MsvcCodegenExpression : ITraitTag<MsvcCodegenExpression, MsvcTraitSort>, IAssociatedTrait<ExprIndex, ExprIndex>
             {
                 public static SortType Type => SortType.MsvcTrait;
                 public static MsvcTraitSort Sort => MsvcTraitSort.CodegenExpression;
@@ -5757,7 +5862,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.DeclAttributes)]
-            public readonly struct DeclAttributes : ITraitTag<DeclAttributes, MsvcTraitSort>, IAssociatedTrait<DeclIndex, AttrIndex>
+            public readonly record struct DeclAttributes : ITraitTag<DeclAttributes, MsvcTraitSort>, IAssociatedTrait<DeclIndex, AttrIndex>
             {
                 public static SortType Type => SortType.MsvcTrait;
                 public static MsvcTraitSort Sort => MsvcTraitSort.DeclAttributes;
@@ -5767,7 +5872,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.StmtAttributes)]
-            public readonly struct StmtAttributes : ITraitTag<StmtAttributes, MsvcTraitSort>, IAssociatedTrait<StmtIndex, AttrIndex>
+            public readonly record struct StmtAttributes : ITraitTag<StmtAttributes, MsvcTraitSort>, IAssociatedTrait<StmtIndex, AttrIndex>
             {
                 public static SortType Type => SortType.MsvcTrait;
                 public static MsvcTraitSort Sort => MsvcTraitSort.StmtAttributes;
@@ -5777,7 +5882,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.Vendor)]
-            public readonly struct MsvcVendor : ITraitTag<MsvcVendor, MsvcTraitSort>, IAssociatedTrait<DeclIndex, VendorTraits>
+            public readonly record struct MsvcVendor : ITraitTag<MsvcVendor, MsvcTraitSort>, IAssociatedTrait<DeclIndex, VendorTraits>
             {
                 public static SortType Type => SortType.MsvcTrait;
                 public static MsvcTraitSort Sort => MsvcTraitSort.Vendor;
@@ -5787,7 +5892,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.CodegenMappingExpr)]
-            public readonly struct MsvcCodegenMappingExpr : ITraitTag<MsvcCodegenMappingExpr, MsvcTraitSort>, IAssociatedTrait<DeclIndex, MappingDefinition>
+            public readonly record struct MsvcCodegenMappingExpr : ITraitTag<MsvcCodegenMappingExpr, MsvcTraitSort>, IAssociatedTrait<DeclIndex, MappingDefinition>
             {
                 public static SortType Type => SortType.MsvcTrait;
                 public static MsvcTraitSort Sort => MsvcTraitSort.CodegenMappingExpr;
@@ -5797,7 +5902,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.DynamicInitVariable)]
-            public readonly struct MsvcDynamicInitVariable : ITraitTag<MsvcDynamicInitVariable, MsvcTraitSort>, IAssociatedTrait<DeclIndex, DeclIndex>
+            public readonly record struct MsvcDynamicInitVariable : ITraitTag<MsvcDynamicInitVariable, MsvcTraitSort>, IAssociatedTrait<DeclIndex, DeclIndex>
             {
                 public static SortType Type => SortType.MsvcTrait;
                 public static MsvcTraitSort Sort => MsvcTraitSort.DynamicInitVariable;
@@ -5807,7 +5912,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.CodegenLabelProperties)]
-            public readonly struct MsvcCodegenLabelProperties : ITraitTag<MsvcCodegenLabelProperties, MsvcTraitSort>, IAssociatedTrait<ExprIndex, MsvcLabelProperties>
+            public readonly record struct MsvcCodegenLabelProperties : ITraitTag<MsvcCodegenLabelProperties, MsvcTraitSort>, IAssociatedTrait<ExprIndex, MsvcLabelProperties>
             {
                 public static SortType Type => SortType.MsvcTrait;
                 public static MsvcTraitSort Sort => MsvcTraitSort.CodegenLabelProperties;
@@ -5817,7 +5922,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.CodegenSwitchType)]
-            public readonly struct MsvcCodegenSwitchType : ITraitTag<MsvcCodegenSwitchType, MsvcTraitSort>, IAssociatedTrait<StmtIndex, TypeIndex>
+            public readonly record struct MsvcCodegenSwitchType : ITraitTag<MsvcCodegenSwitchType, MsvcTraitSort>, IAssociatedTrait<StmtIndex, TypeIndex>
             {
                 public static SortType Type => SortType.MsvcTrait;
                 public static MsvcTraitSort Sort => MsvcTraitSort.CodegenSwitchType;
@@ -5827,7 +5932,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.CodegenDoWhileStmt)]
-            public readonly struct MsvcCodegenDoWhileStmt : ITraitTag<MsvcCodegenDoWhileStmt, MsvcTraitSort>, IAssociatedTrait<StmtIndex, StmtIndex>
+            public readonly record struct MsvcCodegenDoWhileStmt : ITraitTag<MsvcCodegenDoWhileStmt, MsvcTraitSort>, IAssociatedTrait<StmtIndex, StmtIndex>
             {
                 public static SortType Type => SortType.MsvcTrait;
                 public static MsvcTraitSort Sort => MsvcTraitSort.CodegenDoWhileStmt;
@@ -5837,7 +5942,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.LexicalScopeIndex)]
-            public readonly struct MsvcLexicalScopeIndices : ITraitTag<MsvcLexicalScopeIndices, MsvcTraitSort>, IAssociatedTrait<DeclIndex, MsvcLexicalScopeIndex>
+            public readonly record struct MsvcLexicalScopeIndices : ITraitTag<MsvcLexicalScopeIndices, MsvcTraitSort>, IAssociatedTrait<DeclIndex, MsvcLexicalScopeIndex>
             {
                 public static SortType Type => SortType.MsvcTrait;
                 public static MsvcTraitSort Sort => MsvcTraitSort.LexicalScopeIndex;
@@ -5847,7 +5952,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.FileBoundary)]
-            public readonly struct MsvcFileBoundary : ITraitTag<MsvcFileBoundary, MsvcTraitSort>, IAssociatedTrait<NameIndex, MsvcFileBoundaryProperties>
+            public readonly record struct MsvcFileBoundary : ITraitTag<MsvcFileBoundary, MsvcTraitSort>, IAssociatedTrait<NameIndex, MsvcFileBoundaryProperties>
             {
                 public static SortType Type => SortType.MsvcTrait;
                 public static MsvcTraitSort Sort => MsvcTraitSort.FileBoundary;
@@ -5857,7 +5962,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.HeaderUnitSourceFile)]
-            public readonly struct MsvcHeaderUnitSourceFile : ITraitTag<MsvcHeaderUnitSourceFile, MsvcTraitSort>, IAssociatedTrait<TextOffset, NameIndex>
+            public readonly record struct MsvcHeaderUnitSourceFile : ITraitTag<MsvcHeaderUnitSourceFile, MsvcTraitSort>, IAssociatedTrait<TextOffset, NameIndex>
             {
                 public static SortType Type => SortType.MsvcTrait;
                 public static MsvcTraitSort Sort => MsvcTraitSort.HeaderUnitSourceFile;
@@ -5867,7 +5972,7 @@ namespace ifc
             }
 
             [Tag<MsvcTraitSort>(MsvcTraitSort.FileHash)]
-            public readonly struct MsvcFileHash : ITraitTag<MsvcFileHash, MsvcTraitSort>, IAssociatedTrait<NameIndex, MsvcFileHashData>
+            public readonly record struct MsvcFileHash : ITraitTag<MsvcFileHash, MsvcTraitSort>, IAssociatedTrait<NameIndex, MsvcFileHashData>
             {
                 public static SortType Type => SortType.MsvcTrait;
                 public static MsvcTraitSort Sort => MsvcTraitSort.FileHash;

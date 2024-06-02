@@ -1427,7 +1427,7 @@ namespace
             {
                 os << "readonly ";
             }
-            os << "struct " << mName;
+            os << "record struct " << mName;
 
             structsForSizeValidation.insert( mIndex );
 
@@ -1526,7 +1526,14 @@ namespace
                 os << "    public " << over.tagType.name << " Sort => (" << over.tagType.name << ")(IndexAndSort & 0b" << std::string( tagPrecision, '1' ) << ");" << std::endl;
                 os << "    public bool IsNull => IndexAndSort == 0;" << std::endl;
                 os << "    public static SortType Type => SortType." << ( over.tagType.name.substr( 0, over.tagType.name.size() - 4 ) ) << ';' << std::endl;
-                os << "    public override int GetHashCode() => (int)IndexAndSort;" << std::endl;
+                os << "    public override int GetHashCode() => (int)IndexAndSort;" << std::endl << std::endl;
+
+                os << "    public " << mName << "(" << over.tagType.name << " sort, Index index)" << std::endl;
+                os << "    {" << std::endl;
+                os << "        IndexAndSort = (uint)sort | ( (uint)index << " << tagPrecision << " );" << std::endl;
+                os << "    }" << std::endl << std::endl;
+
+                os << "    public static " << mName << " Create(" << over.tagType.name << " sort, Index index) => new(sort, index);" << std::endl;
             }
 
             for ( const auto& member : baseTypes.MembersToInline )
