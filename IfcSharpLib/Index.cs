@@ -88,6 +88,7 @@ namespace ifc
     public interface IOver<TImpl> : IOver
         where TImpl : struct, IOver<TImpl>
     {
+        static virtual TImpl Create(byte sort, Index index) => TImpl.Create(sort, index);
     }
 
     public interface IOver<TImpl, T> : IOver<TImpl>
@@ -99,6 +100,8 @@ namespace ifc
         byte IOver.UntypedSort => Unsafe.BitCast<T, byte>(Sort);
 
         static abstract TImpl Create(T sort, Index index);
+
+        static TImpl IOver<TImpl>.Create(byte sort, Index index) => TImpl.Create(Unsafe.BitCast<byte, T>(sort), index);
     }
 
     [AttributeUsage(AttributeTargets.Struct)]

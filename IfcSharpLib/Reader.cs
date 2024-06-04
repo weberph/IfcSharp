@@ -158,6 +158,27 @@ namespace IfcSharpLib
             return TIndex.Create(T.Sort, (ifc.Index)(offset / (int)summary.entry_size));
         }
 
+        public void IndexOf<T, TIndex>(in T type, out TIndex index)
+            where T : struct, ITag
+            where TIndex : struct, IOver<TIndex>
+        {
+            ref readonly var summary = ref PartitionSummary(T.Type, T.Sort);
+
+            Debug.Assert(Marshal.SizeOf<T>() == (int)summary.entry_size);
+
+            var size = (int)summary.cardinality * (int)summary.entry_size;
+            var span = MemoryMarshal.Cast<byte, T>(_memory.Span.Slice((int)summary.offset, size));
+
+            var offset = Unsafe.ByteOffset(in span[0], in type);
+            if (offset < 0 || offset > size)
+            {
+                throw new ArgumentOutOfRangeException(nameof(type));
+            }
+
+            Debug.Assert(offset % (int)summary.entry_size == 0);
+            index = TIndex.Create(T.Sort, (ifc.Index)(offset / (int)summary.entry_size));
+        }
+
         public ReadOnlySpan<T> Sequence<T>(Sequence<T> sequence)
             where T : struct, ITag
         {
