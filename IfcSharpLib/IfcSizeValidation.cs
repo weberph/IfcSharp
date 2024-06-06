@@ -4,21 +4,16 @@ namespace IfcSharpLib
 {
     public sealed class IfcSelfTestException(string message) : Exception(message) { }
 
-    public static partial class IfcSizeValidation
+    public class IfcSizeValidationSelfTest : IfcSizeValidation
     {
-        private static void AssertSize<T>(int expected)
+        protected override void AssertSize<T>(int expected)
         {
             var actual = Marshal.SizeOf<T>();
             if (actual != expected)
             {
-                var msg = $"{typeof(T).Name} as unexpected size: {actual} instead of expected {expected}.";
-                Console.WriteLine(msg);
+                var msg = $"{typeof(T).Name} has unexpected size: {actual} instead of expected {expected}.";
                 throw new IfcSelfTestException(msg);
             }
         }
-
-        static partial void ExecuteTest();
-
-        public static void Test() => ExecuteTest();
     }
 }

@@ -1,11 +1,13 @@
-// hash: 2aa31cf98a70c67293a3440eb2c6f12e3bd5552f1e4f47397b79bc9c447c4e2e
+// hash: cc8928a3ac5a81783dae9d60545ff3ca15e3756ac7a64cd53b147dae39898960
 
 
 namespace IfcSharpLib
 {
-    public static partial class IfcSizeValidation
+    public abstract class IfcSizeValidation
     {
-        static partial void ExecuteTest()
+        protected abstract void AssertSize<T>(int expected);
+
+        public void ExecuteTest()
         {
             AssertSize<ifc.FormatVersion>(2);
             AssertSize<ifc.SHA256Hash>(32);

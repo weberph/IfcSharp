@@ -1689,8 +1689,6 @@ namespace
 
                             os << fundamentalTypeName << ' ' << fieldName << "_bitfield;" << std::endl;
                         }
-
-                        std::cout << "";
                     }
                     else if ( innerDeclaration.index.sort() == ifc::DeclSort::Scope )
                     {
@@ -1764,7 +1762,7 @@ namespace
         std::vector<UnionMember> mUnionMembers;
     };
 
-    void updateValidationData( const std::string& validationInputFile, const std::string& validationOutputFile )
+    bool updateValidationData( const std::string& validationInputFile, const std::string& validationOutputFile )
     {
         std::ostringstream os;
 
@@ -1773,24 +1771,24 @@ namespace
 
         ScopeInfo scopeInfo;
         scopeInfo.collect( reader, true );
-        scopeInfo.print( std::cout );
-
 
         constexpr std::string_view templateCode = R"(
 namespace IfcSharpLib
 {
-    public static partial class IfcSizeValidation
+    public abstract class IfcSizeValidation
     {
-        static partial void ExecuteTest()
+        protected abstract void AssertSize<T>(int expected);
+
+        public void ExecuteTest()
         {
-            >
+            #
         }
     }
 }
 )";
 
         const std::span templateSpan{ templateCode };
-        const auto insertionPosition = templateCode.find( '>' );
+        const auto insertionPosition = templateCode.find( '#' );
         const auto indentationCount = insertionPosition - templateCode.rfind( '\n', insertionPosition ) - 1;
 
         const std::string indent( indentationCount, ' ' );
@@ -1830,7 +1828,7 @@ namespace IfcSharpLib
         os.write( end.data(), end.size() );
         os.flush();
 
-        updateFileWithHash( validationOutputFile, os.str() );
+        return updateFileWithHash( validationOutputFile, os.str() );
     }
 
     std::span<const std::string_view> QualifiedNameTable::getRefereeQualifier( const StructInfo& referer, const InfoBase& referee ) const
@@ -1863,14 +1861,23 @@ int main()
 
     const auto testOutputFile = ifcSharpRepoDir / "IfcTestData" / "IfcSizeValidation.ixx";
 
-    updateValidationData( validationInputFile.string(), validationOutputFile.string() );
+    if ( std::filesystem::exists( validationInputFile ) )
+    {
+        if ( updateValidationData( validationInputFile.string(), validationOutputFile.string() ) )
+        {
+            std::cout << "### Validation file IfcSizeValidation.Generated.cs changed ###" << std::endl;
+        }
+        else
+        {
+            std::cout << "No change in validation file" << std::endl;
+        }
+    }
 
     auto ifc = ifchelper::IfcReader::loadFile( ifcInputFile.string() );
     auto& reader = ifc.reader();
 
     ScopeInfo scopeInfo;
     scopeInfo.collect( reader, true );
-    scopeInfo.print( std::cout );
 
     struct ScopeContent
     {
@@ -1937,8 +1944,6 @@ int main()
                 const auto& templateInfo = infoByScope[scope->get().Index].templates.emplace_back( reader, tdecl, scope.value(), argumentCount, std::move( fields ) );
                 infoByIndex.emplace( templateInfo.index(), templateInfo );
                 nameTable.add( templateInfo.index(), scope.value() );
-
-                std::cout << "Template: " << templateInfo.name() << std::endl;
             }
         }
     }
@@ -2042,8 +2047,6 @@ int main()
             }
         }
     } );
-
-    std::cout << std::endl << std::string( 80, '=' ) << std::endl << std::endl;
 
     if ( updateFileWithHash( ifcOutputFile.string(), osCode.str() ) )
     {

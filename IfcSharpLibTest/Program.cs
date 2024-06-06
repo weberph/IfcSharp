@@ -11,7 +11,7 @@ namespace IfcSharpLibTest
     {
         static void Main()
         {
-            IfcSizeValidation.Test();
+            new IfcSizeValidationSelfTest().ExecuteTest();
 
             PrintEnumsExample();
 

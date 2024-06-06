@@ -2,6 +2,7 @@
 
 _external/
 _publish/
+build/
 
 bin/
 obj/
