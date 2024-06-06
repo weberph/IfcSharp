@@ -9,6 +9,8 @@
     <IfcSharpOutDir>$([MSBuild]::NormalizeDirectory('$(SolutionDir)', 'build', '$(Platform)', '$(Configuration)'))</IfcSharpOutDir>
     <IfcSharpIntDir>$([MSBuild]::NormalizeDirectory('$(IfcSharpOutDir)', '$(MSBuildProjectName)'))</IfcSharpIntDir>
     
+    <ExternalDir>$([MSBuild]::NormalizeDirectory('$(SolutionDir)', '_external'))</ExternalDir>
+
     <OutDir>$(IfcSharpOutDir)</OutDir>
   </PropertyGroup>
   
@@ -18,6 +20,15 @@
   
   <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.vcxproj'">
     <IntDir>$(IfcSharpIntDir)</IntDir>
+
+    <CodeAnalysisRuleSet>$(SolutionDir)\CppCodeAnalysis.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
-  
+
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <DisableAnalyzeExternal>true</DisableAnalyzeExternal>
+      <AdditionalOptions>/external:I &quot;$(ExternalDir)\&quot; %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+  </ItemDefinitionGroup>
 </Project>

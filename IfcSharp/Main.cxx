@@ -31,11 +31,13 @@
 #include <ifc/abstract-sgraph.hxx>
 
 #include <gsl/span>
+#include <gsl/narrow>
 
 #pragma comment(lib, "bcrypt.lib")
 
 #pragma warning( disable : 26440 ) // ... can be declared 'noexcept' (f.6).
 #pragma warning( disable : 26446 ) // Prefer to use gsl::at() instead of unchecked subscript operator (bounds.4).
+#pragma warning( disable : 26455 ) // Default constructor should not throw. Declare it 'noexcept' (f.6).
 
 using namespace ifchelper;
 
@@ -59,7 +61,6 @@ struct std::hash<ifc::symbolic::FundamentalType>
 
 namespace
 {
-    // XXX workaround
     std::string_view registerString( std::string str )
     {
         static std::deque<std::string> gStringTable;
@@ -83,13 +84,15 @@ namespace
 
     template<class T, size_t Extent>
         requires ( sizeof( T ) == 1 )
-    constexpr std::string toHex( const std::span<const T, Extent> span )
+    std::string toHex( const std::span<const T, Extent> span )
     {
         std::string result( span.size() * 2, '\0' );
         for ( size_t index = 0; const auto t : span )
         {
             const auto b = static_cast<uint8_t>( t );
+#pragma warning( suppress : 26482 ) // Only index into arrays using constant expressions (bounds.2).
             result[index++] = HexChars[( b >> 4 ) & 0xF];
+#pragma warning( suppress : 26482 ) // Only index into arrays using constant expressions (bounds.2).
             result[index++] = HexChars[b & 0xF];
         }
         return result;
@@ -99,6 +102,7 @@ namespace
     bool updateFileWithHash( const std::string& outputFile, const std::string& content )
     {
         const auto contentSpan = std::as_bytes( std::span{ content } );
+#pragma warning( suppress : 26481 ) // Don't use pointer arithmetic. Use span instead (bounds.1).
         const auto hash = ifc::hash_bytes( contentSpan.data(), contentSpan.data() + contentSpan.size() );
         const auto hashHex = toHex( std::as_bytes( std::span{ hash.value } ) );
 
@@ -1997,7 +2001,7 @@ int main()
 
             if ( currentLevel < level )
             {
-                assert( currentLevel + 1 == level );
+                assert( gsl::narrow<size_t>( currentLevel + 1 ) == level );
 
                 os << "namespace " << current.Name << std::endl << '{' << std::endl;
                 ++currentLevel;
