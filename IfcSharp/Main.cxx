@@ -1225,21 +1225,6 @@ namespace
             std::optional<Declarator> SequenceType;
             std::optional<EnumeratorIndexAndName> SequenceTag;
 
-            EnumeratorIndexAndName extractEnumeratorIndexAndName( const ifc::Reader& reader, const ifc::ExprIndex expr )
-            {
-                const auto& tagArgNamedDeclExpr = reader.get<ifc::symbolic::NamedDeclExpr>( expr );
-
-                const auto tagArgTypeDecl = Query( reader, tagArgNamedDeclExpr.type )
-                    .get( &ifc::symbolic::DesignatedType::decl );
-
-                const auto tagArgTypeName = tagArgTypeDecl.identity( &ifc::symbolic::EnumerationDecl::identity );
-
-                const auto tagArgEnumeratorName = Query( reader, tagArgNamedDeclExpr.decl )
-                    .identity( &ifc::symbolic::EnumeratorDecl::identity );
-
-                return { { tagArgTypeDecl.index, tagArgTypeName }, tagArgNamedDeclExpr.decl, tagArgEnumeratorName };
-            }
-
             void collect( const ifc::Reader& reader, const std::unordered_map<ifc::DeclIndex, InfoBaseRef>& infoByIndex, const ifc::symbolic::BaseType& baseType )
             {
                 if ( baseType.type.sort() != ifc::TypeSort::Syntactic )
@@ -2073,7 +2058,7 @@ int main()
     osTest << "#include <ifc/abstract-sgraph.hxx>" << std::endl << std::endl;
     osTest << "export module IfcSizeValidation;" << std::endl << std::endl;
     osTest << "export {" << std::endl;
-    scopeVisitorWithNamespace( osTest, [&]( const Scope& current, const std::string& q ) {
+    scopeVisitorWithNamespace( osTest, [&]( const Scope& current, const std::string& ) {
         if ( const auto foundIt = infoByScope.find( current.Index ); foundIt != infoByScope.end() )
         {
             for ( const StructInfo& structInfo : foundIt->second.structs )
@@ -2082,7 +2067,6 @@ int main()
                 {
                     const auto name = infoByIndex.at( it.value() ).get().name();
 
-                    osTest << "// " << current.Name << " - " << q << std::endl;
                     osTest << "constexpr inline size_t " << name << "Size = sizeof(" << name << ");" << std::endl;
                 }
             }

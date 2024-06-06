@@ -36,7 +36,7 @@ namespace IfcSharpLibTest
             DeclIndex ifcNamespace = default;
             foreach (ref readonly var scopeDecl in reader.Partition<ScopeDecl>())
             {
-                if (scopeDecl.home_scope.IsNull // // search top level declarations
+                if (scopeDecl.home_scope.IsNull // search top level declarations
                     && reader.Get<FundamentalType>(scopeDecl.type).basis == TypeBasis.Namespace
                     && reader.GetString(scopeDecl.identity) == "ifc")
                 {
