@@ -20,5 +20,11 @@
     <ClCompile Include="IfcSizeValidation.ixx">
       <Filter>Header Files</Filter>
     </ClCompile>
+    <ClCompile Include="CharArrayTests.ixx">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="StringLiteralTests.ixx">
+      <Filter>Header Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

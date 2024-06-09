@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\IfcSharpLibTest\IfcSharpLibTest.csproj" />
     <ProjectReference Include="..\IfcSharpLib\IfcSharpLib.csproj" />
   </ItemGroup>
 
