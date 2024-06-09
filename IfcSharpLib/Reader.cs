@@ -187,10 +187,20 @@ namespace IfcSharpLib
 
         public ReadOnlySpan<T> Sequence<T>(ISequence<T> sequence) where T : struct, ITag => Sequence(sequence.Sequence);
 
-        public ReadOnlySpan<T> Sequence<TImpl, T, TSort>(ITaggedSequence<TImpl, T, TSort> taggedSequence)
+        public ReadOnlySpan<T> Sequence<TImpl, T, TSort>(in ITaggedSequence<TImpl, T, TSort> taggedSequence)
             where T : struct
             where TSort : unmanaged, Enum
-            where TImpl : ITaggedSequence<TImpl, T, TSort>
+            where TImpl : struct, ITaggedSequence<TImpl, T, TSort>
+        {
+            var sequence = taggedSequence.Sequence;
+            return Partition<T>(in PartitionSummary(TImpl.SequenceType, Unsafe.BitCast<TSort, byte>(TImpl.SequenceSort)))
+                   .Slice((int)sequence.start, (int)sequence.cardinality);
+        }
+
+        public ReadOnlySpan<T> Sequence<TImpl, T, TSort>(ref readonly TImpl taggedSequence)
+            where T : struct
+            where TSort : unmanaged, Enum
+            where TImpl : struct, ITaggedSequence<TImpl, T, TSort>
         {
             var sequence = taggedSequence.Sequence;
             return Partition<T>(in PartitionSummary(TImpl.SequenceType, Unsafe.BitCast<TSort, byte>(TImpl.SequenceSort)))
@@ -380,7 +390,7 @@ namespace IfcSharpLib
         public T[] SequenceAsArray<TImpl, T, TSort>(ITaggedSequence<TImpl, T, TSort> taggedSequence)
             where T : struct
             where TSort : unmanaged, Enum
-            where TImpl : ITaggedSequence<TImpl, T, TSort>
+            where TImpl : struct, ITaggedSequence<TImpl, T, TSort>
         {
             return [.. Sequence(taggedSequence)];
         }

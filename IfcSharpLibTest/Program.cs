@@ -15,11 +15,11 @@ namespace IfcSharpLibTest
 
             PrintEnumsExample();
 
-            // GenerateTestVisitorCode();
+            //GenerateTestVisitorCode();
 
             // BuildBoost();
 
-            // TestVisitor(new Reader(@"IfcTestData\IfcHeaderUnit.ixx.ifc"));
+            // TestVisitor(new Reader(TestFileLocator.GetTestFilePath("IfcHeaderUnit.ixx.ifc")));
 
             // ExecuteForEachTestFile(r => ReflectionTest.Run(r, false));
 
@@ -29,7 +29,7 @@ namespace IfcSharpLibTest
         private static void PrintEnumsExample()
         {
             // see IfcTestData project; the ixx file is compiled with /exportHeader
-            var reader = new Reader(@"IfcTestData\IfcHeaderUnit.ixx.ifc");
+            var reader = new Reader(TestFileLocator.GetTestFilePath("IfcHeaderUnit.ixx.ifc"));
 
             // step 1: search for the namespace of interest ("ifc") and get its index
 

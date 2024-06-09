@@ -1,7 +1,7 @@
 ﻿using ifc;
 using ifc.symbolic;
 using IfcSharpLib;
-using IfcSharpLibBenchmark;
+using IfcSharpLibTest;
 using System.Runtime.InteropServices;
 using System.Text;
 

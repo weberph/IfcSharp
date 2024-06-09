@@ -10,15 +10,16 @@
     <IfcSharpIntDir>$([MSBuild]::NormalizeDirectory('$(IfcSharpOutDir)', '$(MSBuildProjectName)'))</IfcSharpIntDir>
     
     <ExternalDir>$([MSBuild]::NormalizeDirectory('$(SolutionDir)', '_external'))</ExternalDir>
-
-    <OutDir>$(IfcSharpOutDir)</OutDir>
   </PropertyGroup>
   
   <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.csproj'">
-    <BaseIntermediateOutputPath>$(IfcSharpIntDir)</BaseIntermediateOutputPath>
+    <!-- Setting BaseIntermediateOutputPath / OutDir interferes with BenchmarkDotNet -->
+    <!--<BaseIntermediateOutputPath>$(IfcSharpIntDir)</BaseIntermediateOutputPath>-->
+    <!--<OutDir>$(IfcSharpOutDir)</OutDir>-->
   </PropertyGroup>
   
   <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.vcxproj'">
+    <OutDir>$(IfcSharpOutDir)</OutDir>
     <IntDir>$(IfcSharpIntDir)</IntDir>
 
     <CodeAnalysisRuleSet>$(SolutionDir)\CppCodeAnalysis.ruleset</CodeAnalysisRuleSet>
@@ -31,4 +32,5 @@
       <AdditionalOptions>/external:I &quot;$(ExternalDir)\&quot; %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
   </ItemDefinitionGroup>
+
 </Project>

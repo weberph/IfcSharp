@@ -24,7 +24,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ifc-dom", "_external\ifc\bu
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IfcBuilderLib", "IfcBuilderLib\IfcBuilderLib.csproj", "{3F39F045-DA93-4BE4-90C1-422533ABCC94}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IfcSharpLibUnitTests", "IfcSharpLibUnitTests\IfcSharpLibUnitTests.csproj", "{ADA4D1FC-9363-428C-BA42-58E9C22E640A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IfcSharpLibUnitTests", "IfcSharpLibUnitTests\IfcSharpLibUnitTests.csproj", "{ADA4D1FC-9363-428C-BA42-58E9C22E640A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IfcSharpLibBenchmark", "IfcSharpLibBenchmark\IfcSharpLibBenchmark.csproj", "{F9BE12F8-4812-4FFE-AF49-90E6BFD4B16A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -72,6 +74,10 @@ Global
 		{ADA4D1FC-9363-428C-BA42-58E9C22E640A}.Debug|x64.Build.0 = Debug|x64
 		{ADA4D1FC-9363-428C-BA42-58E9C22E640A}.Release|x64.ActiveCfg = Release|x64
 		{ADA4D1FC-9363-428C-BA42-58E9C22E640A}.Release|x64.Build.0 = Release|x64
+		{F9BE12F8-4812-4FFE-AF49-90E6BFD4B16A}.Debug|x64.ActiveCfg = Debug|x64
+		{F9BE12F8-4812-4FFE-AF49-90E6BFD4B16A}.Debug|x64.Build.0 = Debug|x64
+		{F9BE12F8-4812-4FFE-AF49-90E6BFD4B16A}.Release|x64.ActiveCfg = Release|x64
+		{F9BE12F8-4812-4FFE-AF49-90E6BFD4B16A}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

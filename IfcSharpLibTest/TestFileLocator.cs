@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 
-namespace IfcSharpLibBenchmark
+namespace IfcSharpLibTest
 {
     public static class TestFileLocator
     {

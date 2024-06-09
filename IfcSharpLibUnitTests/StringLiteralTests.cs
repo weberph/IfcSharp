@@ -1,6 +1,6 @@
 ﻿using ifc.symbolic;
 using IfcSharpLib;
-using IfcSharpLibBenchmark;
+using IfcSharpLibTest;
 
 namespace IfcSharpLibUnitTests
 {
