@@ -1129,7 +1129,8 @@ namespace
             os << '@';
         }
 
-        os << csIdentifier.identifier;
+        os << gsl::narrow_cast<char>( tolower( csIdentifier.identifier.at( 0 ) ) );
+        os << csIdentifier.identifier.substr( 1 );
         return os;
     }
 
@@ -1532,7 +1533,7 @@ namespace
                 {
                     os << "readonly ";
                 }
-                os << std::get<0>( member ) << ' ' << std::get<1>( member ) << ';' << std::endl;;
+                os << std::get<0>( member ) << ' ' << CsIdentifier{ std::get<1>( member ) } << ';' << std::endl;;
             }
 
             struct BitfieldMember
@@ -1707,7 +1708,7 @@ namespace
                         }
 
                         assert( std::isupper( unionInfo.mName[0] ) );
-                        os << unionInfo.mName << ' ' << gsl::narrow_cast<char>( std::tolower( unionInfo.mName[0] ) ) << unionInfo.mName.substr( 1 ) << ';' << std::endl;
+                        os << unionInfo.mName << ' ' << CsIdentifier{ unionInfo.mName } << ';' << std::endl;
 
                         assert( not unionInfo.mUnionMembers.empty() ); // assumes that nested unions are emitted first
 
@@ -1716,8 +1717,7 @@ namespace
                             os << "    public ";
                             printQualifiedTypePrefix( member.declarator );
                             os << member.typeName << ' ' << CsIdentifier{ member.fieldName } << " => "
-                                << gsl::narrow_cast<char>( std::tolower( unionInfo.mName[0] ) ) << unionInfo.mName.substr( 1 )
-                                << '.' << CsIdentifier{ member.fieldName } << ';' << std::endl;
+                                << CsIdentifier{ unionInfo.mName } << '.' << CsIdentifier{ member.fieldName } << ';' << std::endl;
                         }
                     }
                     else

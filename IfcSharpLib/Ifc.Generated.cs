@@ -1,4 +1,4 @@
-// hash: 67f614a300050750be09624e7caab309cbaa7b01c7887cafa6728bf11f5e6568
+// hash: e3a422d51f44bb567e7e587b5124ba2040f4ddcae7df6ca7957d5c55a3391c1b
 
 using System.Runtime.InteropServices;
 
@@ -2493,7 +2493,7 @@ namespace ifc
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.Temploid;
 
-            public readonly ParameterizedEntity ParameterizedEntity;
+            public readonly ParameterizedEntity parameterizedEntity;
             public readonly ChartIndex chart;
             public readonly ReachableProperties properties;
         }
@@ -2512,7 +2512,7 @@ namespace ifc
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.Template;
 
-            public readonly Template Template;
+            public readonly Template template;
             public readonly TypeIndex type;
             public readonly BasicSpecifiers basic_spec;
             public readonly Access access;
@@ -2525,7 +2525,7 @@ namespace ifc
             public static SortType Type => SortType.Decl;
             public static DeclSort Sort => DeclSort.PartialSpecialization;
 
-            public readonly Template Template;
+            public readonly Template template;
             public readonly SpecFormIndex specialization_form;
             public readonly BasicSpecifiers basic_spec;
             public readonly Access access;
