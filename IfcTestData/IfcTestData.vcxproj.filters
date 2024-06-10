@@ -26,5 +26,8 @@
     <ClCompile Include="StringLiteralTests.ixx">
       <Filter>Header Files</Filter>
     </ClCompile>
+    <ClCompile Include="ImportExportModuleTests.ixx">
+      <Filter>Header Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

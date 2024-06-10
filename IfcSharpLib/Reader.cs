@@ -135,6 +135,21 @@ namespace IfcSharpLib
             return ref Partition<FileAndLine>(in _toc.lines)[(int)index];
         }
 
+        public ref readonly Word Get(WordIndex index)
+        {
+            return ref Partition<Word>(in _toc.words)[(int)index];
+        }
+
+        public ref readonly WordSequence Get(SentenceIndex index)
+        {
+            return ref Partition<WordSequence>(in _toc.sentences)[(int)index];
+        }
+
+        public ref readonly SpecializationForm Get(SpecFormIndex index)
+        {
+            return ref Partition<SpecializationForm>(in _toc.spec_forms)[(int)index];
+        }
+
         public TIndex IndexOf<TIndex, TSort, T>(in T type)
             where T : struct, ITag<T, TSort>
             where TSort : unmanaged, Enum
@@ -292,9 +307,15 @@ namespace IfcSharpLib
             return GetString(identity.name);
         }
 
-        public ReadOnlySpan<Scope> Scopes() => Partition<Scope>(_toc.scopes);
-        public ReadOnlySpan<Declaration> Declarations() => Partition<Declaration>(_toc.entities);
+        public ReadOnlySpan<StringIndex> CommandLine() => Partition<StringIndex>(in _toc.command_line);
+        public ReadOnlySpan<ModuleReference> ExportedModules() => Partition<ModuleReference>(in _toc.exported_modules);
+        public ReadOnlySpan<ModuleReference> ImportedModules() => Partition<ModuleReference>(in _toc.imported_modules);
+        public ReadOnlySpan<Scope> Scopes() => Partition<Scope>(in _toc.scopes);
+        public ReadOnlySpan<Declaration> Declarations() => Partition<Declaration>(in _toc.entities);
         public ReadOnlySpan<Declaration> Declarations(Sequence<Declaration> sequence) => Declarations().Slice((int)sequence.start, (int)sequence.cardinality);
+        public ReadOnlySpan<PragmaWarningRegion> PragmaWarnings() => Partition<PragmaWarningRegion>(in _toc.suppressed_warnings);
+        public ReadOnlySpan<PragmaPushState> States() => Partition<PragmaPushState>(in _toc.states);
+        public ReadOnlySpan<PragmaIndex> ImplementationPragmas() => Partition<PragmaIndex>(in _toc.implementation_pragmas);
 
         public ReadOnlySpan<T> Partition<T>()
             where T : struct, ITag
@@ -305,7 +326,10 @@ namespace IfcSharpLib
         private ReadOnlySpan<T> Partition<T>(in PartitionSummaryData summary)
             where T : struct
         {
-            Debug.Assert(Marshal.SizeOf<T>() == (int)summary.entry_size || summary.cardinality == 0);
+            Debug.Assert(summary.cardinality == 0
+                || (typeof(T) is { IsEnum: true } enumType && Marshal.SizeOf(enumType.GetEnumUnderlyingType()) == (int)summary.entry_size)
+                || Marshal.SizeOf<T>() == (int)summary.entry_size);
+
             var size = (int)summary.cardinality * (int)summary.entry_size;
             return MemoryMarshal.Cast<byte, T>(_memory.Span.Slice((int)summary.offset, size));
         }
@@ -320,18 +344,6 @@ namespace IfcSharpLib
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private ref readonly PartitionSummaryData PartitionSummary(SortType type, byte sort)
         {
-            // TODO
-            // command_line
-            // exported_modules
-            // imported_modules
-            // states
-            // words
-            // sentences
-            // entities
-            // spec_forms
-            // suppressed_warnings
-            // implementation_pragmas
-
             switch (type)
             {
                 case SortType.Name: return ref _toc.names[sort];
