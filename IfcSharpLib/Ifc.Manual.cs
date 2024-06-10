@@ -2,13 +2,15 @@
 
 namespace ifc
 {
-    public readonly struct Sequence<T>(Index start, Cardinality cardinality)
+    public readonly record struct Sequence<T>(Index start, Cardinality cardinality)
+        where T : struct
     {
         public readonly Index start = start;
         public readonly Cardinality cardinality = cardinality;
     }
 
-    public readonly struct Identity<T>
+    public readonly record struct Identity<T>
+        where T : struct
     {
         public readonly T name;
         public readonly symbolic.SourceLocation locus;
